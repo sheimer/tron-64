@@ -64,6 +64,7 @@ block content
           div(class='flex-row')
             input(type='text' value='' placeholder='gamename' id='input-create-game')
             input(type='submit' value=' create game ' id='btn-create-game' disabled=true)
+          div#lobby-error(class='fg-rose-muted' style='display:none; margin-top: 0.5rem; text-align: center;')
       #footer-playersconfig(style="display:none;")
         form(onsubmit='return false;' id='form-add-player')
           div(class='flex-row wrap')

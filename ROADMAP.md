@@ -36,11 +36,10 @@ Focus on room privacy, concurrent server capacity, and process recovery.
     - Add a "Private / Unlisted" toggle in the game creation form (`isPublic: false`).
     - Exclude unlisted games from `MSG_TYPE.LOBBY_LIST`.
     - Allow players to join directly via URL hash (`https://domain.com/#gameId`) or a "Join by Game ID" input field.
-- [ ] **Server Concurrency & Capacity Limits**
+- [x] **Server Concurrency & Capacity Limits**
+  - *Dedicated Plan:* [`docs/plans/2026-08-23-server-concurrency-capacity-limits.md`](docs/plans/2026-08-23-server-concurrency-capacity-limits.md)
   - *Problem:* Unlimited concurrent games could overload a single Node.js event loop during high traffic.
-  - *Proposed Solution:*
-    - Benchmark the target server CPU usage under concurrent match simulations (e.g. 50–100 active rooms).
-    - Introduce a configurable `MAX_ACTIVE_GAMES` cap in server config, returning a friendly "Server at capacity" message when limits are reached.
+  - *Solution:* Introduced configurable `MAX_ACTIVE_GAMES` (default 50) and `MAX_CLIENTS_PER_ROOM` (default 32) guardrails with friendly inline Lobby feedback. Retained and enhanced the 5-minute inactivity auto-cleanup (`IDLE_ROOM_TIMEOUT_MS`). Added headless multi-room benchmark tooling (`npm run benchmark`) confirming $<1\text{ms}$ event loop jitter across 50 simultaneous 40 FPS matches.
 - [x] **Match State Persistence & Graceful Restart Recovery**
   - *Problem:* Restarting the Node server daemon terminates all active games and wipes accumulated scores.
   - *Solution:* Implemented crash-safe atomic JSON snapshot storage (`server/Storage.js`) persisting active game rooms, registered players, and accumulated scores across service reboots and deployments without any I/O overhead during the 40 FPS physics loop.

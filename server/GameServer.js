@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 
 import { GameSession } from './GameSession.js'
 import { storage } from './Storage.js'
+import { MAX_ACTIVE_GAMES } from '../shared/constants.js'
 
 class GameServer {
   constructor() {
@@ -56,6 +57,9 @@ class GameServer {
   }
 
   createGame({ name, size, interval, isPublic }) {
+    if (this.games.length >= MAX_ACTIVE_GAMES) {
+      return null
+    }
     const key = randomBytes(4).toString('hex')
     this.games.push(
       new GameSession({

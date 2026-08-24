@@ -1,7 +1,7 @@
 import WebSocket, { WebSocketServer } from 'ws'
 import { gameServer } from './GameServer.js'
 import { MSG_TYPE, BINARY_OPCODE } from '../shared/protocol.js'
-import { GRID_SIZE } from '../shared/constants.js'
+import { GRID_SIZE, MAX_ACTIVE_GAMES, MAX_CLIENTS_PER_ROOM } from '../shared/constants.js'
 
 const sanitizeString = (str, maxLength = 32) =>
   typeof str === 'string' ? str.trim().slice(0, maxLength) : ''
@@ -152,6 +152,15 @@ export const setupWebSocketServer = (server) => {
               interval,
               isPublic,
             })
+            if (!key) {
+              ws.send(
+                JSON.stringify({
+                  type: MSG_TYPE.ERROR,
+                  payload: `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`,
+                }),
+              )
+              return
+            }
             ws.send(
               JSON.stringify({
                 type: MSG_TYPE.GAME_CREATED,
@@ -174,6 +183,19 @@ export const setupWebSocketServer = (server) => {
                 JSON.stringify({
                   type: MSG_TYPE.ERROR,
                   payload: `Game ${gameKey} not found`,
+                }),
+              )
+              return
+            }
+
+            const openClients = game.clients.filter(
+              (c) => c?.readyState === WebSocket.OPEN,
+            )
+            if (openClients.length >= MAX_CLIENTS_PER_ROOM) {
+              ws.send(
+                JSON.stringify({
+                  type: MSG_TYPE.ERROR,
+                  payload: `Game room ${gameKey} is full (maximum ${MAX_CLIENTS_PER_ROOM} clients).`,
                 }),
               )
               return

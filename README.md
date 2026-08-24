@@ -69,12 +69,23 @@ npm install
 # Start server (default: port 3000)
 npm start
 
-# Run automated tests (lifecycle & persistence)
+# Run automated tests (lifecycle, persistence, concurrency)
 npm test
+
+# Run headless concurrency benchmark (10, 25, 50 concurrent active games)
+npm run benchmark
 
 # Run linter
 npx eslint .
 ```
+
+### Server Concurrency & Capacity Configuration
+* **`MAX_ACTIVE_GAMES` (Default: `50`):** Maximum concurrent active game rooms allowed on the server. Configurable via environment variable:
+  ```bash
+  MAX_ACTIVE_GAMES=100 npm start
+  ```
+* **`MAX_CLIENTS_PER_ROOM` (Default: `32`):** Maximum connected clients (players + spectators) per game room.
+* **Automatic Inactivity Reaper:** Rooms with zero connected clients automatically clean up and free server memory/slots after **5 minutes** of inactivity (`IDLE_ROOM_TIMEOUT_MS`).
 
 ### Testing Disconnected Clients & Multi-Tab Behavior
 1. Open a regular browser window at `http://localhost:3000` and create a game (e.g. Player "Alice").

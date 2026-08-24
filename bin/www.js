@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import '../server/loadEnv.js'
 import { app, server } from '../app.js'
 import _debug from 'debug'
 

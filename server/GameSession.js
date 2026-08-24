@@ -2,7 +2,7 @@ import WebSocket from 'ws'
 
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
-import { GRID_SIZE, MAX_PLAYERS } from '../shared/constants.js'
+import { GRID_SIZE, MAX_PLAYERS, IDLE_ROOM_TIMEOUT_MS } from '../shared/constants.js'
 
 export class GameSession {
   constructor({
@@ -75,20 +75,20 @@ export class GameSession {
   }
 
   checkConnectionStatus() {
-    if (this.clients.length || Date.now() - this.createdAt > 60 * 1000) {
-      const connectionExists = this.clients.some(
-        (client) => client?.readyState === WebSocket.OPEN,
-      )
-      if (connectionExists) {
-        this.allDisconnected = null
-      } else {
-        if (this.allDisconnected === null) {
-          this.allDisconnected = Date.now()
-        }
-        if (Date.now() - this.allDisconnected > 5 * 60 * 1000) {
-          this.destroy()
-          return
-        }
+    // Prune closed socket references
+    this.clients = this.clients.filter(
+      (client) => client?.readyState === WebSocket.OPEN,
+    )
+
+    if (this.clients.length > 0) {
+      this.allDisconnected = null
+    } else {
+      if (this.allDisconnected === null) {
+        this.allDisconnected = Date.now()
+      }
+      if (Date.now() - this.allDisconnected > IDLE_ROOM_TIMEOUT_MS) {
+        this.destroy()
+        return
       }
     }
     this.statusTimer = setTimeout(() => {
@@ -99,7 +99,12 @@ export class GameSession {
   }
 
   connect({ client, ondraw, onfinish, onreset }) {
+    // Prune closed socket references before adding new client
+    this.clients = this.clients.filter(
+      (c) => c?.readyState === WebSocket.OPEN,
+    )
     this.clients.push(client)
+    this.allDisconnected = null
     this.arena.addHandler({
       ondraw,
       onfinish: (stats) => {

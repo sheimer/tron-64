@@ -56,6 +56,12 @@ echo -e "${INFO}*** copy deploy to build${NC}"
 cp -a deploy build
 echo -e "${INFO}*** copy node_modules to build${NC}"
 cp -a run/node_modules build/
+
+if [ -f "$path/.env" ]; then
+  echo -e "${INFO}*** copy persistent $path/.env to build/.env${NC}"
+  cp "$path/.env" build/.env
+fi
+
 cd build
 
 echo -e "${INFO}*** npm install${NC}"

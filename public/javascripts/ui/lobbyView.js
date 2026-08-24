@@ -15,6 +15,7 @@ export class LobbyView {
     this.formCreateGame = document.getElementById('form-create-game')
     this.inputGameName = document.getElementById('input-create-game')
     this.btnCreateGame = document.getElementById('btn-create-game')
+    this.lobbyError = document.getElementById('lobby-error')
 
     this.initCreateForm()
   }
@@ -176,6 +177,20 @@ export class LobbyView {
           ? this.inputGameName.value.trim()
           : ''
         this.onSelectGame(gameId, gameName)
+      }),
+    )
+
+    this.unsubscribers.push(
+      network.on(MSG_TYPE.ERROR, (errorMessage) => {
+        if (this.lobbyError) {
+          this.lobbyError.textContent = `[!] ${errorMessage}`
+          this.lobbyError.style.display = 'block'
+          setTimeout(() => {
+            if (this.lobbyError) {
+              this.lobbyError.style.display = 'none'
+            }
+          }, 8000)
+        }
       }),
     )
 
