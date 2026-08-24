@@ -43,6 +43,12 @@ Focus on room privacy, concurrent server capacity, and process recovery.
     - Add a "Private / Unlisted" toggle in the game creation form (`isPublic: false`).
     - Exclude unlisted games from `MSG_TYPE.LOBBY_LIST`.
     - Allow players to join directly via URL hash (`https://domain.com/#gameId`) or a "Join by Game ID" input field.
+- [ ] **Memory Leak Profiling & Verification (Server & Client)**
+  - *Dedicated Plan:* [`docs/plans/2026-08-24-memory-leak-profiling-and-verification.md`](docs/plans/2026-08-24-memory-leak-profiling-and-verification.md)
+  - *Problem:* High-concurrency room lifecycles and extended browser play sessions could accumulate unreaped references (timers, listener closures, socket Sets, detached DOM nodes) leading to memory creep.
+  - *Proposed Solution:*
+    - **Server:** Multi-cycle allocation/deallocation stress tests under `node --expose-gc` asserting baseline return ($\Delta < 1.5\text{MB}$ across 10 cycles of 50 rooms).
+    - **Client:** Headless browser profiling (Puppeteer / DevTools 3-snapshot protocol) asserting bounded heap, zero listener accumulation, and clean DOM disposal on match exit.
 - [x] **Server Concurrency & Capacity Limits**
   - *Dedicated Plan:* [`docs/plans/2026-08-23-server-concurrency-capacity-limits.md`](docs/plans/2026-08-23-server-concurrency-capacity-limits.md)
   - *Problem:* Unlimited concurrent games could overload a single Node.js event loop during high traffic.
