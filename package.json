@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "node ./bin/www",
-    "test": "node scratch/test-disconnect.js && node scratch/test-persistence.js && node scratch/test-concurrency.js",
-    "benchmark": "node scratch/benchmark-concurrency.js"
+    "test": "node test/runAll.js",
+    "benchmark": "node benchmark/concurrency.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

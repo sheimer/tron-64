@@ -1,4 +1,5 @@
 import { settings } from '../settings.js'
+import { state as appState } from '../state.js'
 import { PLAYER_COLOR_KEYS } from '/shared/constants.js'
 import { ordinalSuffixOf } from '/shared/utils.js'
 
@@ -93,7 +94,9 @@ export class GameView {
 
     // Start button readiness
     if (this.startBtn) {
-      const isReady = state === 'ready' || state === 'finished'
+      const hasLocalPlayers = (appState.players || []).some((p) => p.isLocal)
+      const isReady =
+        (state === 'ready' || state === 'finished') && hasLocalPlayers
       const setFocus = isReady && this.startBtn.disabled
       this.startBtn.disabled = !isReady
       if (setFocus) {

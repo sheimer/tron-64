@@ -30,6 +30,13 @@ Focus on optimizing real-time packet delivery, handling unstable or high-latency
 
 Focus on room privacy, concurrent server capacity, and process recovery.
 
+- [x] **Spectator Controls & Permissions Restraint**
+  - *Dedicated Plan:* [`docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md`](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md)
+  - *Problem:* Spectators (clients with zero registered players) can currently click "Start Game" on the config/score screen and modify game speed in settings.
+  - *Solution:* Disabled "Start Game" buttons (`btnInitGame` and `startBtn`) and locked the speed dropdown for spectator clients. Enforced player-only authorization for `START_GAME` and `SET_INTERVAL` on the server in `wsHandler.js`.
+- [x] **Synchronized Game Speed Across Clients**
+  - *Problem:* When a player updates the game speed in config/settings, the new interval is not broadcast to other room clients, leaving their speed dropdowns and local settings out of sync.
+  - *Solution:* Included `interval` in `gameServer.getGameInfo()`, broadcast updated `GAME_INFO` across the room on `SET_INTERVAL`, and dynamically synchronized the speed selector across all connected clients.
 - [ ] **Hidden / Unlisted Private Games**
   - *Problem:* All games are currently broadcast publicly to the lobby list.
   - *Proposed Solution:*

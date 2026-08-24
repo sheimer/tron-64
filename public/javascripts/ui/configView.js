@@ -168,8 +168,9 @@ export class ConfigView {
       this.bodyPlayersTable.appendChild(tr)
     }
 
+    const hasLocalPlayers = players.some((p) => p.isLocal)
     if (this.btnInitGame) {
-      this.btnInitGame.disabled = players.length < 2
+      this.btnInitGame.disabled = !hasLocalPlayers || players.length < 2
     }
 
     if (players.length >= 6) {

@@ -79,10 +79,38 @@ export class SettingsView {
         },
         {},
       )
-      this.elements.speed.value = speedByValue[settings.speed]
+      this.elements.speed.value = speedByValue[settings.speed] || 'NORMAL'
       this.elements.speed.onchange = (evt) => {
         settings.set('speed', SPEED[evt.target.value])
       }
+
+      settings.addListener('speed', (newSpeed) => {
+        if (this.elements.speed) {
+          this.elements.speed.value = speedByValue[newSpeed] || 'NORMAL'
+        }
+      })
+    }
+  }
+
+  updateSpeed(speedValue) {
+    if (this.elements.speed) {
+      const speedByValue = Object.entries(SPEED).reduce(
+        (speeds, [key, value]) => {
+          speeds[value] = key
+          return speeds
+        },
+        {},
+      )
+      this.elements.speed.value = speedByValue[speedValue] || 'NORMAL'
+    }
+  }
+
+  setSpectatorMode(isSpectator) {
+    if (this.elements.speed) {
+      this.elements.speed.disabled = isSpectator
+      this.elements.speed.title = isSpectator
+        ? 'Spectators cannot change game speed'
+        : ''
     }
   }
 

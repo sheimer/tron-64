@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 // Test with a dedicated test data directory
-const testDataDir = path.resolve(process.cwd(), 'data-test')
+const testDataDir = path.resolve(process.cwd(), 'data-test-persistence')
 process.env.DATA_DIR = testDataDir
 
 // Clean up test dir
@@ -13,6 +13,8 @@ if (fs.existsSync(testDataDir)) {
 
 const { gameServer } = await import('../server/GameServer.js')
 const { storage } = await import('../server/Storage.js')
+
+console.log('--- Testing Match State Persistence & Recovery ---')
 
 console.log('1. Creating a game session...')
 const gameKey = gameServer.createGame({
@@ -59,6 +61,8 @@ assert.strictEqual(savedGames[0].stats.players[0].total, 6)
 
 // Clean up test dir and game session
 game.destroy()
-fs.rmSync(testDataDir, { recursive: true, force: true })
+if (fs.existsSync(testDataDir)) {
+  fs.rmSync(testDataDir, { recursive: true, force: true })
+}
 
 console.log('--- ALL PERSISTENCE TESTS PASSED! ---')

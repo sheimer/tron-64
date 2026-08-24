@@ -1,6 +1,6 @@
 import './ui/dropdown.js'
 import { state } from './state.js'
-import { settings } from './settings.js'
+import { settings, SPEED } from './settings.js'
 import { network } from './network.js'
 import { Renderer } from './Renderer.js'
 import { getThemeColors, onThemeChange } from './theme.js'
@@ -149,7 +149,8 @@ class AppCoordinator {
     onThemeChange(updateColors)
     settings.addListener('coloredPlayers', updateColors)
     settings.addListener('speed', (speed) => {
-      if (this.currentGameKey) {
+      const hasLocalPlayers = (state.players || []).some((p) => p.isLocal)
+      if (this.currentGameKey && hasLocalPlayers) {
         network.setInterval(Math.round(1000 / speed))
       }
     })
@@ -228,6 +229,17 @@ class AppCoordinator {
       state.set('players', players)
       this.configView.updatePlayersTable(players)
 
+      const hasLocalPlayers = players.some((p) => p.isLocal)
+      this.settingsView.setSpectatorMode(!hasLocalPlayers && Boolean(this.currentGameKey))
+
+      if (info.interval) {
+        const targetFps = Math.round(1000 / info.interval)
+        const closestSpeed = Object.values(SPEED).reduce((prev, curr) =>
+          Math.abs(curr - targetFps) < Math.abs(prev - targetFps) ? curr : prev,
+        )
+        this.settingsView.updateSpeed(closestSpeed)
+      }
+
       if (info.started) {
         if (info.scores) {
           state.set('scores', info.scores)
@@ -284,6 +296,7 @@ class AppCoordinator {
   leaveCurrentGame() {
     this.currentGameKey = null
     this.localPlayersConfig.clear()
+    this.settingsView.setSpectatorMode(false)
   }
 }
 

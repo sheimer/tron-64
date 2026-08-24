@@ -274,7 +274,7 @@ export const setupWebSocketServer = (server) => {
 
           case MSG_TYPE.START_GAME:
           case 'start': {
-            if (!ws.gameKey) return
+            if (!ws.gameKey || ws.playerIds.size === 0) return
             const gameKey = ws.gameKey
             const game = gameServer.getGame(gameKey)
             if (!game) return
@@ -348,10 +348,14 @@ export const setupWebSocketServer = (server) => {
 
           case MSG_TYPE.SET_INTERVAL:
           case 'setInterval': {
-            if (!ws.gameKey) return
+            if (!ws.gameKey || ws.playerIds.size === 0) return
             const game = gameServer.getGame(ws.gameKey)
             if (game) {
               game.setInterval(sanitizeInterval(payload))
+              broadcastToRoom(ws.gameKey, {
+                type: MSG_TYPE.GAME_INFO,
+                payload: gameServer.getGameInfo(ws.gameKey),
+              })
             }
             break
           }

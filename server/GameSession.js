@@ -120,6 +120,9 @@ export class GameSession {
 
   setInterval(interval) {
     this.interval = interval
+    if (typeof this.onChange === 'function') {
+      this.onChange()
+    }
   }
 
   addPlayer(player) {

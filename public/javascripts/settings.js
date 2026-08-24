@@ -31,7 +31,7 @@ class Settings {
 
     this.showPalette = JSON.parse(localStorage.getItem('showPalette')) ?? false
     this.showGamestats =
-      JSON.parse(localStorage.getItem('showGamestats')) ?? false
+      JSON.parse(localStorage.getItem('showGamestats')) ?? true
 
     this.speed = JSON.parse(localStorage.getItem('speed')) ?? NORMAL
   }

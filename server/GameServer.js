@@ -124,6 +124,7 @@ class GameServer {
         !game.acceptingPlayers,
       running: game.running,
       scores: game.stats,
+      interval: game.interval,
     }
   }
 
