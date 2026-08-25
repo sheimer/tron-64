@@ -78,7 +78,7 @@ export class ConfigView {
     }
 
     if (this.inputPlayerName) {
-      this.inputPlayerName.onkeyup = (evt) => {
+      this.inputPlayerName.oninput = (evt) => {
         playerName = evt.target.value.trim()
         checkAddButtonState()
       }

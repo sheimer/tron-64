@@ -23,7 +23,7 @@ for (const file of testFiles) {
   const fileStart = Date.now()
   console.log(`▶ [RUNNING] test/${file}`)
 
-  const result = spawnSync(process.execPath, [filePath], {
+  const result = spawnSync(process.execPath, ['--expose-gc', filePath], {
     stdio: 'inherit',
     cwd: path.resolve(__dirname, '..'),
   })

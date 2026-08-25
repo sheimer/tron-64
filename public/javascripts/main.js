@@ -313,6 +313,8 @@ class AppCoordinator {
     state.set('players', [])
     state.set('scores', { gamecount: 0, players: [], messages: [] })
     state.set('positions', {})
+    this.configView.updatePlayersTable([])
+    this.gameView.updateScores({ gamecount: 0, players: [], messages: [] }, [])
     this.setScreen('lobby')
     network.requestLobbyList()
   }

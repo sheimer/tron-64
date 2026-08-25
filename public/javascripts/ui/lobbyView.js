@@ -24,7 +24,7 @@ export class LobbyView {
     let gameName = ''
 
     if (this.inputGameName && this.btnCreateGame) {
-      this.inputGameName.onkeyup = (evt) => {
+      this.inputGameName.oninput = (evt) => {
         gameName = evt.target.value.trim()
         this.btnCreateGame.disabled = !gameName.length
       }
@@ -126,6 +126,9 @@ export class LobbyView {
   }
 
   show() {
+    this.unsubscribers.forEach((unsub) => unsub())
+    this.unsubscribers = []
+
     if (this.container) this.container.style.display = ''
     if (this.footer) this.footer.style.display = ''
 
