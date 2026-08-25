@@ -81,10 +81,13 @@ block content
               option(value='btn1_btn2') btn1/btn2
             input(type='submit' value=' add player ' id='btn-add-player' disabled=true)
             input(type='button' value=' start ' id='btn-init-game' disabled=true)
+            input(type='button' value=' lobby ' id='btn-leave-config')
       #footer-game(style="display:none;")
         form(onsubmit='return false;')
           div(class='flex-row space-between' )
-            input(type='button' value=' start ' id='btn-start-game' disabled=true)
+            div(class='flex-row')
+              input(type='button' value=' start ' id='btn-start-game' disabled=true)
+              input(type='button' value=' lobby ' id='btn-leave-game')
             #btns(class="flex-row")
               button#btn-left <-
               button#btn-right ->

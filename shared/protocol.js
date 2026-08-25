@@ -8,6 +8,7 @@ export const MSG_TYPE = {
   CREATE_GAME: 'CREATE_GAME',
   GAME_CREATED: 'GAME_CREATED',
   JOIN_GAME: 'JOIN_GAME',
+  LEAVE_GAME: 'LEAVE_GAME',
 
   // Match configuration & lifecycle
   ADD_PLAYER: 'ADD_PLAYER',

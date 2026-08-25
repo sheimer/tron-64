@@ -33,9 +33,10 @@ const keycodesText = {
 }
 
 export class ConfigView {
-  constructor({ onAddPlayer, onStartGame }) {
+  constructor({ onAddPlayer, onStartGame, onLeaveGame }) {
     this.onAddPlayer = onAddPlayer
     this.onStartGame = onStartGame
+    this.onLeaveGame = onLeaveGame
 
     this.container = document.getElementById('playersconfig')
     this.footer = document.getElementById('footer-playersconfig')
@@ -49,6 +50,7 @@ export class ConfigView {
     this.msgNoKeycodes = document.getElementById('msg-no-keycodes')
     this.btnAddPlayer = document.getElementById('btn-add-player')
     this.btnInitGame = document.getElementById('btn-init-game')
+    this.btnLeaveConfig = document.getElementById('btn-leave-config')
 
     this.initForm()
   }
@@ -116,6 +118,15 @@ export class ConfigView {
     if (this.btnInitGame) {
       this.btnInitGame.onclick = () => {
         this.onStartGame()
+        return false
+      }
+    }
+
+    if (this.btnLeaveConfig) {
+      this.btnLeaveConfig.onclick = () => {
+        if (typeof this.onLeaveGame === 'function') {
+          this.onLeaveGame()
+        }
         return false
       }
     }

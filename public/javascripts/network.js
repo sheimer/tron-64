@@ -193,6 +193,10 @@ class NetworkClient {
     this.send(MSG_TYPE.JOIN_GAME, { key, playerIds })
   }
 
+  leaveGame() {
+    this.send(MSG_TYPE.LEAVE_GAME)
+  }
+
   addPlayer(player) {
     this.send(MSG_TYPE.ADD_PLAYER, player)
   }

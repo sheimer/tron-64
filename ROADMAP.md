@@ -37,6 +37,12 @@ Focus on room privacy, concurrent server capacity, and process recovery.
 - [x] **Synchronized Game Speed Across Clients**
   - *Problem:* When a player updates the game speed in config/settings, the new interval is not broadcast to other room clients, leaving their speed dropdowns and local settings out of sync.
   - *Solution:* Included `interval` in `gameServer.getGameInfo()`, broadcast updated `GAME_INFO` across the room on `SET_INTERVAL`, and dynamically synchronized the speed selector across all connected clients.
+- [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
+  - *Problem:* Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
+  - *Proposed Solution:*
+    - Allow players to explicitly surrender/vacate a slot (clearing session ownership).
+    - Allow new lobby players to join ongoing matches by taking over abandoned light-cycles.
+    - Provide a "Lock Room" toggle for room hosts who want private rosters.
 - [ ] **Hidden / Unlisted Private Games**
   - *Problem:* All games are currently broadcast publicly to the lobby list.
   - *Proposed Solution:*

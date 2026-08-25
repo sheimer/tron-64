@@ -74,11 +74,17 @@ class AppCoordinator {
       onStartGame: () => {
         network.startGame()
       },
+      onLeaveGame: () => {
+        this.leaveCurrentGame()
+      },
     })
 
     this.gameView = new GameView({
       onStartGame: () => {
         network.startGame()
+      },
+      onLeaveGame: () => {
+        this.leaveCurrentGame()
       },
     })
 
@@ -212,7 +218,7 @@ class AppCoordinator {
     })
 
     network.on(MSG_TYPE.GAME_INFO, (info) => {
-      if (!info) return
+      if (!info || !this.currentGameKey) return
       const players = (info.players || []).map((p) => {
         const isLocal = state.isLocalPlayer(p.id)
         if (isLocal) {
@@ -258,10 +264,12 @@ class AppCoordinator {
     })
 
     network.on(MSG_TYPE.GAME_STATE, (matchState) => {
+      if (!this.currentGameKey) return
       this.setMatchState(matchState)
     })
 
     network.on(MSG_TYPE.GAME_RESET, (positions) => {
+      if (!this.currentGameKey) return
       state.set('positions', positions)
       this.renderer.resetGrid()
       this.gameView.updatePlayerPositions(state.players, positions)
@@ -270,10 +278,12 @@ class AppCoordinator {
     })
 
     network.on(MSG_TYPE.GAME_DRAW, (changes) => {
+      if (!this.currentGameKey) return
       this.renderer.draw(changes)
     })
 
     network.on(MSG_TYPE.GAME_FINISH, (scores) => {
+      if (!this.currentGameKey) return
       state.set('scores', scores)
       this.gameView.updateScores(scores, state.players)
       this.setMatchState('scores')
@@ -294,9 +304,17 @@ class AppCoordinator {
   }
 
   leaveCurrentGame() {
+    if (this.currentGameKey) {
+      network.leaveGame()
+    }
     this.currentGameKey = null
     this.localPlayersConfig.clear()
     this.settingsView.setSpectatorMode(false)
+    state.set('players', [])
+    state.set('scores', { gamecount: 0, players: [], messages: [] })
+    state.set('positions', {})
+    this.setScreen('lobby')
+    network.requestLobbyList()
   }
 }
 

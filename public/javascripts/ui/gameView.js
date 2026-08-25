@@ -8,8 +8,9 @@ const canHover =
   window.matchMedia('(hover: hover)').matches
 
 export class GameView {
-  constructor({ onStartGame }) {
+  constructor({ onStartGame, onLeaveGame }) {
     this.onStartGame = onStartGame
+    this.onLeaveGame = onLeaveGame
 
     this.arenaCanvas = document.getElementById('arena')
     this.playernames = document.getElementById('playernames')
@@ -17,6 +18,7 @@ export class GameView {
     this.scoresWaiting = document.getElementById('scores-waiting')
     this.footer = document.getElementById('footer-game')
     this.startBtn = document.getElementById('btn-start-game')
+    this.leaveBtn = document.getElementById('btn-leave-game')
     this.leftBtn = document.getElementById('btn-left')
     this.rightBtn = document.getElementById('btn-right')
 
@@ -40,6 +42,15 @@ export class GameView {
     if (this.startBtn) {
       this.startBtn.onclick = () => {
         this.onStartGame()
+        return false
+      }
+    }
+
+    if (this.leaveBtn) {
+      this.leaveBtn.onclick = () => {
+        if (typeof this.onLeaveGame === 'function') {
+          this.onLeaveGame()
+        }
         return false
       }
     }

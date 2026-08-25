@@ -251,6 +251,29 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
+          case MSG_TYPE.LEAVE_GAME:
+          case 'leave': {
+            if (ws.gameKey) {
+              const gameKey = ws.gameKey
+              const game = gameServer.getGame(gameKey)
+              if (game && ws.playerIds.size > 0) {
+                ws.playerIds.forEach((pid) => {
+                  game.disconnectPlayer(pid)
+                })
+              }
+              ws.gameKey = null
+              ws.playerIds.clear()
+              if (game) {
+                broadcastToRoom(gameKey, {
+                  type: MSG_TYPE.GAME_INFO,
+                  payload: gameServer.getGameInfo(gameKey),
+                })
+              }
+              broadcastLobbyList()
+            }
+            break
+          }
+
           case MSG_TYPE.ADD_PLAYER:
           case 'addPlayer': {
             if (!ws.gameKey) return
