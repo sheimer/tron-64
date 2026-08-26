@@ -1,16 +1,36 @@
-# Retro Multiplayer Tron Game
+# Tron 64 (Web Tribute)
 
-A multiplayer retro Tron light-cycle game built with Node.js, Express, HTML5 Canvas, and WebSockets.
+> **Disclaimer:** This project is an independent open-source fan game and tribute to classic Commodore 64 party games. It is not affiliated with, sponsored by, or endorsed by The Walt Disney Company.
+
+A multiplayer retro light-cycle arena game inspired by the legendary C64 party game **Ultimate Tron II** (created by Oliver Stiller / Masters' Design Group and published on *64'er* magazine cover disks).
+
+Built from the ground up with pure modern web technologies — zero heavy UI frameworks, pure ES Modules, a deterministic 40 FPS target-timestamp physics loop, binary WebSocket streaming, and a responsive HTML5 canvas renderer.
+
+---
+
+## The Nostalgia: 6 Players on One Keyboard
+
+Back in the Commodore 64 era, *Ultimate Tron II* was the undisputed king of local multiplayer house parties. Up to 6 players would crowd shoulder-to-shoulder around a single breadbin keyboard, frantically tapping keys (`Q/W`, `C/V`, `M/,`, arrow keys), screaming as light-cycles turned at pixel precision, trails trapped opponents, and screen-shaking particle explosions determined the ultimate champion.
+
+**Tron 64 (Web Tribute)** preserves that raw, chaotic party energy — allowing multiple local players to share a single keyboard or join together over the internet via WebSockets across laptops, desktops, and mobile devices.
+
+---
+
+## Development Story: Building with AI (Gemini Flash)
+
+This project has been a long-time passion endeavor worked on in tiny, sporadic steps over several years. Between job and family life, time and energy were naturally limited, making it tough to find enough focused hours to tackle complex tasks like real-time multiplayer networking, responsive canvas rendering, crash-safe state persistence, and automated leak verification.
+
+Pair programming with AI assistance (specifically Google's Gemini Flash via Antigravity) completely transformed the development process. Having an intelligent assistant to brainstorm architectural decisions with, design binary streaming protocols, implement complex game loops, and construct comprehensive headless test suites allowed this project to leap forward rapidly. It has been an absolute joy to bridge childhood retro gaming nostalgia with modern AI-driven engineering, bringing the project to a level of polish and completeness that I am truly proud to present to the world.
 
 ---
 
 ## Historical & Algorithmic References
 
-* Some infos taken from: [mist64/ultimatetron2](https://github.com/mist64/ultimatetron2)
-* Score calculation from: [mist64/ultimatetron2/basic.bas](https://github.com/mist64/ultimatetron2/blob/master/basic.bas)
-* Fixed timestep game loop reference: [Glenn Fiedler - Fix Your Timestep!](https://gafferongames.com/post/fix_your_timestep/)
-* MDN Game Loop Architecture: [MDN - Anatomy of a Video Game](https://developer.mozilla.org/en-US/docs/Games/Anatomy#building_a_main_loop_in_javascript)
-* MDN Resolution & Zoom Listener: [MDN - Window devicePixelRatio](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#monitoring_screen_resolution_or_zoom_level_changes)
+* Original C64 Inspiration: **Ultimate Tron II** by Oliver Stiller / Masters' Design Group (*64'er* Magazine, Markt & Technik) — [Lemon64 Entry](https://www.lemon64.com/game/ultimate-tron-2)
+* Algorithm & Score Reference: [mist64/ultimatetron2](https://github.com/mist64/ultimatetron2)
+* Fixed Timestep Game Loop Architecture: [Glenn Fiedler - Fix Your Timestep!](https://gafferongames.com/post/fix_your_timestep/)
+* MDN Game Loop Engine: [MDN - Anatomy of a Video Game](https://developer.mozilla.org/en-US/docs/Games/Anatomy#building_a_main_loop_in_javascript)
+* MDN Resolution & Zoom Scaling: [MDN - Window devicePixelRatio](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#monitoring_screen_resolution_or_zoom_level_changes)
 
 ---
 
@@ -63,19 +83,25 @@ tron/
 ## Development
 
 ```bash
-# Install dependencies
+# 1. Install Node.js dependencies
 npm install
 
-# Start server (default: port 3000)
+# 2. (Optional) Setup Playwright browser binaries for automated client-side tests
+npx playwright install chromium
+
+# On Linux / WSL environments, install required OS system libraries if running browser tests:
+# sudo npx playwright install-deps chromium
+
+# 3. Start development server (default: port 3000)
 npm start
 
-# Run automated tests (lifecycle, persistence, concurrency)
+# 4. Run automated test suites (server lifecycles, memory GC, Playwright browser leak tests)
 npm test
 
-# Run headless concurrency benchmark (10, 25, 50 concurrent active games)
+# 5. Run headless concurrency benchmark (10, 25, 50 concurrent active games)
 npm run benchmark
 
-# Run linter
+# 6. Run linter
 npx eslint .
 ```
 
@@ -128,6 +154,13 @@ To allow automated deployments to restart the service and update systemd unit fi
 
 ---
 
-## Roadmap
+## Roadmap & Changelog
 
-See [ROADMAP.md](ROADMAP.md) for the prioritized backlog across Network Resilience, Server Lifecycle, Gameplay Polish, and Mobile Layout.
+* **Roadmap & Planned Features:** See [ROADMAP.md](ROADMAP.md) for the active milestone backlog (Game Room Lifecycles, Audio SFX, Single-player Bot, Mobile Layouts).
+* **Release History:** See [CHANGELOG.md](CHANGELOG.md) for detailed version release notes.
+
+---
+
+## License
+
+This project is licensed under the terms of the [MIT License](LICENSE).

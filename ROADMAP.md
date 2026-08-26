@@ -4,39 +4,10 @@ This document outlines upcoming architectural improvements, networking enhanceme
 
 ---
 
-## Milestone 1: Network Resilience & Latency
-
-Focus on optimizing real-time packet delivery, handling unstable or high-latency connections, and managing disconnections gracefully.
-
-- [x] **Connection Quality Indicator (CQI)**
-  - *Problem:* Players on high-latency networks (e.g. mobile 4G or cross-border Wi-Fi with 80–200ms ping) experience delayed cycle turns without clear feedback.
-  - *Solution:* Added persistent `#cqi` signal indicator next to `#ping` with theme-adaptive colors (🟢 Optimal $<60\text{ms}$, 🟡 Moderate $60-120\text{ms}$, 🔴 Poor $>120\text{ms}$, ⚫ Disconnected) and dynamic status tooltips, always visible even when numerical ping text is toggled off.
-- [x] **Smooth Reconnection Handling**
-  - *Problem:* Page reload or brief mobile carrier drops disconnect the player and can leave the session in an inconsistent state.
-  - *Solution:* Preserved local player identities and keybindings in `sessionStorage.connectedGames`. On WebSocket reconnection or page reload, automatically re-joins active match rooms, populates local player controls, displays the scoreboard, and enables the start button for seamless continuation.
-- [x] **Disconnected Client Lifecycle & Trail Ghosting**
-  - *Dedicated Plan:* [`docs/plans/2026-08-22-disconnected-client-lifecycle.md`](docs/plans/2026-08-22-disconnected-client-lifecycle.md)
-  - *Problem:* When a client disconnects, its light-cycles should explode mid-round leaving trails as obstacles, and on subsequent rounds explode at start ($t=0$) with zero trail left on the grid. Reconnecting clients should rejoin smoothly.
-  - *Solution:* On socket disconnect (`ws.on('close')`), eliminates associated players immediately while preserving their trails as physical obstacles. On subsequent rounds, explodes offline cycles at start with zero trail. Disconnected players show a `[disconnected]` badge, and reconnected clients join as spectators before seamlessly resuming driving on the next round.
-- [x] **Binary Delta Streaming & Movement Protocol**
-  - *Problem:* JSON strings for real-time draw deltas and frequent direction turns create serialization, string allocation, and GC overhead.
-  - *Solution:*
-    - **Server Draw Streaming:** Packed delta updates into compact binary ArrayBuffers with 5-byte cell records (`[Uint16 X, Uint16 Y, Int8 Value]`) with zero-copy `DataView` canvas decoding for lightweight mobile throughput and resolution independence up to 65,535.
-    - **Client Movement Inputs:** Packed `CHANGE_DIR` commands into 3-byte binary frames (`[Opcode 0x02, PlayerID, Direction]`) with an immediate fast-path on the server event loop bypassing `JSON.parse()`.
-
----
-
 ## Milestone 2: Game Room & Server Lifecycle
 
 Focus on room privacy, concurrent server capacity, and process recovery.
 
-- [x] **Spectator Controls & Permissions Restraint**
-  - *Dedicated Plan:* [`docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md`](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md)
-  - *Problem:* Spectators (clients with zero registered players) can currently click "Start Game" on the config/score screen and modify game speed in settings.
-  - *Solution:* Disabled "Start Game" buttons (`btnInitGame` and `startBtn`) and locked the speed dropdown for spectator clients. Enforced player-only authorization for `START_GAME` and `SET_INTERVAL` on the server in `wsHandler.js`.
-- [x] **Synchronized Game Speed Across Clients**
-  - *Problem:* When a player updates the game speed in config/settings, the new interval is not broadcast to other room clients, leaving their speed dropdowns and local settings out of sync.
-  - *Solution:* Included `interval` in `gameServer.getGameInfo()`, broadcast updated `GAME_INFO` across the room on `SET_INTERVAL`, and dynamically synchronized the speed selector across all connected clients.
 - [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
   - *Problem:* Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
   - *Proposed Solution:*
@@ -49,23 +20,6 @@ Focus on room privacy, concurrent server capacity, and process recovery.
     - Add a "Private / Unlisted" toggle in the game creation form (`isPublic: false`).
     - Exclude unlisted games from `MSG_TYPE.LOBBY_LIST`.
     - Allow players to join directly via URL hash (`https://domain.com/#gameId`) or a "Join by Game ID" input field.
-- [x] **Memory Leak Profiling & Verification (Server & Client)**
-  - *Dedicated Plan:* [`docs/plans/2026-08-24-memory-leak-profiling-and-verification.md`](docs/plans/2026-08-24-memory-leak-profiling-and-verification.md)
-  - *Problem:* High-concurrency room lifecycles and extended browser play sessions could accumulate unreaped references (timers, listener closures, socket Sets, detached DOM nodes) leading to memory creep.
-  - *Solution:*
-    - **Server:** Implemented automated multi-cycle forced GC test suite (`test/leak.test.js` under `node --expose-gc`) creating and destroying 500 game sessions with 2,000 players, confirming zero leak ($\Delta < 0.25\text{MB}$ across 10 cycles).
-    - **Client:** Implemented Playwright browser test suite (`test/client-leak.test.js`) querying CDP performance metrics (`Performance.getMetrics`) across match transitions, asserting bounded heap, zero listener accumulation, and clean DOM disposal on match exit.
-- [x] **Server Concurrency & Capacity Limits**
-  - *Dedicated Plan:* [`docs/plans/2026-08-23-server-concurrency-capacity-limits.md`](docs/plans/2026-08-23-server-concurrency-capacity-limits.md)
-  - *Problem:* Unlimited concurrent games could overload a single Node.js event loop during high traffic.
-  - *Solution:* Introduced configurable `MAX_ACTIVE_GAMES` (default 50) and `MAX_CLIENTS_PER_ROOM` (default 32) guardrails with friendly inline Lobby feedback. Retained and enhanced the 5-minute inactivity auto-cleanup (`IDLE_ROOM_TIMEOUT_MS`). Added headless multi-room benchmark tooling (`npm run benchmark`) confirming $<1\text{ms}$ event loop jitter across 50 simultaneous 40 FPS matches.
-- [x] **Match State Persistence & Graceful Restart Recovery**
-  - *Problem:* Restarting the Node server daemon terminates all active games and wipes accumulated scores.
-  - *Solution:* Implemented crash-safe atomic JSON snapshot storage (`server/Storage.js`) persisting active game rooms, registered players, and accumulated scores across service reboots and deployments without any I/O overhead during the 40 FPS physics loop.
-- [x] **Lobby Connection & Loading State Feedback**
-  - *Dedicated Plan:* [`docs/plans/2026-08-21-lobby-loading-state.md`](docs/plans/2026-08-21-lobby-loading-state.md)
-  - *Problem:* On initial page load or reload, the lobby games table is empty with no visual feedback while the WebSocket connects and waits for the initial `LOBBY_LIST`.
-  - *Solution:* Added inline 5-column spanning status row in `views/index.pug` and `LobbyView.js` handling "Connecting to server & fetching games...", "No active games found...", and "Connection lost. Reconnecting to server..." with zero layout jumps.
 
 ---
 
@@ -106,3 +60,24 @@ Focus on mobile ergonomics, touch input latency, and display scaling.
     - Implement a client-side direction buffer queue so rapid turns (e.g. Left $\rightarrow$ Right within $<30\text{ms}$) are not lost before the server's next physics tick.
 - [ ] **High-DPI / Zoom & Resolution Audit**
   - Verify that canvas sharpness, CSS variables, and touch boundaries adapt cleanly across 1x, 2x, and 3x device pixel ratios (Retina displays, foldable phones, and zoomed browser windows).
+
+---
+
+## Completed Milestones
+
+For a chronological release history, see [CHANGELOG.md](CHANGELOG.md).
+
+### Milestone 1: Network Resilience & Protocol Optimization (v1.1.0)
+- **Connection Quality Indicator (CQI):** Persistent `#cqi` signal indicator with theme-adaptive colors and latency tooltips.
+- **Smooth Reconnection Handling:** Restores local player identities and bindings from `sessionStorage.connectedGames`.
+- **Disconnected Client Lifecycle & Trail Ghosting:** Mid-round vehicle explosion with obstacle trail preservation and starting coordinate zero-trail restarts on subsequent rounds. (Plan: [`docs/plans/2026-08-22-disconnected-client-lifecycle.md`](docs/plans/2026-08-22-disconnected-client-lifecycle.md)).
+- **Binary Delta Streaming & Movement Protocol:** Compact binary ArrayBuffers for canvas delta broadcasts (`[Uint16 X, Uint16 Y, Int8 Value]`) and movement input frames (`[Opcode, PlayerID, Direction]`).
+
+### Milestone 2: Server Concurrency, Stability & Lifecycles (v1.2.0 & v1.3.0)
+- **Memory Leak Profiling & Verification (Server & Client):** Multi-cycle forced GC verification (`test/leak.test.js` under `node --expose-gc`) across 500 rooms ($\Delta < 0.25\text{MB}$), and Playwright headless browser test suite (`test/client-leak.test.js`) verifying bounded heap and strictly constant DOM retention. (Plan: [`docs/plans/2026-08-24-memory-leak-profiling-and-verification.md`](docs/plans/2026-08-24-memory-leak-profiling-and-verification.md)).
+- **Server Concurrency & Capacity Limits:** Configurable `MAX_ACTIVE_GAMES` (default 50) and `MAX_CLIENTS_PER_ROOM` (default 32) guardrails with concurrency benchmark tooling (`npm run benchmark`). (Plan: [`docs/plans/2026-08-23-server-concurrency-capacity-limits.md`](docs/plans/2026-08-23-server-concurrency-capacity-limits.md)).
+- **Match State Persistence & Crash Recovery:** Atomic JSON snapshot storage (`server/Storage.js`) persisting active game rooms and score tallies across daemon reboots and updates.
+- **Spectator Controls & Permissions Restraint:** Disabled start/speed actions for spectator clients and enforced server-side validation. (Plan: [`docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md`](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md)).
+- **Synchronized Game Speed Across Clients:** Dynamically synced speed dropdowns across all connected clients on interval change.
+- **Lobby Connection & Loading State Feedback:** 5-column spanning status rows in lobby table handling connection progress, empty room states, and reconnection. (Plan: [`docs/plans/2026-08-21-lobby-loading-state.md`](docs/plans/2026-08-21-lobby-loading-state.md)).
+- **Lobby Return Navigation:** Dedicated "Lobby" buttons allowing players to return to the lobby while keeping player slots reclaimable via `sessionStorage`.
