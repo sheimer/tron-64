@@ -1,0 +1,59 @@
+name: Auto Tag & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Version and Tag
+        id: check_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          echo "Current package.json version: $VERSION"
+          echo "Target tag: $TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Skipping release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag $TAG does not exist. Will create tag and release."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Git Tag and GitHub Release
+        if: steps.check_version.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.check_version.outputs.tag }}
+          VERSION: ${{ steps.check_version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+          # Extract section from CHANGELOG.md matching current version
+          sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md || true
+
+          if [ -s release_notes.md ]; then
+            gh release create "$TAG" --title "Release $TAG" --notes-file release_notes.md
+          else
+            gh release create "$TAG" --title "Release $TAG" --generate-notes
+          fi
