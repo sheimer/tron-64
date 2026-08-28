@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default initial client screen set to `'welcome'` with seamless transition into `'lobby'`.
 - Made `public/javascripts/state.js` isomorphic with safe global checks for `sessionStorage`.
 
+### Fixed
+- **Round 1 Arena Border Visibility & Transition Lifecycle:**
+  - Resolved missing arena border in Round 1 and scoreboard flicker by synchronizing `resetGrid()` with a 50ms paint tick on `GAME_RESET`.
+  - Immediately dismissed scoreboard overlays (`setMatchState('start')`) and cleared stale round bitmaps (`Renderer.clear()`) on `GAME_FINISH` and `GAME_RESET` to eliminate visual flicker and trail artifacts between rounds.
+  - Added dynamic `ResizeObserver` listener in `Renderer.js` to automatically repaint canvas buffers on internal CSS Grid container reflows.
+
 ---
 
 ## [1.3.0] - 2026-08-25

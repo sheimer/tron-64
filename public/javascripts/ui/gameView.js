@@ -65,7 +65,7 @@ export class GameView {
         state === 'finished'
       ) {
         this.arenaCanvas.style.display = 'none'
-      } else if (state === 'running') {
+      } else if (state === 'running' || state === 'start') {
         this.arenaCanvas.style.display = 'block'
       }
     }
@@ -260,7 +260,7 @@ export class GameView {
   }
 
   show() {
-    if (this.arenaCanvas) this.arenaCanvas.style.display = ''
+    if (this.arenaCanvas) this.arenaCanvas.style.display = 'block'
     if (this.playernames) this.playernames.style.display = ''
     if (this.footer) this.footer.style.display = ''
     if (this.startBtn) this.startBtn.style.display = ''

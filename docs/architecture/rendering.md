@@ -15,11 +15,12 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 * When binary draw packets arrive via WebSocket, the renderer paints *only* the modified cells (`drawField(x, y, value)`) to the canvas 2D context.
 * This keeps frame computation minimal ($<0.5\text{ms}$) on mobile and low-power devices.
 
-### Full Canvas Redraws
-* Full canvas repaints (`redrawAll()`) occur only during:
-  1. Window resize or display orientation changes.
-  2. Device Pixel Ratio (DPR) or browser zoom changes.
-  3. Color theme or palette switches.
+### Full Canvas Redraws & Visibility Lifecycle
+* Full canvas repaints (`redrawAll()`) occur automatically during:
+  1. **Match Start Synchronization:** On `GAME_RESET`, the UI switches to `'game'` screen, dismisses scoreboard overlays (`setMatchState('start')`), and schedules `resetGrid()` on a 50ms paint tick. This ensures the canvas reflows and activates its GPU compositor surface before drawing borders and acknowledging `ARENA_READY`.
+  2. **Layout & Grid Reflows (`ResizeObserver`):** When container dimensions change or CSS Grid shifts layout areas, `ResizeObserver` recalculates dimensions and repaints the buffer.
+  3. **Display Density / DPR Changes:** Media query resolution changes (`(resolution: ${dpr}dppx)`).
+  4. **Theme / Palette Changes:** Instant live CSS color resolution.
 
 ---
 

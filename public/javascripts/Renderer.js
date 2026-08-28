@@ -31,6 +31,7 @@ export class Renderer {
     this.dprMediaQuery = null
     this.onPixelRatioChange = null
     this.onWindowResize = null
+    this.resizeObserver = null
 
     this.setupDimensions()
     this.setupPixelRatioListener()
@@ -93,6 +94,14 @@ export class Renderer {
 
     this.onPixelRatioChange()
     window.addEventListener('resize', this.onWindowResize)
+
+    if (typeof ResizeObserver !== 'undefined' && this.domCanvas) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.setupDimensions()
+        this.redrawAll()
+      })
+      this.resizeObserver.observe(this.domCanvas)
+    }
   }
 
   destroy() {
@@ -101,6 +110,9 @@ export class Renderer {
     }
     if (this.onWindowResize) {
       window.removeEventListener('resize', this.onWindowResize)
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
     }
   }
 
@@ -212,6 +224,7 @@ export class Renderer {
   }
 
   resetGrid() {
+    this.setupDimensions()
     const xMax = this.size.x - 1
     const yMax = this.size.y - 1
 
@@ -228,6 +241,7 @@ export class Renderer {
   }
 
   clear() {
+    this.setupDimensions()
     for (let x = 0; x < this.size.x; x++) {
       this.fields[x].fill(CELL_TYPE.EMPTY)
     }

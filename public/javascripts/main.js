@@ -313,10 +313,14 @@ class AppCoordinator {
     network.on(MSG_TYPE.GAME_RESET, (positions) => {
       if (!this.currentGameKey) return
       state.set('positions', positions)
-      this.renderer.resetGrid()
-      this.gameView.updatePlayerPositions(state.players, positions)
+      this.renderer.clear()
       this.setScreen('game')
-      network.send(MSG_TYPE.ARENA_READY)
+      this.setMatchState('start')
+      this.gameView.updatePlayerPositions(state.players, positions)
+      setTimeout(() => {
+        this.renderer.resetGrid()
+        network.send(MSG_TYPE.ARENA_READY)
+      }, 50)
     })
 
     network.on(MSG_TYPE.GAME_DRAW, (changes) => {
@@ -328,6 +332,7 @@ class AppCoordinator {
       if (!this.currentGameKey) return
       state.set('scores', scores)
       this.gameView.updateScores(scores, state.players)
+      this.renderer.clear()
       this.setMatchState('scores')
       setTimeout(() => {
         this.setMatchState('finished')
