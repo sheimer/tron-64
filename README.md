@@ -113,14 +113,6 @@ npx eslint .
 * **`MAX_CLIENTS_PER_ROOM` (Default: `32`):** Maximum connected clients (players + spectators) per game room.
 * **Automatic Inactivity Reaper:** Rooms with zero connected clients automatically clean up and free server memory/slots after **5 minutes** of inactivity (`IDLE_ROOM_TIMEOUT_MS`).
 
-### Testing Disconnected Clients & Multi-Tab Behavior
-1. Open a regular browser window at `http://localhost:3000` and create a game (e.g. Player "Alice").
-2. Open a second window (e.g. Private / Incognito window or a second browser) and join the game as Player "Bob".
-3. Start the match. Both clients drive their cycles across the arena grid in real time.
-4. **Mid-Round Disconnect:** Close Bob's browser tab while driving:
-   * **Alice's Screen:** Bob's cycle instantly explodes into particle sparks at his last coordinates, and his trail remains on the grid as an obstacle. Alice continues steering until the round naturally finishes.
-   * **Bob's Reconnection:** When Bob re-opens the URL, he automatically rejoins the game room. If a round is actively running, Bob sees the scoreboard with *"waiting for current round to finish"*, and on the next round reset, Bob is automatically placed back on the grid ready to race.
-
 ---
 
 ## Deployment
