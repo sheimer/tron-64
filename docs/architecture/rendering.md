@@ -37,3 +37,19 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 * **Live CSS Resolution (`getThemeColors()`):**  
   Reads computed colors directly from CSS custom properties (`--color-bg`, `--color-rose`, `--color-water`, etc.) and resolves `light-dark()` expressions dynamically without hardcoded hex constants in JS.
 * **Palette Switch:** `settings.coloredPlayers` toggles between vibrant player-specific colors and classic monochrome phosphor styling.
+
+---
+
+## 4. Dual Layout Modes & Legal Modals (`layout.css`, `components.css`)
+
+### Welcome Screen Layout (`#layout.screen-welcome`)
+* **Natural Page Scrolling:** Allows the long-form tribute, gameplay controls, and tech overview to scroll smoothly using native browser scrolling (`min-height: var(--inner-height)`).
+* **Sticky Header:** Keeps `#head` and `#controls` pinned to `top: 0` with `position: sticky` and background fill, ensuring theme toggles and "Enter Lobby →" remain instantly accessible.
+* **CSS Grid Area Discipline:** Explicitly defines 2-column `grid-template-areas` (`"head ctrl" "main main" "footer footer" "stat pltt"`) while hiding `#footer` via `#layout.screen-welcome #footer { display: none; }` to prevent implicit grid column generation.
+
+### Arena & Match Layout
+* **Fixed Viewport CSS Grid:** Renders fixed-dimension arenas with responsive multiplicator scaling (`--multiplicator`), DPR alignment, and zero artificial scrollbars across desktop and mobile.
+
+### Accessible Modals & Email Anti-Scraping
+* **Legal Dialogs:** Impressum (§ 5 DDG) and Privacy (GDPR/DSGVO) render as centered modal overlays with backdrop click and `Escape` key dismissal.
+* **Email Protection:** Uses obfuscated data attributes (`<span class="mail-link" data-user="..." data-domain="..."></span>`) hydrated into `mailto:` links on client load to thwart automated scrapers.

@@ -4,7 +4,38 @@
 
 ---
 
-## 1. Match State Machine
+## 1. Client Screen & View Architecture
+
+The client application (`public/javascripts/main.js`, `public/javascripts/state.js`) coordinates four primary top-level screens:
+
+```
+┌──────────────┐     Enter Lobby     ┌──────────────┐     Join / Create     ┌──────────────┐
+│   WELCOME    │ ──────────────────> │    LOBBY     │ ────────────────────> │    CONFIG    │
+│  (Tribute &  │ <────────────────── │ (Games List) │                       │(Add Players) │
+│  Modals)     │      #btn-info      └──────────────┘                       └──────┬───────┘
+└──────────────┘                                                                   │
+       ▲                                                                           │ START_GAME
+       │                                     ← Lobby                               ▼
+       └─────────────────────────────────── (#btn-header-lobby) ──────────── ┌──────────────┐
+                   #btn-info                                                 │     GAME     │
+                                                                             │(Arena/Scores)│
+                                                                             └──────────────┘
+```
+
+* **Screen Store (`state.js`):** Reactive pub/sub store managing active `screen` (`'welcome' | 'lobby' | 'config' | 'game'`).
+* **View Controllers:**
+  * `WelcomeView` (`#welcome`): Landing tribute, controls overview, legal/privacy modals.
+  * `LobbyView` (`#lobby`): Public room listing and room creation form.
+  * `ConfigView` (`#playersconfig`): Player name entry and turn keycode selection.
+  * `GameView` (`#arena`, `#scores`): Match rendering, score tally, in-game mobile turn controls.
+* **Header Navigation Model:**
+  * **Welcome View:** Displays "Enter Lobby →" (`#btn-header-enter-lobby`). Info and Lobby return buttons are hidden.
+  * **Lobby View:** Displays Info button (`#btn-info`) to return to the welcome tribute.
+  * **In-Room (Config / Arena / Scores):** Displays Info (`#btn-info`) and "← Lobby" (`#btn-header-lobby`) to leave the current room cleanly.
+
+---
+
+## 2. Match State Machine
 
 Game sessions transition through the following states (`shared/constants.js`):
 
@@ -32,7 +63,7 @@ Game sessions transition through the following states (`shared/constants.js`):
 
 ---
 
-## 2. Disconnected Client Lifecycle & Trail Ghosting
+## 3. Disconnected Client Lifecycle & Trail Ghosting
 
 When a player's browser disconnects mid-match (tab closed, carrier drop):
 
@@ -55,17 +86,17 @@ When a player's browser disconnects mid-match (tab closed, carrier drop):
 
 ---
 
-## 3. Leaving Game & Return to Lobby
+## 4. Leaving Game & Return to Lobby
 
-When a player clicks the "Lobby" button:
+When a player clicks the "← Lobby" header button (`#btn-header-lobby`):
 1. Client sends `MSG_TYPE.LEAVE_GAME`.
 2. **Crucial Server Sequence in `wsHandler.js`:**  
    The server *first* clears `ws.gameKey = null` and `ws.playerIds.clear()`, and *then* broadcasts updated `GAME_INFO` to remaining players. This prevents the leaving socket from receiving room packets and getting pulled back into the match screen.
-3. Client resets its local match state (`players`, `scores`, `positions`) and requests the latest `LOBBY_LIST`.
+3. Client resets its local match state (`players`, `scores`, `positions`), transitions to screen `'lobby'`, and requests the latest `LOBBY_LIST`.
 
 ---
 
-## 4. Room Reaping & Inactivity Timeout
+## 5. Room Reaping & Inactivity Timeout
 
 * **`IDLE_ROOM_TIMEOUT_MS` (5 Minutes):** When all clients disconnect from a room, a 5-minute timer starts.
 * If no client reconnects within 5 minutes, `game.destroy()` is called:

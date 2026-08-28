@@ -19,13 +19,16 @@
 * **Changelog & Roadmap Maintenance:**
   - Update `CHANGELOG.md` with human-readable, player-facing release notes under `[Unreleased]` or the corresponding version tag following the *Keep a Changelog* format.
   - When milestones or roadmap items are completed, move them from active sections in `ROADMAP.md` into `## Completed Milestones`, linking them to their respective documentation plans and `CHANGELOG.md`.
+* **Living Architecture & Domain Guide Maintenance:**
+  - Whenever introducing, refactoring, or modifying architectural patterns, network protocols, screen routing, rendering lifecycles, or test suites, proactively update the corresponding domain guide in `docs/architecture/` (`protocol.md`, `lifecycle.md`, `rendering.md`, `testing.md`).
+  - Keep the guide summaries and links under `## Architecture & Domain Guides` in `GEMINI.md` synchronized with any new or updated architecture documentation.
 
 ## Architecture & Domain Guides (Read On-Demand)
 When working on specific subsystems, consult the corresponding domain guide in `docs/architecture/`:
 * **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Single WebSocket model, binary frame formats, opcode fast-paths, latency CQI.
-* **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper.
-* **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, CSS custom properties.
-* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks.
+* **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Client screen routing (`welcome`/`lobby`/`config`/`game`), header navigation (`btn-header-lobby`), match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper.
+* **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, dual layout modes (natural welcome scroll vs fixed grid arena), accessible legal modals, anti-scraping email hydration.
+* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests.
 
 
 
