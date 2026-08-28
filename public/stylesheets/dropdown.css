@@ -1,13 +1,12 @@
 .dropdown {
   position: relative;
-  display: inline-block;
-
-  padding-bottom: var(--size-tiny);
+  display: inline-flex;
 }
 
 .dropdown-content {
   display: none;
   position: absolute;
+  top: 100%;
   margin-top: var(--size-tiny);
 
   flex-direction: column;

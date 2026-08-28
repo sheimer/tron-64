@@ -139,13 +139,6 @@
   display: flex;
   justify-content: end;
   align-items: end;
-
-  position: relative;
-}
-#palette > div {
-  position: absolute;
-  bottom: 0;
-  right: 0;
 }
 
 #playernames {
@@ -221,4 +214,60 @@
   right: 0px;
   width: calc(min(var(--arena-width), var(--arena-max-width)) / 3.2);
   text-align: center;
+}
+
+/* Screen Welcome: Natural Flow & Sticky Header */
+#layout.screen-welcome {
+  min-height: var(--inner-height);
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: max-content auto max-content max-content;
+  grid-template-areas:
+    "head ctrl"
+    "main main"
+    "footer footer"
+    "stat pltt";
+
+  @media (orientation: landscape) and (max-height: 800px) {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: max-content auto max-content max-content;
+    grid-template-areas:
+      "head ctrl"
+      "main main"
+      "footer footer"
+      "stat pltt";
+  }
+}
+
+#layout.screen-welcome #footer {
+  display: none;
+}
+
+#layout.screen-welcome #head,
+#layout.screen-welcome #controls {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--color-bg);
+  padding-bottom: var(--size-tiny);
+}
+
+#layout.screen-welcome #main {
+  width: var(--arena-width);
+  max-width: var(--arena-max-width);
+  height: auto;
+  max-height: none;
+  margin: 1.5rem auto 1rem;
+
+  @media (orientation: landscape) and (max-height: 800px) {
+    width: 100%;
+    max-width: 680px;
+    margin: 1rem auto;
+  }
+}
+
+#layout.screen-welcome #welcome {
+  height: auto;
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
 }

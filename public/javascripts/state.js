@@ -3,13 +3,15 @@
  */
 class State {
   constructor() {
-    this.screen = 'lobby' // 'lobby' | 'config' | 'game'
+    this.screen = 'welcome' // 'welcome' | 'lobby' | 'config' | 'game'
     this.currentGame = {
       key: null,
       name: null,
     }
     this.connectedGames =
-      JSON.parse(sessionStorage.getItem('connectedGames')) ?? {}
+      typeof sessionStorage !== 'undefined'
+        ? JSON.parse(sessionStorage.getItem('connectedGames')) ?? {}
+        : {}
 
     this.gamesList = []
     this.matchState = 'initializing'
@@ -103,10 +105,12 @@ class State {
   }
 
   saveConnectedGames() {
-    sessionStorage.setItem(
-      'connectedGames',
-      JSON.stringify(this.connectedGames),
-    )
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(
+        'connectedGames',
+        JSON.stringify(this.connectedGames),
+      )
+    }
   }
 }
 

@@ -3,17 +3,17 @@
 * https://remixicon.com
 * https://github.com/Remix-Design/RemixIcon
 * Copyright RemixIcon.com
-* Released under the Apache License Version 2.0
+* Released under the Remix Icon License v1.0
 */
 
 @font-face {
     font-family: "remixicon";
-    src: url('remixicon.eot?t=1754380921587'); /* IE9*/
-    src: url('remixicon.eot?t=1754380921587#iefix') format('embedded-opentype'), /* IE6-IE8 */
-    url("remixicon.woff2?t=1754380921587") format("woff2"),
-    url("remixicon.woff?t=1754380921587") format("woff"),
-    url('remixicon.ttf?t=1754380921587') format('truetype'), /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
-    url('remixicon.svg?t=1754380921587#remixicon') format('svg'); /* iOS 4.1- */
+    src: url('remixicon.eot?t=1787949969791'); /* IE9*/
+    src: url('remixicon.eot?t=1787949969791#iefix') format('embedded-opentype'), /* IE6-IE8 */
+    url("remixicon.woff2?t=1787949969791") format("woff2"),
+    url("remixicon.woff?t=1787949969791") format("woff"),
+    url('remixicon.ttf?t=1787949969791') format('truetype'), /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
+    url('remixicon.svg?t=1787949969791#remixicon') format('svg'); /* iOS 4.1- */
     font-display: swap;
 }
 
@@ -45,3 +45,8 @@
 .ri-palette-fill:before { content: "\efc4"; }
 .ri-sun-fill:before { content: "\f1bc"; }
 .ri-moon-clear-fill:before { content: "\ef6e"; }
+.ri-github-fill:before { content: "\edca"; }
+.ri-close-line:before { content: "\eb99"; }
+.ri-arrow-left-line:before { content: "\ea60"; }
+.ri-arrow-right-line:before { content: "\ea6c"; }
+.ri-information-fill:before { content: "\ee58"; }

@@ -81,3 +81,11 @@ For a chronological release history, see [CHANGELOG.md](CHANGELOG.md).
 - **Synchronized Game Speed Across Clients:** Dynamically synced speed dropdowns across all connected clients on interval change.
 - **Lobby Connection & Loading State Feedback:** 5-column spanning status rows in lobby table handling connection progress, empty room states, and reconnection. (Plan: [`docs/plans/2026-08-21-lobby-loading-state.md`](docs/plans/2026-08-21-lobby-loading-state.md)).
 - **Lobby Return Navigation:** Dedicated "Lobby" buttons allowing players to return to the lobby while keeping player slots reclaimable via `sessionStorage`.
+
+### Milestone 3: Welcome View, Tribute & Legal Scaffold (v1.4.0)
+- **Initial Welcome / Landing Screen:** Full-screen retro card (`#welcome` in `#main`) celebrating Oliver Stiller's 1989 Commodore 64 party classic *Ultimate Tron II*, with multi-player mode descriptions, controls guide, and open-source references. (Plan: [`docs/plans/2026-08-28-welcome-page-and-branding.md`](docs/plans/2026-08-28-welcome-page-and-branding.md)).
+- **Dedicated `#footer-welcome` & Responsive Layout:** Primary Call-to-Action button (`Enter Lobby →`) integrated into `#footer`, fully responsive in both portrait and 4-column landscape mobile layouts.
+- **Header Info Navigation:** Info button (`#btn-info`) in `#controls` allowing players to navigate back to the Welcome/About screen from the lobby at any time.
+- **Legal Notice (Impressum) & Privacy (Datenschutz) Modals:** Compliant self-contained modals disclosing § 5 DDG operator info and GDPR-compliant zero-cookie / server telemetry operations.
+- **Rebranding Harmonization:** Title update to **Bitcycles** (`bitcycles.net`).
+

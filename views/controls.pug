@@ -1,34 +1,43 @@
 include mixins/buttonGradient.pug
 include mixins/checkbox.pug
 
-div(class='dropdown')
-  button#btn-settings
-    i(class='ri-equalizer-fill')
-  div(class='dropdown-content bottom-end')
-    h2 Theme
-    div(class="flex-column medium-gap")
-      div(class="flex-row")
-        button#scheme-light
-          div(class="flex-row")
-            i(class="ri-sun-fill")
-            | Light
-        button#scheme-dark(class="button-inverted")
-          div(class="flex-row")
-            i(class="ri-moon-clear-fill")
-            | Dark
-        +buttonGradient({"id":"scheme-auto"})
-          div(class="flex-row")
-            i(class='ri-palette-fill')
-            | Auto
-      +checkbox({"id":"show-palette", "label": "Show Color Palette"})
-    h2 Settings
-    div(class="flex-column medium-gap")
-      div(class='flex-row small-gap align-center')
-        select(id='game-speed')
-          option(value='SLOW') slow
-          option(value='NORMAL' selected=true) normal
-          option(value='FAST') fast
-        div speed
-      div(class="flex-column small-gap")
-        +checkbox({"id":"colored-players", "label": "Colored Players"})
-        +checkbox({"id":"show-gamestats", "label": "Show Ping"})
+div(class='flex-row small-gap align-center')
+  button#btn-header-enter-lobby(type='button' title='Enter Lobby')
+    | Enter Lobby 
+    i(class='ri-arrow-right-line')
+  button#btn-info(title='About & Tribute Info' aria-label='About & Tribute Info' style='display:none;')
+    i(class='ri-information-fill')
+  button#btn-header-lobby(type='button' title='Back to Lobby' aria-label='Back to Lobby' style='display:none;')
+    i(class='ri-arrow-left-line')
+    |  Lobby
+  div(class='dropdown')
+    button#btn-settings(title='Settings' aria-label='Settings')
+      i(class='ri-equalizer-fill')
+    div(class='dropdown-content bottom-end')
+      h2 Theme
+      div(class="flex-column medium-gap")
+        div(class="flex-row")
+          button#scheme-light
+            div(class="flex-row")
+              i(class="ri-sun-fill")
+              | Light
+          button#scheme-dark(class="button-inverted")
+            div(class="flex-row")
+              i(class="ri-moon-clear-fill")
+              | Dark
+          +buttonGradient({"id":"scheme-auto"})
+            div(class="flex-row")
+              i(class='ri-palette-fill')
+              | Auto
+        +checkbox({"id":"show-palette", "label": "Show Color Palette"})
+      h2 Settings
+      div(class="flex-column medium-gap")
+        div(class='flex-row small-gap align-center')
+          select(id='game-speed')
+            option(value='SLOW') slow
+            option(value='NORMAL' selected=true) normal
+            option(value='FAST') fast
+          div speed
+        div(class="flex-column small-gap")
+          +checkbox({"id":"colored-players", "label": "Colored Players"})
+          +checkbox({"id":"show-gamestats", "label": "Show Ping"})

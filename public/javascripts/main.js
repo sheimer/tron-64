@@ -4,6 +4,7 @@ import { settings, SPEED } from './settings.js'
 import { network } from './network.js'
 import { Renderer } from './Renderer.js'
 import { getThemeColors, onThemeChange } from './theme.js'
+import { WelcomeView } from './ui/welcomeView.js'
 import { SettingsView } from './ui/settingsView.js'
 import { LobbyView } from './ui/lobbyView.js'
 import { ConfigView } from './ui/configView.js'
@@ -42,6 +43,12 @@ class AppCoordinator {
     this.keyboardBound = false
 
     this.settingsView = new SettingsView()
+
+    this.welcomeView = new WelcomeView({
+      onEnterLobby: () => {
+        this.setScreen('lobby')
+      },
+    })
 
     this.lobbyView = new LobbyView({
       onSelectGame: (gameId, name) => {
@@ -104,12 +111,32 @@ class AppCoordinator {
     this.initNetworkListeners()
     this.initThemeListeners()
     this.initKeyboardControls()
+    this.initNavigationControls()
 
     state.subscribe('screen', (screen) => {
       this.updateScreenViews(screen)
     })
 
-    this.setScreen('lobby')
+    this.setScreen('welcome')
+  }
+
+  initNavigationControls() {
+    const infoBtn = document.getElementById('btn-info')
+    if (infoBtn) {
+      infoBtn.addEventListener('click', () => {
+        if (this.currentGameKey) {
+          this.leaveCurrentGame()
+        }
+        this.setScreen('welcome')
+      })
+    }
+
+    const headerLobbyBtn = document.getElementById('btn-header-lobby')
+    if (headerLobbyBtn) {
+      headerLobbyBtn.addEventListener('click', () => {
+        this.leaveCurrentGame()
+      })
+    }
   }
 
   setScreen(screen) {
@@ -117,15 +144,29 @@ class AppCoordinator {
   }
 
   updateScreenViews(screen) {
-    if (screen === 'lobby') {
+    const headerLobbyBtn = document.getElementById('btn-header-lobby')
+    if (headerLobbyBtn) {
+      headerLobbyBtn.style.display =
+        screen === 'config' || screen === 'game' ? '' : 'none'
+    }
+
+    if (screen === 'welcome') {
+      this.lobbyView.hide()
+      this.configView.hide()
+      this.gameView.hide()
+      this.welcomeView.show()
+    } else if (screen === 'lobby') {
+      this.welcomeView.hide()
       this.configView.hide()
       this.gameView.hide()
       this.lobbyView.show()
     } else if (screen === 'config') {
+      this.welcomeView.hide()
       this.lobbyView.hide()
       this.gameView.hide()
       this.configView.show(state.currentGame)
     } else if (screen === 'game') {
+      this.welcomeView.hide()
       this.lobbyView.hide()
       this.configView.hide()
       this.gameView.show()
@@ -189,8 +230,9 @@ class AppCoordinator {
   }
 
   onButtonClick(evt) {
-    const isLeft = evt.target.id?.includes('left')
-    const isRight = evt.target.id?.includes('right')
+    const btn = evt.target.closest('button')
+    const isLeft = btn?.id?.includes('left')
+    const isRight = btn?.id?.includes('right')
 
     this.localPlayersConfig.forEach((cfg, playerId) => {
       if (typeof cfg.left === 'string') {

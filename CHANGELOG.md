@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Landing / Welcome View & Ultimate Tron II Homage:**
+  - Initial welcome view (`#welcome` in `#main`) presenting the rich backstory of Oliver Stiller's 1989 Commodore 64 party classic *Ultimate Tron II*, highlighting 6 players on 1 keyboard and modern pure-web technology.
+  - Dedicated `#footer-welcome` with responsive `Enter Lobby →` Call-to-Action button aligned with the existing desktop and mobile landscape 4-column layout grid.
+  - Header Info icon (`#btn-info`) in `#controls` allowing players to return to the Welcome view from the lobby at any time.
+- **Legal Notice (Impressum) & Privacy (Datenschutz) Modals:**
+  - Integrated compliant legal notice modal (§ 5 DDG) and privacy notice modal (Art. 6(1)(f) GDPR) with zero-tracking cookie policy and in-memory server telemetry disclosures.
+- **Automated Welcome View & Route Tests:**
+  - `test/welcome-view.test.js`: Verified Express route rendering of `Bitcycles`, `#welcome`, `#footer-welcome`, modals, and `WelcomeView` lifecycle (backdrop click, escape key, and screen transitions).
+
+### Changed
+- Rebranded project and template title to **Bitcycles** (`bitcycles.net`).
+- Default initial client screen set to `'welcome'` with seamless transition into `'lobby'`.
+- Made `public/javascripts/state.js` isomorphic with safe global checks for `sessionStorage`.
+
 ---
 
 ## [1.3.0] - 2026-08-25

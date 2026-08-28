@@ -10,7 +10,43 @@ block content
     #controls
       include controls.pug
     #main
-      #lobby
+      #welcome
+        .welcome-content
+          .welcome-hero
+            h2(class="fg-water") Bitcycles
+            p.welcome-subtitle
+              | A modern Web tribute to the legendary Commodore 64 party game 
+              a(href="https://www.lemon64.com/game/ultimate-tron-2" target="_blank" rel="noopener noreferrer" class="link-external") Ultimate Tron II
+              |  (Oliver Stiller / Masters' Design Group, 1989).
+          
+          .welcome-section.section-nostalgia
+            h3(class="fg-leaf") The Nostalgia: 6 Players on 1 Keyboard
+            p Back in the C64 era, up to 6 players crowded shoulder-to-shoulder around a single breadbin keyboard, frantically tapping keys as lightcycles turned with pixel precision.
+            p #[strong Bitcycles] brings back that raw couch-multiplayer energy! Play locally on one keyboard or join friends over the internet across laptops, desktops, and mobile phones.
+
+          .welcome-section.section-controls
+            h3(class="fg-wood") Controls & Gameplay
+            ul.welcome-features
+              li #[strong Keyboard:] Select your turn keys (#[code Q/W], #[code Y/X], #[code B/N], #[code K/L], #[code &lt;Down&gt;/&lt;Right&gt;], #[code &lt;Numpad 2&gt;/&lt;3&gt;]).
+              li #[strong Mobile / Touch:] On-screen left/right directional buttons for high-speed thumb reflexes.
+              li #[strong Objective:] Trap opponents with your neon light trail, survive simultaneous crashes, and outsmart rivals to claim the score lead.
+
+          .welcome-section.section-tech
+            h3(class="fg-sky") Pure Web Tech Stack
+            p Built with zero heavy frameworks: pure ES Modules, deterministic 40 FPS target-timestamp physics loop, binary WebSocket protocol, and an optimized HTML5 canvas delta renderer.
+            p.welcome-code-links
+              a(href="https://github.com/sheimer/tron" target="_blank" rel="noopener noreferrer" class="link-external")
+                i(class="ri-github-fill")
+                |  GitHub Repository
+
+          .welcome-footer-note
+            p(class="fg-fg-muted small-text")
+              | Disclaimer: This project is an independent open-source fan game and tribute. Not affiliated with, sponsored by, or endorsed by The Walt Disney Company.
+            p.welcome-links
+              a#btn-open-legal(href="#") Impressum / Legal Notice
+              |  • 
+              a#btn-open-privacy(href="#") Privacy / Datenschutz
+      #lobby(style="display:none;")
         p Welcome to #{title}
         p Select or create a new game, please...
         table#gamelisttable
@@ -59,7 +95,7 @@ block content
         #scores-waiting-message
           h1(class='fg-water') waiting for current round to finish
     #footer
-      #footer-lobby
+      #footer-lobby(style="display:none;")
         form(onsubmit='return false;' id='form-create-game')
           div(class='flex-row')
             input(type='text' value='' placeholder='gamename' id='input-create-game')
@@ -81,16 +117,16 @@ block content
               option(value='btn1_btn2') btn1/btn2
             input(type='submit' value=' add player ' id='btn-add-player' disabled=true)
             input(type='button' value=' start ' id='btn-init-game' disabled=true)
-            input(type='button' value=' lobby ' id='btn-leave-config')
       #footer-game(style="display:none;")
         form(onsubmit='return false;')
           div(class='flex-row space-between' )
             div(class='flex-row')
               input(type='button' value=' start ' id='btn-start-game' disabled=true)
-              input(type='button' value=' lobby ' id='btn-leave-game')
             #btns(class="flex-row")
-              button#btn-left <-
-              button#btn-right ->
+              button#btn-left(type='button' aria-label='Turn Left')
+                i(class='ri-arrow-left-line')
+              button#btn-right(type='button' aria-label='Turn Right')
+                i(class='ri-arrow-right-line')
     #palette
       div(class="flex-row small-gap")
         each group in ['bg', 'fg', 'rose', 'leaf', 'wood', 'water', 'blossom', 'sky', 'rock']
@@ -98,4 +134,45 @@ block content
             div(class=`color bg-${group}` title=`--color-${group}`)
             div(class=`color bg-${group}-hl` title=`--color-${group}-hl`)
             div(class=`color bg-${group}-muted` title=`--color-${group}-muted`)
+  #modal-legal(class='modal' style='display:none;')
+    .modal-backdrop
+    .modal-content
+      .modal-header
+        h2 Impressum / Legal Notice
+        button.modal-close#btn-close-legal(type='button' aria-label='Close')
+          i(class='ri-close-line')
+      .modal-body
+        h3 Angaben gemäß § 5 DDG
+        p
+          strong Betreiber / Website Operator:
+          br
+          | Swen Hoffmann
+          br
+          | Hiltenspergerstraße 42
+          br
+          | 80796 München
+          br
+          | Deutschland
+        h3 Kontakt / Contact
+        p
+          strong E-Mail:
+          br
+          span.mail-link(data-user="swen" data-domain="debugstube.de")
+        h3 Haftungsausschluss / Disclaimer
+        p Dieses Projekt ist eine unabhängige, nicht-kommerzielle Open-Source-Hommage an klassische Commodore-64-Spiele. Alle genannten Markennamen, Warenzeichen und eingetragenen Warenzeichen sind Eigentum der jeweiligen Rechteinhaber.
+  #modal-privacy(class='modal' style='display:none;')
+    .modal-backdrop
+    .modal-content
+      .modal-header
+        h2 Privacy Policy / Datenschutzerklärung
+        button.modal-close#btn-close-privacy(type='button' aria-label='Close')
+          i(class='ri-close-line')
+      .modal-body
+        h3 1. Datenschutz auf einen Blick
+        p Wir nehmen den Schutz Ihrer Daten ernst. Diese Website verwendet #[strong keine Tracking-Cookies], #[strong keine Werbenetzwerke] und bindet #[strong keine externen CDNs oder Schriftarten von Drittanbietern] ein. Alle Assets werden lokal von unserem Server ausgeliefert.
+        h3 2. Server-Logs & WebSocket-Telemetrie
+        p Für das Echtzeit-Multiplayer-Spielgeschehen verarbeiten wir temporäre technische Verbindungsdaten (IP-Adresse, WebSocket-Verbindung, Latenz/Ping).
+        p Zur Sicherstellung der Serverstabilität erfassen wir rein aggregierte, anonyme Kennzahlen (z.B. Anzahl aktiver Spielräume, Höchststand gleichzeitiger Spieler, Verteilung lokaler vs. entfernter Spieler). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren und reibungslosen Spielbetrieb).
+        h3 3. Lokale Einstellungen (LocalStorage / SessionStorage)
+        p Ihre Einstellungen (z.B. Farb-Theme, ausgewählte Spielgeschwindigkeit) werden ausschließlich lokal in Ihrem Webbrowser gespeichert.
   #log

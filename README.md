@@ -1,4 +1,4 @@
-# Tron 64 (Web Tribute)
+# Bitcycles (Web Tribute)
 
 > **Disclaimer:** This project is an independent open-source fan game and tribute to classic Commodore 64 party games. It is not affiliated with, sponsored by, or endorsed by The Walt Disney Company.
 
@@ -12,7 +12,7 @@ Built from the ground up with pure modern web technologies — zero heavy UI fra
 
 Back in the Commodore 64 era, *Ultimate Tron II* was the undisputed king of local multiplayer house parties. Up to 6 players would crowd shoulder-to-shoulder around a single breadbin keyboard, frantically tapping keys (`Q/W`, `C/V`, `M/,`, arrow keys), screaming as light-cycles turned at pixel precision, trails trapped opponents, and screen-shaking particle explosions determined the ultimate champion.
 
-**Tron 64 (Web Tribute)** preserves that raw, chaotic party energy — allowing multiple local players to share a single keyboard or join together over the internet via WebSockets across laptops, desktops, and mobile devices.
+**Bitcycles (Web Tribute)** preserves that raw, chaotic party energy — allowing multiple local players to share a single keyboard or join together over the internet via WebSockets across laptops, desktops, and mobile devices.
 
 ---
 
