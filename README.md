@@ -122,10 +122,14 @@ Deployments to production servers use [`scripts/deploy.sh`](scripts/deploy.sh), 
 ```bash
 # 1. Setup local environment configuration (optional):
 cp .env.example .env
-# Edit .env with your DEPLOY_TARGET (e.g. user@your-server.com)
+# Edit .env with DEPLOY_TARGET or multi-target profiles DEPLOY_TARGETS="primary,secondary"
 
-# 2. Deploy with zero arguments (loads .env):
+# 2. Deploy to all configured targets (zero arguments loads all targets or default):
 ./scripts/deploy.sh
+
+# Or deploy to a specific configured profile:
+./scripts/deploy.sh primary
+./scripts/deploy.sh secondary
 
 # Or pass parameters on the fly:
 ./scripts/deploy.sh user@server /srv/tron 3000
