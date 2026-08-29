@@ -1,0 +1,26 @@
+[Unit]
+Description=Bitcycles Multiplayer Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_USER__
+WorkingDirectory=__PATH__/run
+ExecStart=/usr/bin/node bin/www.js
+Restart=always
+RestartSec=5s
+
+# Production Environment Settings
+Environment=PORT=__PORT__ NODE_ENV=production DATA_DIR=__PATH__/data MAX_ACTIVE_GAMES=50
+
+# OS Resource Allocation Limitations
+CPUAccounting=true
+CPUQuota=80%
+MemoryAccounting=true
+MemoryMax=1G
+MemoryHigh=800M
+TasksMax=50
+
+[Install]
+WantedBy=multi-user.target

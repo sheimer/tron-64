@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Hardened Deployment Architecture & Service Templates:**
+  - Introduced hardened systemd service template ([bitcycles.service](file:///home/hidden/projects/tron/bitcycles.service)) utilizing system Node 24 and Linux cgroups resource limits (`CPUQuota=80%`, `MemoryMax=1G`, `TasksMax=50`).
+  - Added legacy FNM service template ([bitcycles-fnm.service](file:///home/hidden/projects/tron/bitcycles-fnm.service)) and configurable `DEPLOY_USE_FNM` toggle in `.env.example`.
+  - Added approved `allowScripts` in `package.json` for WebSocket native acceleration modules (`bufferutil`, `utf-8-validate`).
+  - Implemented fast incremental deployments in `scripts/deploy.sh` reusing cached `node_modules` and zero-sudo unprivileged file operations.
 - **Landing / Welcome View & Ultimate Tron II Homage:**
   - Initial welcome view (`#welcome` in `#main`) presenting the rich backstory of Oliver Stiller's 1989 Commodore 64 party classic *Ultimate Tron II*, highlighting 6 players on 1 keyboard and modern pure-web technology.
   - Dedicated `#footer-welcome` with responsive `Enter Lobby →` Call-to-Action button aligned with the existing desktop and mobile landscape 4-column layout grid.

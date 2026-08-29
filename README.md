@@ -117,7 +117,7 @@ npx eslint .
 
 ## Deployment
 
-Deployments to production servers use [`scripts/deploy.sh`](scripts/deploy.sh), which synchronizes files via rsync, preserves `/srv/tron/data/`, dynamically templates [`tron.service`](tron.service), and triggers systemd reload:
+Deployments to production servers use [`scripts/deploy.sh`](scripts/deploy.sh), which synchronizes files via rsync, preserves `/srv/tron/data/`, dynamically templates [`bitcycles.service`](bitcycles.service) or [`bitcycles-fnm.service`](bitcycles-fnm.service) depending on `DEPLOY_USE_FNM`, and triggers systemd reload:
 
 ```bash
 # 1. Setup local environment configuration (optional):
@@ -128,20 +128,21 @@ cp .env.example .env
 ./scripts/deploy.sh
 
 # Or pass parameters on the fly:
-./scripts/deploy.sh user@server /srv/tron 3042
+./scripts/deploy.sh user@server /srv/tron 3000
 ```
 
 ### Server Sudoers Setup
 
-To allow automated deployments to restart the service and update systemd unit files without interactive password prompts, create `/etc/sudoers.d/tron-service` on the target server:
+To allow automated deployments to restart the service and update systemd unit files without interactive password prompts, create `/etc/sudoers.d/bitcycles-service` on the target server:
 
 ```text
-<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop tron.service
-<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl start tron.service
-<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl status tron.service
+<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop bitcycles.service
+<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl start bitcycles.service
+<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl status bitcycles.service
+<user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable bitcycles.service
 <user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
-<user> ALL=(ALL) NOPASSWD: /usr/bin/cp <path>/build/tron.service.resolved /etc/systemd/system/tron.service
-<user> ALL=(ALL) NOPASSWD: /bin/cp <path>/build/tron.service.resolved /etc/systemd/system/tron.service
+<user> ALL=(ALL) NOPASSWD: /usr/bin/cp <path>/build/bitcycles.service.resolved /etc/systemd/system/bitcycles.service
+<user> ALL=(ALL) NOPASSWD: /bin/cp <path>/build/bitcycles.service.resolved /etc/systemd/system/bitcycles.service
 ```
 
 ---

@@ -2,8 +2,9 @@
 
 ## File Modification Rules
 * **Modifying Existing Files:** Always use `replace_file_content` for making edits or updates to existing files. Inspect existing file content with `view_file` before making modifications.
-* **Creating Files:** Use `write_to_file` exclusively when creating brand new files or when an explicit complete file rewrite is requested.
-* **Config & Template Preservation:** Never strip or overwrite configuration files, env templates (`.env.example`), deployment settings, or existing project assets unless specifically requested to refactor them.
+* **Creating Files:** Use `write_to_file` exclusively when creating brand new files or when an explicit complete file rewrite is requested. Never use `write_to_file` on existing files. Always check for existing files (including dotfiles like `.env.example`, `.nvmrc`, `.gitignore`) before creating files.
+* **Config & Template Preservation:** Never strip, overwrite, or truncate configuration files, env templates (`.env.example`), deployment settings, or existing project assets. When adding new parameters or options to template files (e.g. `.env.example` or service templates), always preserve all existing environment variables, defaults, sections, and explanatory comments.
+
 
 ## Code Comments & Documentation Rules
 * **Preserve Meaningful Comments:** Maintain all existing comments, explanations, and docstrings unless they are clearly redundant or obsolete. Never strip out design notes, lifecycle descriptions, or contextual comments.

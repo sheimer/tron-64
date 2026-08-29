@@ -1,5 +1,6 @@
 [Unit]
-Description=Tron Server Daemon
+Description=Bitcycles Server Daemon (FNM)
+After=network.target
 
 [Service]
 Restart=on-failure
