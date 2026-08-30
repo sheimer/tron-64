@@ -108,19 +108,22 @@ export const isMetricsRequestAuthorized = (req) => {
   }
 
   const forwardedFor = req?.headers ? req.headers['x-forwarded-for'] : null
-  const clientIp = (
+  const rawIp = (
     (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : null) ||
     (req?.headers ? req.headers['x-real-ip'] : null) ||
     req?.ip ||
     req?.socket?.remoteAddress ||
     ''
-  ).replace(/^::ffff:/, '')
+  )
+    .replace(/^::ffff:/, '')
+    .trim()
+    .toLowerCase()
 
   if (
-    clientIp === '127.0.0.1' ||
-    clientIp === '::1' ||
-    clientIp === 'localhost' ||
-    clientIp === ''
+    rawIp === '127.0.0.1' ||
+    rawIp === '::1' ||
+    rawIp === 'localhost' ||
+    rawIp === ''
   ) {
     return true
   }
@@ -129,9 +132,9 @@ export const isMetricsRequestAuthorized = (req) => {
   if (allowedIpsStr) {
     const allowedIps = allowedIpsStr
       .split(',')
-      .map((ip) => ip.trim().replace(/^::ffff:/, ''))
+      .map((ip) => ip.trim().replace(/^::ffff:/, '').toLowerCase())
       .filter(Boolean)
-    if (allowedIps.includes(clientIp)) {
+    if (allowedIps.includes(rawIp)) {
       return true
     }
   }
