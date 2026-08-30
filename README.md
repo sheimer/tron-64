@@ -2,25 +2,30 @@
 
 > **Disclaimer:** This project is an independent open-source fan game and tribute to classic Commodore 64 party games. It is not affiliated with, sponsored by, or endorsed by The Walt Disney Company.
 
-A multiplayer retro light-cycle arena game inspired by the legendary C64 party game **Ultimate Tron II** (created by Oliver Stiller / Masters' Design Group and published on *64'er* magazine cover disks).
+A multiplayer retro light-cycle arena game inspired by the classic Commodore 64 game **Ultimate Tron II** (created by Oliver Stiller / Masters' Design Group and published on *64'er* magazine cover disks).
 
-Built from the ground up with pure modern web technologies — zero heavy UI frameworks, pure ES Modules, a deterministic 40 FPS target-timestamp physics loop, binary WebSocket streaming, and a responsive HTML5 canvas renderer.
-
----
-
-## The Nostalgia: 6 Players on One Keyboard
-
-Back in the Commodore 64 era, *Ultimate Tron II* was the undisputed king of local multiplayer house parties. Up to 6 players would crowd shoulder-to-shoulder around a single breadbin keyboard, frantically tapping keys (`Q/W`, `C/V`, `M/,`, arrow keys), screaming as light-cycles turned at pixel precision, trails trapped opponents, and screen-shaking particle explosions determined the ultimate champion.
-
-**Bitcycles (Web Tribute)** preserves that raw, chaotic party energy — allowing multiple local players to share a single keyboard or join together over the internet via WebSockets across laptops, desktops, and mobile devices.
+Built with standard web technologies — vanilla ES Modules, a deterministic 40 FPS target-timestamp physics loop, binary WebSocket streaming, and a responsive HTML5 canvas delta renderer.
 
 ---
 
-## Development Story: Building with AI (Gemini Flash)
+## Background: 6 Players on One Keyboard
 
-This project has been a long-time passion endeavor worked on in tiny, sporadic steps over several years. Between job and family life, time and energy were naturally limited, making it tough to find enough focused hours to tackle complex tasks like real-time multiplayer networking, responsive canvas rendering, crash-safe state persistence, and automated leak verification.
+On the Commodore 64, *Ultimate Tron II* stood out by supporting up to 6 simultaneous players sharing a single keyboard (`Q/W`, `C/V`, `M/,`, arrow keys, etc.), creating fast-paced local multiplayer matches where light-cycles navigated tight grid corridors and left solid obstacle trails.
 
-Pair programming with AI assistance (specifically Google's Gemini Flash via Antigravity) completely transformed the development process. Having an intelligent assistant to brainstorm architectural decisions with, design binary streaming protocols, implement complex game loops, and construct comprehensive headless test suites allowed this project to leap forward rapidly. It has been an absolute joy to bridge childhood retro gaming nostalgia with modern AI-driven engineering, bringing the project to a level of polish and completeness that I am truly proud to present to the world.
+**Bitcycles** brings that same multiplayer mechanic to modern web browsers — supporting multiple players on a shared local keyboard as well as cross-device multiplayer over WebSockets across desktops, laptops, and mobile devices.
+
+---
+
+## Development & Engineering Methodology
+
+This project originated as an independent side project developed sporadically over several years. Recently, modern AI pair-programming tools (specifically Google's Gemini models via Antigravity) were introduced to accelerate development and modernize the architecture while balancing limited time outside of work and family commitments.
+
+AI assistance was leveraged across several key engineering areas:
+* **Protocol & Loop Design:** Architecting the deterministic target-timestamp physics loop and compact binary WebSocket frame format.
+* **Canvas Optimization:** Structuring the $O(k)$ hybrid delta renderer and `Int8Array` spatial grid buffer.
+* **Testing & Verification:** Implementing comprehensive test suites, including multi-cycle heap leak verifications (`node --expose-gc`), headless concurrency benchmarks, and Playwright browser tests.
+
+This approach enabled rapid architectural iteration, rigorous automated testing, and clean modular separation across both client and server subsystems.
 
 ---
 

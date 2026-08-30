@@ -8,6 +8,8 @@
 
 ## Code Comments & Documentation Rules
 * **Preserve Meaningful Comments:** Maintain all existing comments, explanations, and docstrings unless they are clearly redundant or obsolete. Never strip out design notes, lifecycle descriptions, or contextual comments.
+* **Emoji & Emoticon Hesitancy:** Avoid emojis and emoticons in source code, shell scripts, CLI output, commit messages, and documentation unless explicitly requested.
+
 
 ## Testing Guidelines
 * **Test Location:** Place all unit and integration test scripts in the `test/` directory using the `.test.js` naming convention (e.g. `test/<feature>.test.js`).

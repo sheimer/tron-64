@@ -63,6 +63,20 @@ Focus on mobile ergonomics, touch input latency, and display scaling.
 
 ---
 
+## Milestone 5: Operations, Telemetry & Infrastructure
+
+Focus on system observability, game metrics, and automated failure detection.
+
+- [ ] **Prometheus / VictoriaMetrics Metrics & Grafana Dashboard**
+  - *Dedicated Plan:* [`docs/plans/2026-08-29-telemetry-monitoring-and-alerting.md`](docs/plans/2026-08-29-telemetry-monitoring-and-alerting.md)
+  - Expose `/metrics` endpoint with game session counters (active rooms, players, spectators, packet throughput, crash tallies) and Node.js engine stats (heap memory, event loop lag).
+  - Deploy `prometheus-node-exporter` on the game server for host CPU/RAM/network metrics with firewall protection.
+  - Configure VictoriaMetrics and Grafana on the Strong Server for time-series aggregation and visual operations dashboard.
+  - Implement automated email alerts via local Postfix mail server for server downtime, high memory, or game loop lag.
+
+
+---
+
 ## Completed Milestones
 
 For a chronological release history, see [CHANGELOG.md](CHANGELOG.md).
