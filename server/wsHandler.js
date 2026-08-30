@@ -2,6 +2,11 @@ import WebSocket, { WebSocketServer } from 'ws'
 import { gameServer } from './GameServer.js'
 import { MSG_TYPE, BINARY_OPCODE } from '../shared/protocol.js'
 import { GRID_SIZE, MAX_ACTIVE_GAMES, MAX_CLIENTS_PER_ROOM } from '../shared/constants.js'
+import {
+  wsClientsGauge,
+  wsMessagesSentCounter,
+  wsMessagesReceivedCounter,
+} from './metrics.js'
 
 const sanitizeString = (str, maxLength = 32) =>
   typeof str === 'string' ? str.trim().slice(0, maxLength) : ''
@@ -53,6 +58,7 @@ export const setupWebSocketServer = (server) => {
         client.readyState === WebSocket.OPEN &&
         client.gameKey === gameKey
       ) {
+        wsMessagesSentCounter.inc({ type: isBuffer ? 'binary' : 'text' })
         if (isBuffer) {
           client.send(data, { binary: true })
         } else {
@@ -69,6 +75,7 @@ export const setupWebSocketServer = (server) => {
     })
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
+        wsMessagesSentCounter.inc({ type: 'text' })
         client.send(message)
       }
     })
@@ -81,10 +88,12 @@ export const setupWebSocketServer = (server) => {
   const pendingStarts = new Map()
 
   wss.on('connection', (ws) => {
+    wsClientsGauge.set(wss.clients.size)
     ws.gameKey = null
     ws.playerIds = new Set()
 
     // Send initial lobby list
+    wsMessagesSentCounter.inc({ type: 'text' })
     ws.send(
       JSON.stringify({
         type: MSG_TYPE.LOBBY_LIST,
@@ -93,6 +102,9 @@ export const setupWebSocketServer = (server) => {
     )
 
     ws.on('message', (raw) => {
+      wsMessagesReceivedCounter.inc({
+        type: Buffer.isBuffer(raw) ? 'binary' : 'text',
+      })
       // Fast path for 3-byte binary CHANGE_DIR frames: [OPCODE, playerId, dirByte]
       if (
         Buffer.isBuffer(raw) &&
@@ -411,6 +423,7 @@ export const setupWebSocketServer = (server) => {
     })
 
     ws.on('close', () => {
+      wsClientsGauge.set(wss.clients.size)
       if (ws.gameKey) {
         const game = gameServer.getGame(ws.gameKey)
         if (game && ws.playerIds.size > 0) {

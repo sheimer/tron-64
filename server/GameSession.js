@@ -3,6 +3,7 @@ import WebSocket from 'ws'
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
 import { GRID_SIZE, MAX_PLAYERS, IDLE_ROOM_TIMEOUT_MS } from '../shared/constants.js'
+import { roundsPlayedCounter, tickDurationSummary } from './metrics.js'
 
 export class GameSession {
   constructor({
@@ -156,6 +157,7 @@ export class GameSession {
     }, {})
 
     this.stats.gamecount++
+    roundsPlayedCounter.inc()
     this.stats.messages = []
     for (let i = 0; i < playerscount; i++) {
       this.stats.players[i].lastScore = 0
@@ -288,7 +290,9 @@ export class GameSession {
     this.timer = setTimeout(() => {
       if (!this.running) return
 
+      const endTimer = tickDurationSummary.startTimer()
       this.arena.run()
+      endTimer()
 
       if (!this.running) {
         // Round ended during arena.run() (finish() was called)

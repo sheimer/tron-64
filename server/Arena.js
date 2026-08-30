@@ -8,6 +8,7 @@ import {
   EXPLOSION_MAX_MS_FINISHED,
 } from '../shared/constants.js'
 import { Explosion } from './Explosion.js'
+import { crashesTotalCounter } from './metrics.js'
 
 export class Arena {
   constructor({ size = GRID_SIZE } = {}) {
@@ -167,6 +168,7 @@ export class Arena {
   }
 
   killPlayer(index, player, killedBy) {
+    crashesTotalCounter.inc()
     player.deadPlayers = this.deadPlayers
     player.alive = false
     if (killedBy >= 0) {
