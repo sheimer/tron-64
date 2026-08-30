@@ -1,4 +1,4 @@
-import client from 'prom-client'
+import client from '@prometheus-io/client'
 import { gameServer } from './GameServer.js'
 
 export const register = new client.Registry()
