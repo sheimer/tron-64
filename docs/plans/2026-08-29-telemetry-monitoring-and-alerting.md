@@ -2,7 +2,7 @@
 
 > **Date:** 2026-08-29  
 > **Topic:** Prometheus / VictoriaMetrics Metrics, Custom Game Telemetry, Node Exporter, Grafana Dashboard & Email Alerts  
-> **Status:** Planned  
+> **Status:** Completed  
 
 ---
 
@@ -174,11 +174,12 @@ flowchart TD
 
 ## 5. Verification & Testing Checklist
 
-- [ ] `prom-client` integrated and custom metrics registered in `server/metrics.js`.
-- [ ] `GET /metrics` returns Prometheus text format with HTTP 200.
-- [ ] `test/metrics.test.js` passes with 100% assertions in `npm test`.
-- [ ] `prometheus-node-exporter` running on Tiny Server with firewall restricting port 9100.
-- [ ] Nginx `/metrics` location blocks unauthorized external visitors and allows Strong Server.
-- [ ] VictoriaMetrics successfully scraping both endpoints with target status `HEALTHY`.
-- [ ] Grafana dashboard visualizing live data and room updates in real-time.
-- [ ] Test alert fired and successfully received in admin inbox via local Postfix mail server.
+- [x] `@prometheus-io/client` integrated and custom metrics registered in `server/metrics.js`.
+- [x] `GET /metrics` returns Prometheus text format with HTTP 200 and application-level IP/token security guard.
+- [x] `test/metrics.test.js` passes with 100% assertions in `npm test`.
+- [x] `prometheus-node-exporter` running on Tiny Server with firewall restricting port 9100.
+- [x] Nginx `/metrics` location blocks unauthorized external visitors and allows Strong Server.
+- [x] Prometheus successfully scraping both endpoints with target status `HEALTHY` / `up`.
+- [x] Grafana dashboard visualizing live data and room updates in real-time.
+- [x] Test alert fired and successfully received in admin inbox via local Postfix mail server.
+

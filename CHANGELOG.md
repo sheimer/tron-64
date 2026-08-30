@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Full-Stack Prometheus Telemetry & Performance Instrumentation:**
+  - Implemented application telemetry collector ([server/metrics.js](file:///home/hidden/projects/tron/server/metrics.js)) with `@prometheus-io/client`.
+  - Exposed dynamic gauges for room counts (`bitcycles_active_rooms{visibility}`), active driving players (`bitcycles_connected_players`), and open sockets (`bitcycles_ws_clients_active`).
+  - Added event counters for finished match rounds, cycle collisions/crashes, and WebSocket text/binary frame throughput.
+  - Added 40 FPS game loop tick duration summary timer (`bitcycles_tick_duration_seconds`).
+  - Exposed secured `GET /metrics` endpoint in `app.js` with application-level IP whitelist (`METRICS_ALLOWED_IPS`) and optional Bearer token auth (`METRICS_TOKEN`) in addition to Nginx reverse proxy restrictions.
+  - Added unit test suite ([test/metrics.test.js](file:///home/hidden/projects/tron/test/metrics.test.js)) testing gauge calculations, counter increments, and 403/200 authorization rules.
+- **Centralized Prometheus Monitoring & Postfix Alerting Pipeline:**
+  - Deployed `prometheus-node-exporter` on the game host for system CPU, memory, disk, and network telemetry with firewall isolation on port 9100.
+  - Configured Prometheus scraping over HTTPS (`bitcycles_game`) and Node Exporter (`bitcycles_host`).
+  - Set up Grafana operations dashboard and automated email alerting (`BitcyclesDown`, `BitcyclesHighMemory`, `BitcyclesEventLoopLag`) routing through local Postfix mail server (`127.0.0.1:25`).
 - **Hardened Deployment Architecture & Service Templates:**
   - Introduced hardened systemd service template ([bitcycles.service](file:///home/hidden/projects/tron/bitcycles.service)) utilizing system Node 24 and Linux cgroups resource limits (`CPUQuota=80%`, `MemoryMax=1G`, `TasksMax=50`).
   - Added legacy FNM service template ([bitcycles-fnm.service](file:///home/hidden/projects/tron/bitcycles-fnm.service)) and configurable `DEPLOY_USE_FNM` toggle in `.env.example`.
