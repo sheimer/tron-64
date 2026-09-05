@@ -6,8 +6,15 @@ This document outlines upcoming architectural improvements, networking enhanceme
 
 ## Milestone 2: Game Room & Server Lifecycle
 
-Focus on room privacy, concurrent server capacity, and process recovery.
+Focus on room creation options, host permissions, privacy, and process recovery.
 
+- [ ] **Game Speed Setting & Host Round Lifecycle Controls**
+  - *Problem:* Game speed currently defaults globally to `NORMAL` (40 FPS / 25ms interval), cannot be chosen during room creation in the lobby, and can be changed mid-round by any participant. Additionally, there is no HUD indicator showing when a match runs at non-standard speeds.
+  - *Proposed Solution:*
+    - **Lobby Game Creation:** Add a speed selection dropdown/control in the lobby creation form (`LobbyView`), initializing the room with the selected interval.
+    - **Host-Only Authorization:** Restrict `MSG_TYPE.SET_INTERVAL` permissions strictly to the room creator / host.
+    - **Round-Gated Adjustment:** Enforce that speed can only be modified between rounds (when no active round is running, e.g. in config, round finish, or game reset states).
+    - **HUD Speed Indicator Icon:** Display a visual indicator icon in the header / HUD whenever game speed is not `NORMAL` (e.g. snail icon for `SLOW`, and a high-speed icon for `FAST`). Note: Icons will be supplied and imported into `public/remixicon/` following [`public/remixicon/README.md`](file:///home/hidden/projects/tron/public/remixicon/README.md).
 - [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
   - *Problem:* Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
   - *Proposed Solution:*
@@ -25,8 +32,16 @@ Focus on room privacy, concurrent server capacity, and process recovery.
 
 ## Milestone 3: Polish & Game Modes
 
-Focus on scoring UX, visual artifact cleanups, retro audio, and single-player options.
+Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and single-player options.
 
+- [ ] **Multiple Color Schemes & Palette Presets (Zenbones & Beyond)**
+  - *Context / Problem:* The current palette in `public/stylesheets/var.css` is based on `forestbones` (from the [`zenbones.nvim`](https://github.com/zenbones-theme/zenbones.nvim) collection) with manual by-eye contrast adjustments (notably `-hl` and `-muted` variations). The game currently only supports switching between Light, Dark, and Auto mode for this single palette.
+  - *Proposed Solution:*
+    - **Palette System Architecture:** Implement a multi-palette theming structure (e.g. CSS `data-theme` or `data-palette` attributes on the document root) overriding `--color-*` variables dynamically.
+    - **Zenbones Family Presets:** Introduce additional schemes from the Zenbones collection (e.g. `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) with tuned light and dark variants.
+    - **Non-Editor Aesthetic Palettes:** Add distinctive retro palettes not derived from code editors (e.g. neon arcade, green/amber monochrome phosphor CRT, cyberpunk synthwave, or pastel vaporwave).
+    - **Settings Selection & Persistence:** Add a color scheme picker in Settings (`SettingsView`) persisting to `localStorage`, hot-swapping live computed CSS variables across the canvas delta renderer, player trail colors, and UI elements.
+    - **Contrast & Visibility Balancing:** Fine-tune `-hl` and `-muted` contrast values for each palette to ensure optimal trail legibility and accessibility in both light and dark modes.
 - [ ] **Scoreboard Sorted by Score**
   - *Problem:* Scoreboard currently displays players in registration order (Player 0, 1, 2...).
   - *Proposed Solution:* Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
