@@ -35,6 +35,7 @@ Focus on room creation options, host permissions, privacy, and process recovery.
 Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and single-player options.
 
 - [ ] **Multiple Color Schemes & Palette Presets (Zenbones & Beyond)**
+  - *Dedicated Plan:* [`docs/plans/2026-09-05-multi-palette-color-schemes.md`](docs/plans/2026-09-05-multi-palette-color-schemes.md)
   - *Context / Problem:* The current palette in `public/stylesheets/var.css` is based on `forestbones` (from the [`zenbones.nvim`](https://github.com/zenbones-theme/zenbones.nvim) collection) with manual by-eye contrast adjustments (notably `-hl` and `-muted` variations). The game currently only supports switching between Light, Dark, and Auto mode for this single palette.
   - *Proposed Solution:*
     - **Palette System Architecture:** Implement a multi-palette theming structure (e.g. CSS `data-theme` or `data-palette` attributes on the document root) overriding `--color-*` variables dynamically.
