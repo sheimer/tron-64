@@ -40,11 +40,18 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 
 ---
 
-## 4. Headless Concurrency Benchmarks (`npm run benchmark`)
+## 4. Headless Concurrency Stress Benchmark (`npm run benchmark` / `npm run benchmark:stress`)
 
-* Located in `benchmark/concurrency.js`.
-* Spins up 10, 25, and 50 simultaneous active rooms running 40 FPS physics loops.
-* Measures server tick computation latency, event loop delay ($<1\text{ms}$), and memory overhead under high concurrency.
+* Located in [benchmark/stress.js](file:///home/hidden/projects/tron/benchmark/stress.js).
+* **Quick Sanity Mode (`npm run benchmark`):**
+  * Automatically applies `--quick` to run a fast (~1.5s) health verification against the default server limit (`MAX_ACTIVE_GAMES = 50`) at 40 FPS without pegging system resources.
+* **Progressive Saturation & Stress Mode (`npm run benchmark:stress`):**
+  * Dynamically ramps up active 4-player rooms in incremental batches (default: +100 rooms/stage) with active steering input injection and binary delta buffer encoding until performance degrades.
+  * Monitors real-time health thresholds against the 25.0ms (40 FPS) frame budget:
+    * **Warning (Frame Drops):** Average jitter $\ge 5.0\text{ms}$ or max event-loop spike $\ge 25.0\text{ms}$ (1 full frame dropped).
+    * **Saturation ("Not Good Anymore"):** Average jitter $\ge 10.0\text{ms}$ (40%+ frame budget consumed by lag) or max spike $\ge 40.0\text{ms}$ (consecutive dropped frames).
+  * Outputs live stage metrics, pinpointing the single-thread saturation limit, root cause degradation factor, and recommended maximum safe operating capacity before tearing down all sessions cleanly.
+  * Supports CLI overrides: `--quick`, `--start`, `--step`, `--max`, `--duration`, `--jitter-threshold`, `--spike-threshold`.
 
 ---
 

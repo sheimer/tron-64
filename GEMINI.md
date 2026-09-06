@@ -14,7 +14,7 @@
 ## Testing Guidelines
 * **Test Location:** Place all unit and integration test scripts in the `test/` directory using the `.test.js` naming convention (e.g. `test/<feature>.test.js`).
 * **Test Runner:** All test suites are aggregated and executed in isolated processes by `test/runAll.js` via `npm test`.
-* **Benchmarks:** Place load, stress, and latency benchmark tools in the `benchmark/` directory (e.g. `benchmark/concurrency.js`), executed via `npm run benchmark`.
+* **Benchmarks:** Place load, stress, and latency benchmark tools in the `benchmark/` directory (e.g. `benchmark/stress.js`), executed via `npm run benchmark` or `npm run benchmark:stress`.
 
 ## Git & Workflow Rules
 * **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).

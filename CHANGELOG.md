@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Headless Server Concurrency Stress Benchmark Tool:**
+  - Implemented dynamic load-scaling benchmark in [benchmark/stress.js](file:///home/hidden/projects/tron/benchmark/stress.js) replacing `concurrency.js`, executable via `npm run benchmark` (fast `--quick` sanity check) or `npm run benchmark:stress` (full progressive saturation test).
+  - Progressively provisions active 4-player game sessions in incremental stages with steering input injection and binary delta buffer encoding until event-loop jitter and latency spikes breach real-time 40 FPS gameplay tolerances.
+  - Detects single-frame drop warnings (jitter $\ge 5\text{ms}$ or spike $\ge 25\text{ms}$) and critical event-loop saturation (jitter $\ge 10\text{ms}$ or spike $\ge 40\text{ms}$).
+  - Automatically identifies the exact single-thread saturation capacity, failure point, and recommended safe operating ceiling with safe graceful session teardown.
 - **Multi-Palette Color Scheme Architecture & Curated Preset Catalog:**
   - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](file:///home/hidden/projects/tron/public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution.
   - Curated 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display aesthetics (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` monochrome amber phosphor, `green-crt` P1 green phosphor).

@@ -10,7 +10,8 @@
     "start": "node ./bin/www",
     "test": "node test/runAll.js",
     "test:palettes": "node scripts/generate-palette-gallery.js",
-    "benchmark": "node benchmark/concurrency.js"
+    "benchmark": "node benchmark/stress.js --quick",
+    "benchmark:stress": "node benchmark/stress.js"
   },
   "dependencies": {
     "@prometheus-io/client": "^0.16.1",
