@@ -27,6 +27,11 @@
   height: 100%;
 }
 
+.rank-badge {
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
 #scores-waiting {
   display: none;
   position: absolute;

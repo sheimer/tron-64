@@ -76,7 +76,7 @@ When a player's browser disconnects mid-match (tab closed, carrier drop):
 ### Phase 2: Subsequent Rounds with Offline Player
 1. On round start ($t=0$), the offline player is exploded instantly at their starting coordinates.
 2. **Zero Trail Start:** No wall trail is generated for the offline cycle, keeping the arena open.
-3. The scoreboard marks the player with a `[disconnected]` badge.
+3. The scoreboard marks the player with a `[disconnected]` badge and positions all players dynamically according to score-sorted rankings.
 
 ### Phase 3: Player Reconnection
 1. The client preserves room keys and player configurations in `sessionStorage.connectedGames`.

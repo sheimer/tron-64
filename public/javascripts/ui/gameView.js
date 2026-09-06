@@ -1,7 +1,7 @@
 import { settings } from '../settings.js'
 import { state as appState } from '../state.js'
 import { PLAYER_COLOR_KEYS } from '/shared/constants.js'
-import { ordinalSuffixOf } from '/shared/utils.js'
+import { ordinalSuffixOf, sortScoreboardPlayers } from '/shared/utils.js'
 
 const canHover =
   typeof window !== 'undefined' &&
@@ -211,7 +211,7 @@ export class GameView {
       tr.appendChild(td)
     }
 
-    const playerList =
+    const rawPlayers =
       Array.isArray(scores?.players) && scores.players.length > 0
         ? scores.players
         : players.map((p) => ({
@@ -224,6 +224,8 @@ export class GameView {
             total: 0,
             connected: p.connected,
           }))
+
+    const playerList = sortScoreboardPlayers(rawPlayers)
 
     for (let i = 0; i < playerList.length; i++) {
       const player = playerList[i]
@@ -241,6 +243,16 @@ export class GameView {
       if (!isConnected) {
         tr.style.opacity = '0.6'
       }
+
+      const tdRank = document.createElement('td')
+      tdRank.style.textAlign = 'left'
+      const spanRank = document.createElement('span')
+      spanRank.className = 'rank-badge'
+      spanRank.appendChild(
+        document.createTextNode(player._rankLabel || ordinalSuffixOf(i + 1)),
+      )
+      tdRank.appendChild(spanRank)
+      tr.appendChild(tdRank)
 
       const td = document.createElement('td')
       const displayName = isConnected

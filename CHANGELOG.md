@@ -52,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Header Info icon (`#btn-info`) in `#controls` allowing players to return to the Welcome view from the lobby at any time.
 - **Legal Notice (Impressum) & Privacy (Datenschutz) Modals:**
   - Integrated compliant legal notice modal (§ 5 DDG) and privacy notice modal (Art. 6(1)(f) GDPR) with zero-tracking cookie policy and in-memory server telemetry disclosures.
+- **Score-Sorted Post-Round Scoreboard & Competition Ranking:**
+  - Added score-descending sorting in [shared/utils.js](shared/utils.js) (`sortScoreboardPlayers`) ranking players by total points, kills, and escapes with standard competition ranks (1224 ranking).
+  - Added dedicated "Rank" column with `.rank-badge` indicators (1st, 2nd, 3rd, etc.) in [views/index.pug](views/index.pug), [public/javascripts/ui/gameView.js](public/javascripts/ui/gameView.js), and [public/stylesheets/components.css](public/stylesheets/components.css).
+  - Added unit test suite ([test/scoreboard.test.js](test/scoreboard.test.js)) validating descending point sorting, tie-breaking heuristics, shared rankings, and Express route table markup.
 - **Automated Welcome View & Route Tests:**
   - `test/welcome-view.test.js`: Verified Express route rendering of `Bitcycles`, `#welcome`, `#footer-welcome`, modals, and `WelcomeView` lifecycle (backdrop click, escape key, and screen transitions).
 

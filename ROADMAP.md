@@ -8,7 +8,7 @@ This document outlines upcoming architectural improvements, networking enhanceme
 
 Finalizing post-round scoring UX and engine cleanup for the v1.4.0 release.
 
-- [ ] **Scoreboard Sorted by Score**
+- [x] **Scoreboard Sorted by Score**
   - _Problem:_ Scoreboard currently displays players in registration order (Player 0, 1, 2...).
   - _Proposed Solution:_ Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
 - [ ] **Explosion Ghosting Bug Verification**
