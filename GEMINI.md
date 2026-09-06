@@ -19,6 +19,11 @@
 ## Git & Workflow Rules
 * **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).
 * **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` so the user can easily review and copy it.
+* **Plan Execution (One Phase per Reviewable Commit):** When executing a plan or task with defined phases or milestone checklists (e.g. in `docs/plans/`), execute strictly **one phase at a time**. Each phase must produce a runnable, reviewable commit:
+  - Implement the changes and verify all test suites pass (`npm test`).
+  - Update the corresponding phase checkboxes in the plan document.
+  - Write the proposed commit message tailored for that specific phase to `tmpcommit.md`.
+  - Stop execution and prompt the user to review in their editor, stage, and commit before beginning the next phase. Never bundle multiple planned phases into a single turn unless explicitly instructed.
 * **Changelog & Roadmap Maintenance:**
   - Update `CHANGELOG.md` with human-readable, player-facing release notes under `[Unreleased]` or the corresponding version tag following the *Keep a Changelog* format.
   - When milestones or roadmap items are completed, move them from active sections in `ROADMAP.md` into `## Completed Milestones`, linking them to their respective documentation plans and `CHANGELOG.md`.
@@ -30,8 +35,8 @@
 When working on specific subsystems, consult the corresponding domain guide in `docs/architecture/`:
 * **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Single WebSocket model, binary frame formats, opcode fast-paths, latency CQI.
 * **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Client screen routing (`welcome`/`lobby`/`config`/`game`), header navigation (`btn-header-lobby`), match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper.
-* **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, dual layout modes (natural welcome scroll vs fixed grid arena), accessible legal modals, anti-scraping email hydration.
-* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests.
+* **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, multi-palette theming (Zenbones & retro presets), live CSS resolution, dual layout modes (natural welcome scroll vs fixed grid arena), accessible legal modals, anti-scraping email hydration.
+* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests, mathematical palette contrast & CVD verification, and visual gallery generation (`npm run test:palettes`).
 
 
 

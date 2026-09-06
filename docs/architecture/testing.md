@@ -22,6 +22,7 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 | `test/persistence.test.js` | Verifies atomic snapshot storage and crash recovery. | Disk snapshot verification, cold server reboot simulation, and state restoration. |
 | `test/spectator-speed.test.js` | Verifies spectator action locks and room speed synchronization. | Spectator authorization rejection on `START_GAME` / `SET_INTERVAL`. |
 | `test/welcome-view.test.js` | Verifies route rendering, welcome view lifecycle, legal modals, and email hydration. | Express template rendering assertions, state transition checks, and DOM modal controller tests. |
+| `test/palette.test.js` | Verifies mathematical WCAG contrast, CIELAB color distance, CVD simulation, and template bindings. | Headless CSS parsing, WCAG 2.1 AA ratios ($\ge 4.5:1$ text, $\ge 3.0:1$ trails), CIELAB $\Delta E^*$, and Brettel/Viénot CVD matrices. |
 | `test/leak.test.js` | Verifies zero server-side memory leaks over 500 game sessions. | 10 cycles creating/destroying 50 rooms with 2,000 players under `node --expose-gc`, asserting net heap $\Delta < 0.5\text{MB}$. |
 | `test/client-leak.test.js` | Verifies zero client browser memory and DOM element leaks. | Headless Chromium via Playwright, CDP `Performance.getMetrics`, and multi-round match lifecycles. |
 
@@ -44,3 +45,17 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 * Located in `benchmark/concurrency.js`.
 * Spins up 10, 25, and 50 simultaneous active rooms running 40 FPS physics loops.
 * Measures server tick computation latency, event loop delay ($<1\text{ms}$), and memory overhead under high concurrency.
+
+---
+
+## 5. Palette Verification Suite & Visual Gallery (`npm run test:palettes`)
+
+* **Mathematical Accessibility Suite (`test/palette.test.js`):**
+  - Parses `public/stylesheets/palettes.css` directly to ensure zero drift between production stylesheets and verification checks.
+  - **WCAG 2.1 AA Contrast:** Enforces $\ge 4.5:1$ text contrast (`--color-fg` on `--color-bg`) and $\ge 3.0:1$ graphical visibility for all 6 player trails and `--color-rose` against `--color-bg`.
+  - **CIELAB Perceptual Color Distance ($\Delta E^*$):** Computes Euclidean $\Delta E^*$ across all 15 player pairings ($\binom{6}{2}$) to ensure light-cycle vehicles are distinctly distinguishable during high-speed gameplay.
+  - **CVD Simulation:** Validates legibility under Deuteranopia and Protanopia linear transformation matrices.
+* **Offline Visual Gallery Generator (`scripts/generate-palette-gallery.js`):**
+  - Executed via `npm run test:palettes`.
+  - Generates `test/reports/palette-gallery.html` featuring side-by-side Dark and Light mode mockups for all 12 palettes, arena delta traces, scoreboard overlays, color swatches, and interactive SVG CVD filter simulation toggles.
+

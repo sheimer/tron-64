@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-05  
 > **Topic:** Multiple Color Schemes (Zenbones Family & Retro/Non-Editor Palettes) and Palette Verification Strategy  
-> **Status:** Draft / Proposed  
+> **Status:** Completed  
 
 ---
 
@@ -160,23 +160,23 @@ An in-browser preview mode built directly into the client application:
 
 ## 5. Implementation Phases & Checklist
 
-- [ ] **Phase 1: Palette Definition & Architecture**
-  - [ ] Create `public/stylesheets/palettes.css` with `forestbones` baseline.
-  - [ ] Implement Zenbones presets (`zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`).
-  - [ ] Implement retro presets (`c64`, `arcade-neon`, `amber-crt`, `green-crt`).
-- [ ] **Phase 2: Theme Engine & Settings Integration**
-  - [ ] Update `public/javascripts/settings.js` with `palette` preference.
-  - [ ] Update `public/javascripts/theme.js` to observe `settings.palette` and update `documentElement.dataset.palette`.
-  - [ ] Add palette dropdown in `views/settings.pug` and `public/javascripts/ui/settingsView.js`.
-- [ ] **Phase 3: Testing Suite & Automated Verification**
-  - [ ] Create `test/palette.test.js` with WCAG contrast and CIELAB color distance checks.
-  - [ ] Integrate into `test/runAll.js` runner.
-- [ ] **Phase 4: Palette Approval & Visual Tools**
-  - [ ] Build standalone visual gallery generator `scripts/generate-palette-gallery.js`.
-  - [ ] Review all palettes with the maintainer for visual balance, aesthetics, and accessibility approval.
-- [ ] **Phase 5: Documentation & Roadmap Synchronization**
-  - [ ] Update [`docs/architecture/rendering.md`](docs/architecture/rendering.md) documenting the multi-palette architecture, `[data-palette]` token contract, and live canvas re-resolution.
-  - [ ] Update [`docs/architecture/testing.md`](docs/architecture/testing.md) documenting the new automated palette contrast and color distance test suite.
-  - [ ] Update [`GEMINI.md`](GEMINI.md) (`## Architecture & Domain Guides`) keeping the domain guide summaries synchronized with the new theming and test capabilities.
-  - [ ] Update [`CHANGELOG.md`](CHANGELOG.md) under `[Unreleased]` with player-facing changes.
-  - [ ] Update [`ROADMAP.md`](ROADMAP.md) moving completed milestone items to `## Completed Milestones`.
+- [x] **Phase 1: Palette Definition & Architecture**
+  - [x] Create `public/stylesheets/palettes.css` with `forestbones` baseline.
+  - [x] Implement Zenbones presets (`zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`).
+  - [x] Implement retro presets (`c64`, `arcade-neon`, `amber-crt`, `green-crt`).
+- [x] **Phase 2: Theme Engine & Settings Integration**
+  - [x] Update `public/javascripts/settings.js` with `palette` preference.
+  - [x] Update `public/javascripts/theme.js` to observe `settings.palette` and update `documentElement.dataset.palette`.
+  - [x] Add palette dropdown in `views/controls.pug` and `public/javascripts/ui/settingsView.js`.
+- [x] **Phase 3: Testing Suite & Automated Verification**
+  - [x] Create `test/palette.test.js` with WCAG contrast and CIELAB color distance checks.
+  - [x] Integrate into `test/runAll.js` runner.
+- [x] **Phase 4: Palette Approval & Visual Tools**
+  - [x] Build standalone visual gallery generator `scripts/generate-palette-gallery.js`.
+  - [x] Review all palettes with the maintainer for visual balance, aesthetics, and accessibility approval.
+- [x] **Phase 5: Documentation & Roadmap Synchronization**
+  - [x] Update [`docs/architecture/rendering.md`](docs/architecture/rendering.md) documenting the multi-palette architecture, `[data-palette]` token contract, and live canvas re-resolution.
+  - [x] Update [`docs/architecture/testing.md`](docs/architecture/testing.md) documenting the new automated palette contrast and color distance test suite.
+  - [x] Update [`GEMINI.md`](GEMINI.md) (`## Architecture & Domain Guides`) keeping the domain guide summaries synchronized with the new theming and test capabilities.
+  - [x] Update [`CHANGELOG.md`](CHANGELOG.md) under `[Unreleased]` with player-facing changes.
+  - [x] Update [`ROADMAP.md`](ROADMAP.md) moving completed milestone items to `## Completed Milestones`.

@@ -34,15 +34,6 @@ Focus on room creation options, host permissions, privacy, and process recovery.
 
 Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and single-player options.
 
-- [ ] **Multiple Color Schemes & Palette Presets (Zenbones & Beyond)**
-  - *Dedicated Plan:* [`docs/plans/2026-09-05-multi-palette-color-schemes.md`](docs/plans/2026-09-05-multi-palette-color-schemes.md)
-  - *Context / Problem:* The current palette in `public/stylesheets/var.css` is based on `forestbones` (from the [`zenbones.nvim`](https://github.com/zenbones-theme/zenbones.nvim) collection) with manual by-eye contrast adjustments (notably `-hl` and `-muted` variations). The game currently only supports switching between Light, Dark, and Auto mode for this single palette.
-  - *Proposed Solution:*
-    - **Palette System Architecture:** Implement a multi-palette theming structure (e.g. CSS `data-theme` or `data-palette` attributes on the document root) overriding `--color-*` variables dynamically.
-    - **Zenbones Family Presets:** Introduce additional schemes from the Zenbones collection (e.g. `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) with tuned light and dark variants.
-    - **Non-Editor Aesthetic Palettes:** Add distinctive retro palettes not derived from code editors (e.g. neon arcade, green/amber monochrome phosphor CRT, cyberpunk synthwave, or pastel vaporwave).
-    - **Settings Selection & Persistence:** Add a color scheme picker in Settings (`SettingsView`) persisting to `localStorage`, hot-swapping live computed CSS variables across the canvas delta renderer, player trail colors, and UI elements.
-    - **Contrast & Visibility Balancing:** Fine-tune `-hl` and `-muted` contrast values for each palette to ensure optimal trail legibility and accessibility in both light and dark modes.
 - [ ] **Scoreboard Sorted by Score**
   - *Problem:* Scoreboard currently displays players in registration order (Player 0, 1, 2...).
   - *Proposed Solution:* Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
@@ -110,5 +101,12 @@ For a chronological release history, see [CHANGELOG.md](CHANGELOG.md).
 - **Secured `/metrics` Endpoint:** Implemented defense-in-depth authorization in Express (`isMetricsRequestAuthorized`) supporting IP whitelisting (`METRICS_ALLOWED_IPS`) and Bearer token auth (`METRICS_TOKEN`) in addition to Nginx reverse proxy restrictions.
 - **Automated Host & Engine Monitoring (Prometheus + Grafana):** Configured Prometheus and Grafana on the monitoring hub scraping `bitcycles_game` over HTTPS and `bitcycles_host` OS metrics via `prometheus-node-exporter` (port 9100).
 - **Automated Postfix Email Alerting:** Configured Grafana alert rules (`BitcyclesDown`, `BitcyclesHighMemory`, `BitcyclesEventLoopLag`) routing instant notifications through local Postfix mail server (`127.0.0.1:25`) to admin aliases.
+
+### Milestone 5: Multi-Palette Color Schemes & Accessibility (v1.5.0)
+- **Multi-Palette Color Scheme Architecture:** Implemented 12 hot-swappable color themes in [`public/stylesheets/palettes.css`](public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution. (Plan: [`docs/plans/2026-09-05-multi-palette-color-schemes.md`](docs/plans/2026-09-05-multi-palette-color-schemes.md)).
+- **Curated 12-Palette Catalog:** 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display presets (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` amber phosphor CRT, `green-crt` P1 green phosphor CRT).
+- **Settings UI & Hot-Swapping:** Grouped dropdown selector in Settings modal with `localStorage` persistence, dynamically updating canvas light trails, arena borders, particle explosions, and UI without page reload.
+- **Automated Verification & Visual Gallery:** Automated contrast and CVD test suite (`test/palette.test.js`) and standalone visual gallery generator (`scripts/generate-palette-gallery.js`, `npm run test:palettes`).
+
 
 

@@ -32,12 +32,27 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 
 ---
 
-## 3. Theme Engine & Live CSS Custom Property Resolution (`theme.js`)
+## 3. Multi-Palette Theming Architecture & Live CSS Resolution (`theme.js`, `palettes.css`)
 
-* **Modes:** `dark`, `light`, and `auto` (respects `prefers-color-scheme`).
+* **Modes & Palettes:**
+  - Color scheme modes: `dark`, `light`, and `auto` (respects `prefers-color-scheme`).
+  - Hot-swappable color palettes via `[data-palette="..."]` attribute selectors on `<html>`, defaulting to `forestbones`.
+  - Curated 12-palette catalog:
+    - **Zenbones Neovim Family:** `forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`.
+    - **Retro & Display Aesthetics:** `c64` (Commodore 64 VIC-II tribute), `arcade-neon` (synthwave neon), `amber-crt` (stepped luminance amber phosphor), `green-crt` (P1 monochrome green phosphor).
+* **Token Contract:**
+  - Each palette defines the 13 semantic tokens in both light and dark variants using `light-dark(lightVal, darkVal)`:
+    - UI Backgrounds: `--color-bg`, `--color-bg-hl`, `--color-bg-muted`
+    - UI Foregrounds / Borders: `--color-fg`, `--color-fg-hl`, `--color-fg-muted`
+    - Explosions & Highlight: `--color-rose`
+    - 6 Light-Cycle Player Trails: `--color-water`, `--color-wood`, `--color-leaf`, `--color-blossom`, `--color-sky`, `--color-rock`
+  - Highlight (`-hl`) and muted (`-muted`) variants for player/accent colors are generated automatically via relative CSS color syntax (`hsl(from var(...) ...)`).
 * **Live CSS Resolution (`getThemeColors()`):**  
-  Reads computed colors directly from CSS custom properties (`--color-bg`, `--color-rose`, `--color-water`, etc.) and resolves `light-dark()` expressions dynamically without hardcoded hex constants in JS.
-* **Palette Switch:** `settings.coloredPlayers` toggles between vibrant player-specific colors and classic monochrome phosphor styling.
+  Reads computed colors directly from documentElement CSS custom properties and resolves `light-dark()` expressions dynamically without hardcoded hex constants in JS.
+* **Canvas Hot-Swapping:**
+  Changing palette or theme notifies `Renderer.setColors(...)`, which immediately triggers `redrawAll()` to recolor all trails, borders, and particles on the existing grid buffer with zero page reload.
+* **Player Monochrome Toggle:**
+  `settings.coloredPlayers` toggles between vibrant palette player colors and monochrome styling (`--color-fg`).
 
 ---
 

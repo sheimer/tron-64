@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Multi-Palette Color Scheme Architecture & Curated Preset Catalog:**
+  - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](file:///home/hidden/projects/tron/public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution.
+  - Curated 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display aesthetics (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` monochrome amber phosphor, `green-crt` P1 green phosphor).
+  - Added grouped "Color Scheme" dropdown selector in the Settings menu ([views/controls.pug](file:///home/hidden/projects/tron/views/controls.pug), [public/javascripts/ui/settingsView.js](file:///home/hidden/projects/tron/public/javascripts/ui/settingsView.js)) with `localStorage` persistence.
+  - Dynamic live color re-resolution via [public/javascripts/theme.js](file:///home/hidden/projects/tron/public/javascripts/theme.js), recoloring active arena light trails, borders, particle explosions, scoreboards, and UI modals in real time with zero page reload.
+  - Pre-render script in [views/layout.pug](file:///home/hidden/projects/tron/views/layout.pug) restoring saved palette preferences before DOM painting to eliminate visual flash.
+- **Automated Palette Verification Suite & Visual Comparison Gallery:**
+  - Automated contrast and accessibility test ([test/palette.test.js](file:///home/hidden/projects/tron/test/palette.test.js)) running during `npm test` verifying WCAG 2.1 AA text ($\ge 4.5:1$) and trail ($\ge 3.0:1$) contrast, CIELAB perceptual Euclidean color distance ($\Delta E^*$), and simulated Deuteranopia / Protanopia CVD matrices.
+  - Standalone offline visual gallery generator ([scripts/generate-palette-gallery.js](file:///home/hidden/projects/tron/scripts/generate-palette-gallery.js), `npm run test:palettes`) generating [test/reports/palette-gallery.html](file:///home/hidden/projects/tron/test/reports/palette-gallery.html) with side-by-side Dark/Light mode mockups and interactive SVG CVD simulation filters.
 - **Full-Stack Prometheus Telemetry & Performance Instrumentation:**
   - Implemented application telemetry collector ([server/metrics.js](file:///home/hidden/projects/tron/server/metrics.js)) with `@prometheus-io/client`.
   - Exposed dynamic gauges for room counts (`bitcycles_active_rooms{visibility}`), active driving players (`bitcycles_connected_players`), and open sockets (`bitcycles_ws_clients_active`).
