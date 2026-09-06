@@ -47,6 +47,17 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
     - Explosions & Highlight: `--color-rose`
     - 6 Light-Cycle Player Trails: `--color-water`, `--color-wood`, `--color-leaf`, `--color-blossom`, `--color-sky`, `--color-rock`
   - Highlight (`-hl`) and muted (`-muted`) variants for player/accent colors are generated automatically via relative CSS color syntax (`hsl(from var(...) ...)`).
+
+### Color Science of Relative Color Derivations (`-hl` and `-muted`)
+* **Perceptual Non-Uniformity Compensation in HSL:**
+  - Standard HSL models saturation and lightness as simple cylinders, but human spectral sensitivity peaks strongly in green/yellow wavelengths (~555nm). In HSL, a 50% lightness yellow has a relative luminance of ~0.90, whereas 50% lightness blue has a relative luminance of ~0.07.
+  - To prevent contrast washouts and luminance collapse, the `:root` relative color rules define distinct, hand-calibrated multipliers per semantic hue (e.g., `leaf-muted` scales lightness by $1.8\times$ with saturation at $0.4\times$, whereas `water-hl` scales lightness by $1.3\times$ and dark lightness down to $0.7\times$).
+* **Universal Inheritance vs Scoped Palette Overrides:**
+  - `:root` establishes the universal baseline so palettes only need to declare their 13 primary semantic tokens.
+  - Specialized display aesthetics selectively override `--color-*-hl` and `--color-*-muted` inside their scoped `[data-palette="..."]` selector:
+    - **`arcade-neon`:** Replaces the standard saturation clamp with high-radiance electric bloom for highlights ($L \times 1.25$ in dark mode) and glowing wireframe phosphors for muted elements ($S \times 0.75, L \times 0.5$).
+    - **`amber-crt` & `green-crt`:** Locks hue and saturation strictly to the physical phosphor emission wavelengths (585nm amber / 525nm green) while driving pure radiometric luminance steps (beam overdrive for `-hl`, afterglow decay for `-muted`).
+    - **`rosebones`:** Preserves soft pastel and dusty cedar personality by retaining higher saturation ($S \times 0.7$) rather than collapsing into neutral gray.
 * **Live CSS Resolution (`getThemeColors()`):**  
   Reads computed colors directly from documentElement CSS custom properties and resolves `light-dark()` expressions dynamically without hardcoded hex constants in JS.
 * **Canvas Hot-Swapping:**

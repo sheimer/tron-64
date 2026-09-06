@@ -44,6 +44,189 @@ function parsePalettes(css) {
 const cssContent = fs.readFileSync(cssPath, 'utf-8')
 const palettes = parsePalettes(cssContent)
 
+function hexToRgb(hex) {
+  hex = hex.replace('#', '')
+  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('')
+  const num = parseInt(hex, 16)
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255]
+}
+
+function rgbToHsl([r, g, b]) {
+  r /= 255
+  g /= 255
+  b /= 255
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b)
+  let h,
+    s,
+    l = (max + min) / 2
+  if (max === min) {
+    h = s = 0
+  } else {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+        break
+      case g:
+        h = ((b - r) / d + 2) / 6
+        break
+      case b:
+        h = ((r - g) / d + 4) / 6
+        break
+    }
+  }
+  return [Math.round(h * 360), s * 100, l * 100]
+}
+
+function hslToRgb(h, s, l) {
+  s = Math.max(0, Math.min(100, s)) / 100
+  l = Math.max(0, Math.min(100, l)) / 100
+  h = ((h % 360) + 360) % 360
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+  let r = 0,
+    g = 0,
+    b = 0
+  if (0 <= h && h < 60) {
+    r = c
+    g = x
+    b = 0
+  } else if (60 <= h && h < 120) {
+    r = x
+    g = c
+    b = 0
+  } else if (120 <= h && h < 180) {
+    r = 0
+    g = c
+    b = 0
+  } else if (180 <= h && h < 240) {
+    r = 0
+    g = x
+    b = c
+  } else if (240 <= h && h < 300) {
+    r = x
+    g = 0
+    b = c
+  } else if (300 <= h && h < 360) {
+    r = c
+    g = 0
+    b = x
+  }
+  return [
+    Math.round((r + m) * 255),
+    Math.round((g + m) * 255),
+    Math.round((b + m) * 255),
+  ]
+}
+
+function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')
+}
+
+function parseParam(str, target) {
+  const re = new RegExp(`calc\\(${target}\\s*\\*\\s*([0-9.]+)\\)`)
+  const m = str.match(re)
+  return m ? parseFloat(m[1]) : 1.0
+}
+
+function parseRelativeRulesByScope(css) {
+  const blocks = [
+    ...css.matchAll(
+      /(?:\[data-palette="([^"]+)"\]|:root(?!\s*,\s*\[))\s*\{([^}]+)\}/g,
+    ),
+  ]
+  const relativeRulesByScope = {}
+  for (const b of blocks) {
+    const id = b[1] || 'root'
+    const body = b[2]
+    const rules = {}
+    const relRegex =
+      /--color-([a-z-]+):\s*light-dark\(\s*hsl\(from\s+var\(--color-([a-z]+)\)\s+h\s+([\s\S]+?)\)\s*,\s*hsl\(from\s+var\(--color-[a-z]+\)\s+h\s+([\s\S]+?)\)\s*\);/g
+    for (const m of body.matchAll(relRegex)) {
+      const token = m[1]
+      const base = m[2]
+      rules[token] = {
+        base,
+        light: { s: parseParam(m[3], 's'), l: parseParam(m[3], 'l') },
+        dark: { s: parseParam(m[4], 's'), l: parseParam(m[4], 'l') },
+      }
+    }
+    relativeRulesByScope[id] = rules
+  }
+  return relativeRulesByScope
+}
+
+const relativeRulesByScope = parseRelativeRulesByScope(cssContent)
+
+function resolveTriads(paletteId, mode, pal) {
+  const groups = [
+    { key: 'bg', label: 'BG' },
+    { key: 'fg', label: 'FG' },
+    { key: 'rose', label: 'Rose' },
+    { key: 'water', label: 'P0 Water' },
+    { key: 'wood', label: 'P1 Wood' },
+    { key: 'leaf', label: 'P2 Leaf' },
+    { key: 'blossom', label: 'P3 Blossom' },
+    { key: 'sky', label: 'P4 Sky' },
+    { key: 'rock', label: 'P5 Rock' },
+  ]
+
+  return groups.map((g) => {
+    const baseColor = pal[g.key][mode]
+    let hlColor = pal[`${g.key}-hl`]?.[mode]
+    let mutedColor = pal[`${g.key}-muted`]?.[mode]
+
+    if (!hlColor) {
+      const hlRule =
+        relativeRulesByScope[paletteId]?.[`${g.key}-hl`] ||
+        relativeRulesByScope['root']?.[`${g.key}-hl`]
+      if (hlRule) {
+        const [h, s, l] = rgbToHsl(hexToRgb(pal[hlRule.base][mode]))
+        const m = hlRule[mode]
+        hlColor = rgbToHex(
+          hslToRgb(
+            h,
+            Math.min(100, s * m.s),
+            Math.min(100, Math.max(0, l * m.l)),
+          ),
+        )
+      } else {
+        hlColor = baseColor
+      }
+    }
+
+    if (!mutedColor) {
+      const mutedRule =
+        relativeRulesByScope[paletteId]?.[`${g.key}-muted`] ||
+        relativeRulesByScope['root']?.[`${g.key}-muted`]
+      if (mutedRule) {
+        const [h, s, l] = rgbToHsl(hexToRgb(pal[mutedRule.base][mode]))
+        const m = mutedRule[mode]
+        mutedColor = rgbToHex(
+          hslToRgb(
+            h,
+            Math.min(100, s * m.s),
+            Math.min(100, Math.max(0, l * m.l)),
+          ),
+        )
+      } else {
+        mutedColor = baseColor
+      }
+    }
+
+    return {
+      label: g.label,
+      key: g.key,
+      base: baseColor,
+      hl: hlColor,
+      muted: mutedColor,
+    }
+  })
+}
+
 const PALETTE_META = {
   forestbones: { name: 'Forestbones', group: 'Zenbones Family (Default)' },
   zenbones: { name: 'Zenbones', group: 'Zenbones Family' },
@@ -161,29 +344,31 @@ function renderScoreboard(colors) {
   `
 }
 
-function renderSwatches(colors) {
-  const groups = [
-    { key: 'bg', label: 'BG' },
-    { key: 'fg', label: 'FG' },
-    { key: 'rose', label: 'Rose' },
-    { key: 'water', label: 'P0 Water' },
-    { key: 'wood', label: 'P1 Wood' },
-    { key: 'leaf', label: 'P2 Leaf' },
-    { key: 'blossom', label: 'P3 Blossom' },
-    { key: 'sky', label: 'P4 Sky' },
-    { key: 'rock', label: 'P5 Rock' },
-  ]
-
+function renderSwatches(triads, fgColor) {
   return `
   <div class="swatch-bar">
-    ${groups
-      .map((g) => {
-        const c = colors[g.key]
+    ${triads
+      .map((t) => {
         return `
-      <div class="swatch-item" title="${g.label}: ${c}">
-        <div class="swatch-color" style="background-color: ${c}; border: 1px solid ${colors.fg};"></div>
-        <span class="swatch-code">${c}</span>
-        <span class="swatch-name">${g.label}</span>
+      <div class="swatch-group">
+        <span class="swatch-group-title">${t.label}</span>
+        <div class="swatch-triad">
+          <div class="swatch-sub" title="${t.label} (Base): ${t.base}">
+            <div class="swatch-color" style="background-color: ${t.base}; border: 1px solid ${fgColor};"></div>
+            <span class="swatch-code">${t.base}</span>
+            <span class="swatch-sublabel">Base</span>
+          </div>
+          <div class="swatch-sub" title="${t.label} (Highlight): ${t.hl}">
+            <div class="swatch-color" style="background-color: ${t.hl}; border: 1px solid ${fgColor};"></div>
+            <span class="swatch-code">${t.hl}</span>
+            <span class="swatch-sublabel">-hl</span>
+          </div>
+          <div class="swatch-sub" title="${t.label} (Muted): ${t.muted}">
+            <div class="swatch-color" style="background-color: ${t.muted}; border: 1px solid ${fgColor};"></div>
+            <span class="swatch-code">${t.muted}</span>
+            <span class="swatch-sublabel">-muted</span>
+          </div>
+        </div>
       </div>`
       })
       .join('')}
@@ -199,6 +384,9 @@ for (const [id, pal] of Object.entries(palettes)) {
     lightColors[prop] = val.light
     darkColors[prop] = val.dark
   }
+
+  const darkTriads = resolveTriads(id, 'dark', pal)
+  const lightTriads = resolveTriads(id, 'light', pal)
 
   cardsHtml += `
   <section class="palette-card" id="palette-${id}">
@@ -220,7 +408,7 @@ for (const [id, pal] of Object.entries(palettes)) {
           ${renderArenaSvg(darkColors)}
           ${renderScoreboard(darkColors)}
         </div>
-        ${renderSwatches(darkColors)}
+        ${renderSwatches(darkTriads, darkColors.fg)}
       </div>
 
       <!-- Light Mode Column -->
@@ -232,7 +420,7 @@ for (const [id, pal] of Object.entries(palettes)) {
           ${renderArenaSvg(lightColors)}
           ${renderScoreboard(lightColors)}
         </div>
-        ${renderSwatches(lightColors)}
+        ${renderSwatches(lightTriads, lightColors.fg)}
       </div>
     </div>
   </section>
@@ -402,30 +590,49 @@ const fullHtml = `<!DOCTYPE html>
     }
     .swatch-bar {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
-      overflow-x: auto;
-      padding-top: 0.5rem;
+      padding-top: 0.75rem;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .swatch-item {
+    .swatch-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.25rem;
-      min-width: 54px;
+      background: rgba(0, 0, 0, 0.22);
+      padding: 0.35rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .swatch-group-title {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+    }
+    .swatch-triad {
+      display: flex;
+      gap: 0.3rem;
+    }
+    .swatch-sub {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      min-width: 38px;
     }
     .swatch-color {
-      width: 32px;
-      height: 24px;
-      border-radius: 4px;
+      width: 28px;
+      height: 18px;
+      border-radius: 3px;
     }
     .swatch-code {
       font-family: monospace;
-      font-size: 0.7rem;
+      font-size: 0.62rem;
       color: #94a3b8;
     }
-    .swatch-name {
-      font-size: 0.65rem;
+    .swatch-sublabel {
+      font-size: 0.58rem;
       color: #64748b;
     }
 

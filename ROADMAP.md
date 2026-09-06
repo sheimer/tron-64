@@ -53,8 +53,9 @@ Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and 
   - _Problem:_ Adding a new theme/palette currently requires modifying multiple hardcoded locations across the codebase: CSS definitions in `public/stylesheets/palettes.css`, `<option>` elements in `views/controls.pug`, `EXPECTED_PALETTES` in `test/palette.test.js`, and `PALETTE_META` in `scripts/generate-palette-gallery.js`.
   - _Proposed Solution:_
     - Centralize palette metadata into a single data manifest (e.g. `shared/palettes.json` or individual CSS theme files with structured metadata headers).
+    - **Custom Derivation Overrides Support:** Ensure the theme manifest/parser supports optional per-palette `-hl` and `-muted` derivation formulas (or raw CSS override blocks) so themes with unique optics (e.g. `arcade-neon` bloom, monochrome CRT decay) retain their specialized behaviors.
     - Dynamically populate the Settings dropdown selector (`<select id="game-palette">`) in Pug / `settingsView.js` from the manifest.
-    - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover and verify all registered palettes dynamically without maintaining hardcoded arrays.
+    - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover, verify, and generate swatch triads for all registered palettes dynamically without maintaining hardcoded arrays.
     - _Documentation:_ Update and expand `README.md` to document the plug-and-play theme architecture and provide clear developer instructions for creating, testing, and submitting custom palettes.
 
 
