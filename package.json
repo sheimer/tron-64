@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node ./bin/www",
     "test": "node test/runAll.js",
+    "test:palettes": "node scripts/generate-palette-gallery.js",
     "benchmark": "node benchmark/concurrency.js"
   },
   "dependencies": {

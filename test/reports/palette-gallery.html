@@ -1,0 +1,3993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcycles Multi-Palette Visual Verification Gallery</title>
+  <style>
+    :root {
+      --bg: #121417;
+      --fg: #e2e8f0;
+      --card-bg: #1e2229;
+      --border: #2d3748;
+      --accent: #38bdf8;
+    }
+    body {
+      margin: 0;
+      padding: 2rem;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    header {
+      max-width: 1400px;
+      margin: 0 auto 2rem auto;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: #fff;
+    }
+    .lead {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      margin: 0 0 1rem 0;
+    }
+    .cvd-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .cvd-controls span {
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    .cvd-btn {
+      background: #2a303c;
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .cvd-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: bold;
+      border-color: var(--accent);
+    }
+    .gallery-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+    .palette-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .palette-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .palette-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .palette-title-wrap h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    .palette-group-badge {
+      background: #334155;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .palette-id {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+    }
+    .palette-modes-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 1024px) {
+      .palette-modes-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .palette-mode-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .dark-box {
+      background: #111317;
+    }
+    .light-box {
+      background: #232730;
+    }
+    .mode-header h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.1rem;
+      color: #e2e8f0;
+    }
+    .mode-content {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    .arena-preview {
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      image-rendering: pixelated;
+    }
+    .scoreboard-preview {
+      font-family: monospace;
+      font-size: 0.8rem;
+      border-collapse: collapse;
+      border-radius: 4px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .scoreboard-preview th,
+    .scoreboard-preview td {
+      padding: 0.35rem 0.6rem;
+    }
+    .swatch-bar {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-top: 0.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .swatch-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      min-width: 54px;
+    }
+    .swatch-color {
+      width: 32px;
+      height: 24px;
+      border-radius: 4px;
+    }
+    .swatch-code {
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: #94a3b8;
+    }
+    .swatch-name {
+      font-size: 0.65rem;
+      color: #64748b;
+    }
+
+    /* CVD SVG Filters */
+    .filter-protanopia { filter: url('#filter-protanopia'); }
+    .filter-deuteranopia { filter: url('#filter-deuteranopia'); }
+    .filter-tritanopia { filter: url('#filter-tritanopia'); }
+    .filter-monochrome { filter: grayscale(100%); }
+  </style>
+</head>
+<body>
+  <!-- Embedded CVD SVG Simulation Filters -->
+  <svg style="display:none;">
+    <defs>
+      <!-- Protanopia (Red-Blind) -->
+      <filter id="filter-protanopia">
+        <feColorMatrix type="matrix" values="0.56667 0.43333 0 0 0  0.55833 0.44167 0 0 0  0 0.24167 0.75833 0 0  0 0 0 1 0" />
+      </filter>
+      <!-- Deuteranopia (Green-Blind) -->
+      <filter id="filter-deuteranopia">
+        <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0" />
+      </filter>
+      <!-- Tritanopia (Blue-Blind) -->
+      <filter id="filter-tritanopia">
+        <feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.43333 0.56667 0 0  0 0.475 0.525 0 0  0 0 0 1 0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <header>
+    <h1>Bitcycles Multi-Palette Visual Verification Gallery</h1>
+    <p class="lead">Interactive visual comparison suite for all 12 curated game color schemes in Light and Dark modes.</p>
+    <div class="cvd-controls">
+      <span>Color Vision Deficiency (CVD) Simulation:</span>
+      <button class="cvd-btn active" data-filter="">Normal (Full Vision)</button>
+      <button class="cvd-btn" data-filter="filter-deuteranopia">Deuteranopia (Green-Blind)</button>
+      <button class="cvd-btn" data-filter="filter-protanopia">Protanopia (Red-Blind)</button>
+      <button class="cvd-btn" data-filter="filter-tritanopia">Tritanopia (Blue-Blind)</button>
+      <button class="cvd-btn" data-filter="filter-monochrome">Monochrome</button>
+    </div>
+  </header>
+
+  <main class="gallery-container" id="gallery-root">
+    
+  <section class="palette-card" id="palette-forestbones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Forestbones</h2>
+        <span class="palette-group-badge">Zenbones Family (Default)</span>
+        <code class="palette-id">data-palette="forestbones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#2c343a" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#e7dcc4" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#7fbcb4" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#7fbcb4" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#ddbd7f" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#ddbd7f" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#b4cf7a" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#b4cf7a" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#e59bb9" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#e59bb9" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#6ec596" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#6ec596" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#b88ee0" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#b88ee0" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#e67c7f">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #2c343a; color: #e7dcc4; border: 1px solid #6e7b85;">
+    <thead>
+      <tr style="border-bottom: 1px solid #6e7b85;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #b4cf7a;">#1</td>
+        <td style="color: #7fbcb4; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #b4cf7a;">#2</td>
+        <td style="color: #6ec596; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #ddbd7f; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #e59bb9; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #b88ee0; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #e67c7f;">💥</td>
+        <td style="color: #e67c7f; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #2c343a">
+        <div class="swatch-color" style="background-color: #2c343a; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#2c343a</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #e7dcc4">
+        <div class="swatch-color" style="background-color: #e7dcc4; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#e7dcc4</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #e67c7f">
+        <div class="swatch-color" style="background-color: #e67c7f; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#e67c7f</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #7fbcb4">
+        <div class="swatch-color" style="background-color: #7fbcb4; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#7fbcb4</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #ddbd7f">
+        <div class="swatch-color" style="background-color: #ddbd7f; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#ddbd7f</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #b4cf7a">
+        <div class="swatch-color" style="background-color: #b4cf7a; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#b4cf7a</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #e59bb9">
+        <div class="swatch-color" style="background-color: #e59bb9; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#e59bb9</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #6ec596">
+        <div class="swatch-color" style="background-color: #6ec596; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#6ec596</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #b88ee0">
+        <div class="swatch-color" style="background-color: #b88ee0; border: 1px solid #e7dcc4;"></div>
+        <span class="swatch-code">#b88ee0</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#faf3e1" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#4f5b62" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#297ca6" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#297ca6" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#b88200" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#b88200" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#728800" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#728800" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#b94695" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#b94695" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#1e8e6c" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#1e8e6c" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#8146c2" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#8146c2" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#c8322c">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #faf3e1; color: #4f5b62; border: 1px solid #9a9071;">
+    <thead>
+      <tr style="border-bottom: 1px solid #9a9071;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #728800;">#1</td>
+        <td style="color: #297ca6; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #728800;">#2</td>
+        <td style="color: #1e8e6c; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #b88200; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #b94695; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #8146c2; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #c8322c;">💥</td>
+        <td style="color: #c8322c; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #faf3e1">
+        <div class="swatch-color" style="background-color: #faf3e1; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#faf3e1</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #4f5b62">
+        <div class="swatch-color" style="background-color: #4f5b62; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#4f5b62</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #c8322c">
+        <div class="swatch-color" style="background-color: #c8322c; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#c8322c</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #297ca6">
+        <div class="swatch-color" style="background-color: #297ca6; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#297ca6</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #b88200">
+        <div class="swatch-color" style="background-color: #b88200; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#b88200</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #728800">
+        <div class="swatch-color" style="background-color: #728800; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#728800</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #b94695">
+        <div class="swatch-color" style="background-color: #b94695; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#b94695</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #1e8e6c">
+        <div class="swatch-color" style="background-color: #1e8e6c; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#1e8e6c</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #8146c2">
+        <div class="swatch-color" style="background-color: #8146c2; border: 1px solid #4f5b62;"></div>
+        <span class="swatch-code">#8146c2</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-zenbones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Zenbones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="zenbones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#1c1917" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#b4bdc3" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#6099c0" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#6099c0" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#cf8662" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#cf8662" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#94b574" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#94b574" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#c7789e" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#c7789e" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#5bb8c4" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#5bb8c4" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#a88ad4" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#a88ad4" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#de6e7c">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #1c1917; color: #b4bdc3; border: 1px solid #6e6763;">
+    <thead>
+      <tr style="border-bottom: 1px solid #6e6763;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #94b574;">#1</td>
+        <td style="color: #6099c0; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #94b574;">#2</td>
+        <td style="color: #5bb8c4; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #cf8662; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #c7789e; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #a88ad4; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #de6e7c;">💥</td>
+        <td style="color: #de6e7c; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #1c1917">
+        <div class="swatch-color" style="background-color: #1c1917; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#1c1917</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #b4bdc3">
+        <div class="swatch-color" style="background-color: #b4bdc3; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#b4bdc3</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #de6e7c">
+        <div class="swatch-color" style="background-color: #de6e7c; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#de6e7c</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #6099c0">
+        <div class="swatch-color" style="background-color: #6099c0; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#6099c0</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #cf8662">
+        <div class="swatch-color" style="background-color: #cf8662; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#cf8662</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #94b574">
+        <div class="swatch-color" style="background-color: #94b574; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#94b574</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #c7789e">
+        <div class="swatch-color" style="background-color: #c7789e; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#c7789e</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #5bb8c4">
+        <div class="swatch-color" style="background-color: #5bb8c4; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#5bb8c4</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #a88ad4">
+        <div class="swatch-color" style="background-color: #a88ad4; border: 1px solid #b4bdc3;"></div>
+        <span class="swatch-code">#a88ad4</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#f0edec" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#2c363c" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#286486" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#286486" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#944927" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#944927" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#4f6c31" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#4f6c31" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#a04878" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#a04878" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#2b7e88" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#2b7e88" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#604285" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#604285" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#a8334c">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #f0edec; color: #2c363c; border: 1px solid #948985;">
+    <thead>
+      <tr style="border-bottom: 1px solid #948985;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #4f6c31;">#1</td>
+        <td style="color: #286486; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #4f6c31;">#2</td>
+        <td style="color: #2b7e88; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #944927; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #a04878; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #604285; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #a8334c;">💥</td>
+        <td style="color: #a8334c; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #f0edec">
+        <div class="swatch-color" style="background-color: #f0edec; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#f0edec</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #2c363c">
+        <div class="swatch-color" style="background-color: #2c363c; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#2c363c</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #a8334c">
+        <div class="swatch-color" style="background-color: #a8334c; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#a8334c</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #286486">
+        <div class="swatch-color" style="background-color: #286486; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#286486</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #944927">
+        <div class="swatch-color" style="background-color: #944927; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#944927</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #4f6c31">
+        <div class="swatch-color" style="background-color: #4f6c31; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#4f6c31</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #a04878">
+        <div class="swatch-color" style="background-color: #a04878; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#a04878</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #2b7e88">
+        <div class="swatch-color" style="background-color: #2b7e88; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#2b7e88</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #604285">
+        <div class="swatch-color" style="background-color: #604285; border: 1px solid #2c363c;"></div>
+        <span class="swatch-code">#604285</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-zenburned">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Zenburned</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="zenburned"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#404040" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#f0e4cf" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#6cb8bc" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#6cb8bc" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#dfaf8f" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#dfaf8f" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#92b370" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#92b370" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#dc8cc3" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#dc8cc3" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#7cdfe3" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#7cdfe3" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#baa0de" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#baa0de" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#e3716e">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #404040; color: #f0e4cf; border: 1px solid #848484;">
+    <thead>
+      <tr style="border-bottom: 1px solid #848484;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #92b370;">#1</td>
+        <td style="color: #6cb8bc; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #92b370;">#2</td>
+        <td style="color: #7cdfe3; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #dfaf8f; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #dc8cc3; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #baa0de; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #e3716e;">💥</td>
+        <td style="color: #e3716e; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #404040">
+        <div class="swatch-color" style="background-color: #404040; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#404040</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #f0e4cf">
+        <div class="swatch-color" style="background-color: #f0e4cf; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#f0e4cf</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #e3716e">
+        <div class="swatch-color" style="background-color: #e3716e; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#e3716e</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #6cb8bc">
+        <div class="swatch-color" style="background-color: #6cb8bc; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#6cb8bc</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #dfaf8f">
+        <div class="swatch-color" style="background-color: #dfaf8f; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#dfaf8f</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #92b370">
+        <div class="swatch-color" style="background-color: #92b370; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#92b370</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #dc8cc3">
+        <div class="swatch-color" style="background-color: #dc8cc3; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#dc8cc3</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #7cdfe3">
+        <div class="swatch-color" style="background-color: #7cdfe3; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#7cdfe3</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #baa0de">
+        <div class="swatch-color" style="background-color: #baa0de; border: 1px solid #f0e4cf;"></div>
+        <span class="swatch-code">#baa0de</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#f5eedc" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#3f3f3f" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#255e77" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#255e77" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#965d2c" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#965d2c" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#587438" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#587438" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#944772" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#944772" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#23737b" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#23737b" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#5e437b" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#5e437b" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#b04340">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #f5eedc; color: #3f3f3f; border: 1px solid #8a8275;">
+    <thead>
+      <tr style="border-bottom: 1px solid #8a8275;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #587438;">#1</td>
+        <td style="color: #255e77; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #587438;">#2</td>
+        <td style="color: #23737b; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #965d2c; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #944772; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #5e437b; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #b04340;">💥</td>
+        <td style="color: #b04340; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #f5eedc">
+        <div class="swatch-color" style="background-color: #f5eedc; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#f5eedc</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #3f3f3f">
+        <div class="swatch-color" style="background-color: #3f3f3f; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#3f3f3f</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #b04340">
+        <div class="swatch-color" style="background-color: #b04340; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#b04340</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #255e77">
+        <div class="swatch-color" style="background-color: #255e77; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#255e77</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #965d2c">
+        <div class="swatch-color" style="background-color: #965d2c; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#965d2c</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #587438">
+        <div class="swatch-color" style="background-color: #587438; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#587438</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #944772">
+        <div class="swatch-color" style="background-color: #944772; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#944772</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #23737b">
+        <div class="swatch-color" style="background-color: #23737b; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#23737b</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #5e437b">
+        <div class="swatch-color" style="background-color: #5e437b; border: 1px solid #3f3f3f;"></div>
+        <span class="swatch-code">#5e437b</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-tokyobones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Tokyobones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="tokyobones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#1a1b26" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#c0caf5" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#7aa2f7" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#7aa2f7" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#e0af68" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#e0af68" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#6ddac9" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#6ddac9" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#c678dd" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#c678dd" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#2ac3de" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#2ac3de" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#9d7cd8" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#9d7cd8" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#f77890">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #1a1b26; color: #c0caf5; border: 1px solid #65677d;">
+    <thead>
+      <tr style="border-bottom: 1px solid #65677d;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #6ddac9;">#1</td>
+        <td style="color: #7aa2f7; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #6ddac9;">#2</td>
+        <td style="color: #2ac3de; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #e0af68; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #c678dd; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #9d7cd8; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #f77890;">💥</td>
+        <td style="color: #f77890; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #1a1b26">
+        <div class="swatch-color" style="background-color: #1a1b26; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#1a1b26</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #c0caf5">
+        <div class="swatch-color" style="background-color: #c0caf5; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#c0caf5</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #f77890">
+        <div class="swatch-color" style="background-color: #f77890; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#f77890</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #7aa2f7">
+        <div class="swatch-color" style="background-color: #7aa2f7; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#7aa2f7</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #e0af68">
+        <div class="swatch-color" style="background-color: #e0af68; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#e0af68</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #6ddac9">
+        <div class="swatch-color" style="background-color: #6ddac9; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#6ddac9</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #c678dd">
+        <div class="swatch-color" style="background-color: #c678dd; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#c678dd</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #2ac3de">
+        <div class="swatch-color" style="background-color: #2ac3de; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#2ac3de</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #9d7cd8">
+        <div class="swatch-color" style="background-color: #9d7cd8; border: 1px solid #c0caf5;"></div>
+        <span class="swatch-code">#9d7cd8</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#d6d7dc" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#333a57" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#2b5299" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#2b5299" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#8f5e14" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#8f5e14" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#2c6d48" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#2c6d48" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#793e77" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#793e77" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#146f82" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#146f82" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#4e3380" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#4e3380" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#8b4351">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #d6d7dc; color: #333a57; border: 1px solid #7c7e89;">
+    <thead>
+      <tr style="border-bottom: 1px solid #7c7e89;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #2c6d48;">#1</td>
+        <td style="color: #2b5299; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #2c6d48;">#2</td>
+        <td style="color: #146f82; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #8f5e14; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #793e77; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #4e3380; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #8b4351;">💥</td>
+        <td style="color: #8b4351; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #d6d7dc">
+        <div class="swatch-color" style="background-color: #d6d7dc; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#d6d7dc</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #333a57">
+        <div class="swatch-color" style="background-color: #333a57; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#333a57</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #8b4351">
+        <div class="swatch-color" style="background-color: #8b4351; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#8b4351</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #2b5299">
+        <div class="swatch-color" style="background-color: #2b5299; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#2b5299</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #8f5e14">
+        <div class="swatch-color" style="background-color: #8f5e14; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#8f5e14</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #2c6d48">
+        <div class="swatch-color" style="background-color: #2c6d48; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#2c6d48</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #793e77">
+        <div class="swatch-color" style="background-color: #793e77; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#793e77</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #146f82">
+        <div class="swatch-color" style="background-color: #146f82; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#146f82</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #4e3380">
+        <div class="swatch-color" style="background-color: #4e3380; border: 1px solid #333a57;"></div>
+        <span class="swatch-code">#4e3380</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-rosebones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Rosebones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="rosebones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#1a1825" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#e1d4d4" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#9ccfd8" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#9ccfd8" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#f6c177" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#f6c177" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#56949f" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#56949f" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#ebbcba" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#ebbcba" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#3e8fb0" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#3e8fb0" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#c4a7e7" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#c4a7e7" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#eb6f92">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #1a1825; color: #e1d4d4; border: 1px solid #69657e;">
+    <thead>
+      <tr style="border-bottom: 1px solid #69657e;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #56949f;">#1</td>
+        <td style="color: #9ccfd8; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #56949f;">#2</td>
+        <td style="color: #3e8fb0; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #f6c177; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #ebbcba; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #c4a7e7; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #eb6f92;">💥</td>
+        <td style="color: #eb6f92; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #1a1825">
+        <div class="swatch-color" style="background-color: #1a1825; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#1a1825</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #e1d4d4">
+        <div class="swatch-color" style="background-color: #e1d4d4; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#e1d4d4</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #eb6f92">
+        <div class="swatch-color" style="background-color: #eb6f92; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#eb6f92</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #9ccfd8">
+        <div class="swatch-color" style="background-color: #9ccfd8; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#9ccfd8</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #f6c177">
+        <div class="swatch-color" style="background-color: #f6c177; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#f6c177</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #56949f">
+        <div class="swatch-color" style="background-color: #56949f; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#56949f</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #ebbcba">
+        <div class="swatch-color" style="background-color: #ebbcba; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#ebbcba</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #3e8fb0">
+        <div class="swatch-color" style="background-color: #3e8fb0; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#3e8fb0</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #c4a7e7">
+        <div class="swatch-color" style="background-color: #c4a7e7; border: 1px solid #e1d4d4;"></div>
+        <span class="swatch-code">#c4a7e7</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#fbf6f0" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#575279" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#31748f" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#31748f" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#b86b10" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#b86b10" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#2e7552" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#2e7552" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#914972" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#914972" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#247a8a" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#247a8a" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#6b498f" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#6b498f" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#b5637a">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #fbf6f0; color: #575279; border: 1px solid #9893a5;">
+    <thead>
+      <tr style="border-bottom: 1px solid #9893a5;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #2e7552;">#1</td>
+        <td style="color: #31748f; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #2e7552;">#2</td>
+        <td style="color: #247a8a; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #b86b10; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #914972; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #6b498f; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #b5637a;">💥</td>
+        <td style="color: #b5637a; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #fbf6f0">
+        <div class="swatch-color" style="background-color: #fbf6f0; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#fbf6f0</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #575279">
+        <div class="swatch-color" style="background-color: #575279; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#575279</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #b5637a">
+        <div class="swatch-color" style="background-color: #b5637a; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#b5637a</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #31748f">
+        <div class="swatch-color" style="background-color: #31748f; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#31748f</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #b86b10">
+        <div class="swatch-color" style="background-color: #b86b10; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#b86b10</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #2e7552">
+        <div class="swatch-color" style="background-color: #2e7552; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#2e7552</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #914972">
+        <div class="swatch-color" style="background-color: #914972; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#914972</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #247a8a">
+        <div class="swatch-color" style="background-color: #247a8a; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#247a8a</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #6b498f">
+        <div class="swatch-color" style="background-color: #6b498f; border: 1px solid #575279;"></div>
+        <span class="swatch-code">#6b498f</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-nordbones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Nordbones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="nordbones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#2f3541" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#ebeef3" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#81a1c1" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#81a1c1" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#ebcb8b" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#ebcb8b" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#a3be8c" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#a3be8c" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#b48ead" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#b48ead" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#88c0d0" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#88c0d0" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#9382b0" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#9382b0" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#c1616a">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #2f3541; color: #ebeef3; border: 1px solid #737c90;">
+    <thead>
+      <tr style="border-bottom: 1px solid #737c90;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #a3be8c;">#1</td>
+        <td style="color: #81a1c1; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #a3be8c;">#2</td>
+        <td style="color: #88c0d0; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #ebcb8b; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #b48ead; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #9382b0; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #c1616a;">💥</td>
+        <td style="color: #c1616a; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #2f3541">
+        <div class="swatch-color" style="background-color: #2f3541; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#2f3541</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #ebeef3">
+        <div class="swatch-color" style="background-color: #ebeef3; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#ebeef3</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #c1616a">
+        <div class="swatch-color" style="background-color: #c1616a; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#c1616a</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #81a1c1">
+        <div class="swatch-color" style="background-color: #81a1c1; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#81a1c1</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #ebcb8b">
+        <div class="swatch-color" style="background-color: #ebcb8b; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#ebcb8b</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #a3be8c">
+        <div class="swatch-color" style="background-color: #a3be8c; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#a3be8c</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #b48ead">
+        <div class="swatch-color" style="background-color: #b48ead; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#b48ead</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #88c0d0">
+        <div class="swatch-color" style="background-color: #88c0d0; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#88c0d0</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #9382b0">
+        <div class="swatch-color" style="background-color: #9382b0; border: 1px solid #ebeef3;"></div>
+        <span class="swatch-code">#9382b0</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#eceff4" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#2e3440" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#356a9a" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#356a9a" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#966c1e" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#966c1e" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#437d35" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#437d35" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#884378" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#884378" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#227488" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#227488" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#564483" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#564483" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#a83d47">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #eceff4; color: #2e3440; border: 1px solid #7b88a1;">
+    <thead>
+      <tr style="border-bottom: 1px solid #7b88a1;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #437d35;">#1</td>
+        <td style="color: #356a9a; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #437d35;">#2</td>
+        <td style="color: #227488; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #966c1e; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #884378; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #564483; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #a83d47;">💥</td>
+        <td style="color: #a83d47; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #eceff4">
+        <div class="swatch-color" style="background-color: #eceff4; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#eceff4</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #2e3440">
+        <div class="swatch-color" style="background-color: #2e3440; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#2e3440</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #a83d47">
+        <div class="swatch-color" style="background-color: #a83d47; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#a83d47</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #356a9a">
+        <div class="swatch-color" style="background-color: #356a9a; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#356a9a</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #966c1e">
+        <div class="swatch-color" style="background-color: #966c1e; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#966c1e</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #437d35">
+        <div class="swatch-color" style="background-color: #437d35; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#437d35</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #884378">
+        <div class="swatch-color" style="background-color: #884378; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#884378</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #227488">
+        <div class="swatch-color" style="background-color: #227488; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#227488</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #564483">
+        <div class="swatch-color" style="background-color: #564483; border: 1px solid #2e3440;"></div>
+        <span class="swatch-code">#564483</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-duckbones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Duckbones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="duckbones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#0e101a" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#ebefc0" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#00a3cb" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#00a3cb" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#e39500" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#e39500" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#5dcd97" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#5dcd97" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#ce74b4" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#ce74b4" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#2de2c4" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#2de2c4" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#9a6bf7" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#9a6bf7" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#e03600">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #0e101a; color: #ebefc0; border: 1px solid #5a5f7b;">
+    <thead>
+      <tr style="border-bottom: 1px solid #5a5f7b;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #5dcd97;">#1</td>
+        <td style="color: #00a3cb; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #5dcd97;">#2</td>
+        <td style="color: #2de2c4; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #e39500; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #ce74b4; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #9a6bf7; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #e03600;">💥</td>
+        <td style="color: #e03600; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #0e101a">
+        <div class="swatch-color" style="background-color: #0e101a; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#0e101a</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #ebefc0">
+        <div class="swatch-color" style="background-color: #ebefc0; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#ebefc0</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #e03600">
+        <div class="swatch-color" style="background-color: #e03600; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#e03600</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #00a3cb">
+        <div class="swatch-color" style="background-color: #00a3cb; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#00a3cb</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #e39500">
+        <div class="swatch-color" style="background-color: #e39500; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#e39500</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #5dcd97">
+        <div class="swatch-color" style="background-color: #5dcd97; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#5dcd97</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #ce74b4">
+        <div class="swatch-color" style="background-color: #ce74b4; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#ce74b4</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #2de2c4">
+        <div class="swatch-color" style="background-color: #2de2c4; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#2de2c4</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #9a6bf7">
+        <div class="swatch-color" style="background-color: #9a6bf7; border: 1px solid #ebefc0;"></div>
+        <span class="swatch-code">#9a6bf7</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#eef1f2" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#151b29" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#006d8a" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#006d8a" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#9a6200" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#9a6200" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#187440" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#187440" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#823b6b" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#823b6b" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#0a7779" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#0a7779" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#583f94" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#583f94" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#b82e07">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #eef1f2; color: #151b29; border: 1px solid #6b7385;">
+    <thead>
+      <tr style="border-bottom: 1px solid #6b7385;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #187440;">#1</td>
+        <td style="color: #006d8a; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #187440;">#2</td>
+        <td style="color: #0a7779; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #9a6200; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #823b6b; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #583f94; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #b82e07;">💥</td>
+        <td style="color: #b82e07; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #eef1f2">
+        <div class="swatch-color" style="background-color: #eef1f2; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#eef1f2</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #151b29">
+        <div class="swatch-color" style="background-color: #151b29; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#151b29</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #b82e07">
+        <div class="swatch-color" style="background-color: #b82e07; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#b82e07</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #006d8a">
+        <div class="swatch-color" style="background-color: #006d8a; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#006d8a</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #9a6200">
+        <div class="swatch-color" style="background-color: #9a6200; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#9a6200</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #187440">
+        <div class="swatch-color" style="background-color: #187440; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#187440</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #823b6b">
+        <div class="swatch-color" style="background-color: #823b6b; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#823b6b</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #0a7779">
+        <div class="swatch-color" style="background-color: #0a7779; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#0a7779</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #583f94">
+        <div class="swatch-color" style="background-color: #583f94; border: 1px solid #151b29;"></div>
+        <span class="swatch-code">#583f94</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-seoulbones">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Seoulbones</h2>
+        <span class="palette-group-badge">Zenbones Family</span>
+        <code class="palette-id">data-palette="seoulbones"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#4b4b4b" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#dddddd" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#8bb8e0" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#8bb8e0" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#ffdf9b" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#ffdf9b" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#98bd99" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#98bd99" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#cca5c5" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#cca5c5" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#68c4c2" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#68c4c2" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#a894d8" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#a894d8" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#e388a3">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #4b4b4b; color: #dddddd; border: 1px solid #9a9a9a;">
+    <thead>
+      <tr style="border-bottom: 1px solid #9a9a9a;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #98bd99;">#1</td>
+        <td style="color: #8bb8e0; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #98bd99;">#2</td>
+        <td style="color: #68c4c2; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #ffdf9b; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #cca5c5; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #a894d8; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #e388a3;">💥</td>
+        <td style="color: #e388a3; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #4b4b4b">
+        <div class="swatch-color" style="background-color: #4b4b4b; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#4b4b4b</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #dddddd">
+        <div class="swatch-color" style="background-color: #dddddd; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#dddddd</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #e388a3">
+        <div class="swatch-color" style="background-color: #e388a3; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#e388a3</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #8bb8e0">
+        <div class="swatch-color" style="background-color: #8bb8e0; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#8bb8e0</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #ffdf9b">
+        <div class="swatch-color" style="background-color: #ffdf9b; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#ffdf9b</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #98bd99">
+        <div class="swatch-color" style="background-color: #98bd99; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#98bd99</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #cca5c5">
+        <div class="swatch-color" style="background-color: #cca5c5; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#cca5c5</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #68c4c2">
+        <div class="swatch-color" style="background-color: #68c4c2; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#68c4c2</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #a894d8">
+        <div class="swatch-color" style="background-color: #a894d8; border: 1px solid #dddddd;"></div>
+        <span class="swatch-code">#a894d8</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#e2e2e2" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#454545" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#00708f" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#00708f" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#a76b48" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#a76b48" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#3b743c" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#3b743c" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#894676" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#894676" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#006f70" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#006f70" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#5d4782" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#5d4782" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#b5285e">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #e2e2e2; color: #454545; border: 1px solid #628562;">
+    <thead>
+      <tr style="border-bottom: 1px solid #628562;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #3b743c;">#1</td>
+        <td style="color: #00708f; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #3b743c;">#2</td>
+        <td style="color: #006f70; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #a76b48; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #894676; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #5d4782; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #b5285e;">💥</td>
+        <td style="color: #b5285e; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #e2e2e2">
+        <div class="swatch-color" style="background-color: #e2e2e2; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#e2e2e2</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #454545">
+        <div class="swatch-color" style="background-color: #454545; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#454545</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #b5285e">
+        <div class="swatch-color" style="background-color: #b5285e; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#b5285e</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #00708f">
+        <div class="swatch-color" style="background-color: #00708f; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#00708f</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #a76b48">
+        <div class="swatch-color" style="background-color: #a76b48; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#a76b48</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #3b743c">
+        <div class="swatch-color" style="background-color: #3b743c; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#3b743c</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #894676">
+        <div class="swatch-color" style="background-color: #894676; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#894676</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #006f70">
+        <div class="swatch-color" style="background-color: #006f70; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#006f70</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #5d4782">
+        <div class="swatch-color" style="background-color: #5d4782; border: 1px solid #454545;"></div>
+        <span class="swatch-code">#5d4782</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-c64">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Commodore 64 (VIC-II)</h2>
+        <span class="palette-group-badge">Retro & Display</span>
+        <code class="palette-id">data-palette="c64"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#000000" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#ffffff" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#68a0e8" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#68a0e8" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#e8e458" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#e8e458" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#44b830" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#44b830" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#984498" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#984498" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#70b8c8" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#70b8c8" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#d07030" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#d07030" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#e05038">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #000000; color: #ffffff; border: 1px solid #7869c4;">
+    <thead>
+      <tr style="border-bottom: 1px solid #7869c4;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #44b830;">#1</td>
+        <td style="color: #68a0e8; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #44b830;">#2</td>
+        <td style="color: #70b8c8; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #e8e458; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #984498; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #d07030; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #e05038;">💥</td>
+        <td style="color: #e05038; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #000000">
+        <div class="swatch-color" style="background-color: #000000; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#000000</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #ffffff">
+        <div class="swatch-color" style="background-color: #ffffff; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#ffffff</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #e05038">
+        <div class="swatch-color" style="background-color: #e05038; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#e05038</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #68a0e8">
+        <div class="swatch-color" style="background-color: #68a0e8; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#68a0e8</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #e8e458">
+        <div class="swatch-color" style="background-color: #e8e458; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#e8e458</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #44b830">
+        <div class="swatch-color" style="background-color: #44b830; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#44b830</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #984498">
+        <div class="swatch-color" style="background-color: #984498; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#984498</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #70b8c8">
+        <div class="swatch-color" style="background-color: #70b8c8; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#70b8c8</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #d07030">
+        <div class="swatch-color" style="background-color: #d07030; border: 1px solid #ffffff;"></div>
+        <span class="swatch-code">#d07030</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#b8b8b8" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#000000" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#283898" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#283898" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#704800" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#704800" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#186818" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#186818" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#581858" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#581858" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#105058" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#105058" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#782810" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#782810" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#881b10">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #b8b8b8; color: #000000; border: 1px solid #505050;">
+    <thead>
+      <tr style="border-bottom: 1px solid #505050;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #186818;">#1</td>
+        <td style="color: #283898; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #186818;">#2</td>
+        <td style="color: #105058; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #704800; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #581858; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #782810; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #881b10;">💥</td>
+        <td style="color: #881b10; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #b8b8b8">
+        <div class="swatch-color" style="background-color: #b8b8b8; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#b8b8b8</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #000000">
+        <div class="swatch-color" style="background-color: #000000; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#000000</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #881b10">
+        <div class="swatch-color" style="background-color: #881b10; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#881b10</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #283898">
+        <div class="swatch-color" style="background-color: #283898; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#283898</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #704800">
+        <div class="swatch-color" style="background-color: #704800; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#704800</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #186818">
+        <div class="swatch-color" style="background-color: #186818; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#186818</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #581858">
+        <div class="swatch-color" style="background-color: #581858; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#581858</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #105058">
+        <div class="swatch-color" style="background-color: #105058; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#105058</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #782810">
+        <div class="swatch-color" style="background-color: #782810; border: 1px solid #000000;"></div>
+        <span class="swatch-code">#782810</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-arcade-neon">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Arcade Neon</h2>
+        <span class="palette-group-badge">Retro & Display</span>
+        <code class="palette-id">data-palette="arcade-neon"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#080810" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#f0f0ff" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#00bfff" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#00bfff" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#ffe600" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#ffe600" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#00ff66" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#00ff66" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#ff00ff" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#ff00ff" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#00ffcc" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#00ffcc" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#b030ff" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#b030ff" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#ff0055">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #080810; color: #f0f0ff; border: 1px solid #505078;">
+    <thead>
+      <tr style="border-bottom: 1px solid #505078;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #00ff66;">#1</td>
+        <td style="color: #00bfff; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #00ff66;">#2</td>
+        <td style="color: #00ffcc; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #ffe600; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #ff00ff; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #b030ff; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #ff0055;">💥</td>
+        <td style="color: #ff0055; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #080810">
+        <div class="swatch-color" style="background-color: #080810; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#080810</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #f0f0ff">
+        <div class="swatch-color" style="background-color: #f0f0ff; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#f0f0ff</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #ff0055">
+        <div class="swatch-color" style="background-color: #ff0055; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#ff0055</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #00bfff">
+        <div class="swatch-color" style="background-color: #00bfff; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#00bfff</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #ffe600">
+        <div class="swatch-color" style="background-color: #ffe600; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#ffe600</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #00ff66">
+        <div class="swatch-color" style="background-color: #00ff66; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#00ff66</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #ff00ff">
+        <div class="swatch-color" style="background-color: #ff00ff; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#ff00ff</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #00ffcc">
+        <div class="swatch-color" style="background-color: #00ffcc; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#00ffcc</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #b030ff">
+        <div class="swatch-color" style="background-color: #b030ff; border: 1px solid #f0f0ff;"></div>
+        <span class="swatch-code">#b030ff</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#f6f0fa" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#1a102e" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#0077b6" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#0077b6" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#a67c00" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#a67c00" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#008a38" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#008a38" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#aa00aa" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#aa00aa" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#008272" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#008272" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#6f00b3" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#6f00b3" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#bd003e">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #f6f0fa; color: #1a102e; border: 1px solid #6b5882;">
+    <thead>
+      <tr style="border-bottom: 1px solid #6b5882;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #008a38;">#1</td>
+        <td style="color: #0077b6; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #008a38;">#2</td>
+        <td style="color: #008272; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #a67c00; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #aa00aa; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #6f00b3; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #bd003e;">💥</td>
+        <td style="color: #bd003e; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #f6f0fa">
+        <div class="swatch-color" style="background-color: #f6f0fa; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#f6f0fa</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #1a102e">
+        <div class="swatch-color" style="background-color: #1a102e; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#1a102e</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #bd003e">
+        <div class="swatch-color" style="background-color: #bd003e; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#bd003e</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #0077b6">
+        <div class="swatch-color" style="background-color: #0077b6; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#0077b6</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #a67c00">
+        <div class="swatch-color" style="background-color: #a67c00; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#a67c00</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #008a38">
+        <div class="swatch-color" style="background-color: #008a38; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#008a38</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #aa00aa">
+        <div class="swatch-color" style="background-color: #aa00aa; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#aa00aa</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #008272">
+        <div class="swatch-color" style="background-color: #008272; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#008272</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #6f00b3">
+        <div class="swatch-color" style="background-color: #6f00b3; border: 1px solid #1a102e;"></div>
+        <span class="swatch-code">#6f00b3</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-amber-crt">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Amber Phosphor CRT</h2>
+        <span class="palette-group-badge">Retro & Display</span>
+        <code class="palette-id">data-palette="amber-crt"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#0f0700" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#ffb000" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#e07a00" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#e07a00" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#ffb833" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#ffb833" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#ff9900" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#ff9900" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#ff6a00" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#ff6a00" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#ffd166" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#ffd166" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#c85a00" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#c85a00" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#ff5500">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #0f0700; color: #ffb000; border: 1px solid #805000;">
+    <thead>
+      <tr style="border-bottom: 1px solid #805000;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #ff9900;">#1</td>
+        <td style="color: #e07a00; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #ff9900;">#2</td>
+        <td style="color: #ffd166; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #ffb833; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #ff6a00; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #c85a00; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #ff5500;">💥</td>
+        <td style="color: #ff5500; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #0f0700">
+        <div class="swatch-color" style="background-color: #0f0700; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#0f0700</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #ffb000">
+        <div class="swatch-color" style="background-color: #ffb000; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ffb000</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #ff5500">
+        <div class="swatch-color" style="background-color: #ff5500; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ff5500</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #e07a00">
+        <div class="swatch-color" style="background-color: #e07a00; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#e07a00</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #ffb833">
+        <div class="swatch-color" style="background-color: #ffb833; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ffb833</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #ff9900">
+        <div class="swatch-color" style="background-color: #ff9900; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ff9900</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #ff6a00">
+        <div class="swatch-color" style="background-color: #ff6a00; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ff6a00</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #ffd166">
+        <div class="swatch-color" style="background-color: #ffd166; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#ffd166</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #c85a00">
+        <div class="swatch-color" style="background-color: #c85a00; border: 1px solid #ffb000;"></div>
+        <span class="swatch-code">#c85a00</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#fbf4e4" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#452600" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#4f3000" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#4f3000" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#754d00" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#754d00" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#613c00" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#613c00" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#823800" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#823800" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#3d2400" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#3d2400" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#6e4000" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#6e4000" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#8e3000">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #fbf4e4; color: #452600; border: 1px solid #8f6830;">
+    <thead>
+      <tr style="border-bottom: 1px solid #8f6830;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #613c00;">#1</td>
+        <td style="color: #4f3000; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #613c00;">#2</td>
+        <td style="color: #3d2400; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #754d00; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #823800; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #6e4000; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #8e3000;">💥</td>
+        <td style="color: #8e3000; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #fbf4e4">
+        <div class="swatch-color" style="background-color: #fbf4e4; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#fbf4e4</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #452600">
+        <div class="swatch-color" style="background-color: #452600; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#452600</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #8e3000">
+        <div class="swatch-color" style="background-color: #8e3000; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#8e3000</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #4f3000">
+        <div class="swatch-color" style="background-color: #4f3000; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#4f3000</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #754d00">
+        <div class="swatch-color" style="background-color: #754d00; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#754d00</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #613c00">
+        <div class="swatch-color" style="background-color: #613c00; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#613c00</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #823800">
+        <div class="swatch-color" style="background-color: #823800; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#823800</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #3d2400">
+        <div class="swatch-color" style="background-color: #3d2400; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#3d2400</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #6e4000">
+        <div class="swatch-color" style="background-color: #6e4000; border: 1px solid #452600;"></div>
+        <span class="swatch-code">#6e4000</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="palette-card" id="palette-green-crt">
+    <div class="palette-card-header">
+      <div class="palette-title-wrap">
+        <h2>Green Phosphor CRT</h2>
+        <span class="palette-group-badge">Retro & Display</span>
+        <code class="palette-id">data-palette="green-crt"</code>
+      </div>
+    </div>
+    
+    <div class="palette-modes-container">
+      <!-- Dark Mode Column -->
+      <div class="palette-mode-box dark-box">
+        <div class="mode-header">
+          <h3>Dark Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#030d05" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#33ff33" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#00cc44" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#00cc44" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#88ff88" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#88ff88" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#33ff33" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#33ff33" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#00ff88" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#00ff88" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#aaffaa" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#aaffaa" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#00aa33" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#00aa33" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#00ee55">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #030d05; color: #33ff33; border: 1px solid #186624;">
+    <thead>
+      <tr style="border-bottom: 1px solid #186624;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #33ff33;">#1</td>
+        <td style="color: #00cc44; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #33ff33;">#2</td>
+        <td style="color: #aaffaa; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #88ff88; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #00ff88; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #00aa33; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #00ee55;">💥</td>
+        <td style="color: #00ee55; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #030d05">
+        <div class="swatch-color" style="background-color: #030d05; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#030d05</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #33ff33">
+        <div class="swatch-color" style="background-color: #33ff33; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#33ff33</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #00ee55">
+        <div class="swatch-color" style="background-color: #00ee55; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#00ee55</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #00cc44">
+        <div class="swatch-color" style="background-color: #00cc44; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#00cc44</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #88ff88">
+        <div class="swatch-color" style="background-color: #88ff88; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#88ff88</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #33ff33">
+        <div class="swatch-color" style="background-color: #33ff33; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#33ff33</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #00ff88">
+        <div class="swatch-color" style="background-color: #00ff88; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#00ff88</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #aaffaa">
+        <div class="swatch-color" style="background-color: #aaffaa; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#aaffaa</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #00aa33">
+        <div class="swatch-color" style="background-color: #00aa33; border: 1px solid #33ff33;"></div>
+        <span class="swatch-code">#00aa33</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+
+      <!-- Light Mode Column -->
+      <div class="palette-mode-box light-box">
+        <div class="mode-header">
+          <h3>Light Mode</h3>
+        </div>
+        <div class="mode-content">
+          
+  <svg viewBox="0 0 320 200" width="320" height="200" class="arena-preview" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="200" fill="#e8f5ea" />
+    <!-- Arena Perimeter Border with Breach -->
+    <path d="M 10 10 L 140 10 M 180 10 L 310 10 L 310 190 L 10 190 Z" fill="none" stroke="#0b3612" stroke-width="2" />
+    
+    <!-- Player 0 (Water): horizontal then turn down -->
+    <path d="M 30 40 L 120 40 L 120 110" fill="none" stroke="#0a3312" stroke-width="2" />
+    <rect x="118" y="110" width="4" height="4" fill="#0a3312" />
+    
+    <!-- Player 1 (Wood): right to left -->
+    <path d="M 290 50 L 160 50 L 160 80" fill="none" stroke="#207d2e" stroke-width="2" />
+    <rect x="158" y="80" width="4" height="4" fill="#207d2e" />
+
+    <!-- Player 2 (Leaf): upward curve -->
+    <path d="M 60 160 L 60 90 L 140 90" fill="none" stroke="#0f4418" stroke-width="2" />
+    <rect x="140" y="88" width="4" height="4" fill="#0f4418" />
+
+    <!-- Player 3 (Blossom): diagonal maneuver -->
+    <path d="M 260 160 L 200 160 L 200 120 L 250 120" fill="none" stroke="#115034" stroke-width="2" />
+    <rect x="250" y="118" width="4" height="4" fill="#115034" />
+
+    <!-- Player 4 (Sky): perimeter escape run toward breach -->
+    <path d="M 80 130 L 80 25 L 160 25 L 160 5" fill="none" stroke="#06240c" stroke-width="2" />
+    <rect x="158" y="3" width="4" height="4" fill="#06240c" />
+
+    <!-- Player 5 (Rock): central trap -->
+    <path d="M 230 70 L 230 140 L 110 140" fill="none" stroke="#1a5924" stroke-width="2" />
+    <rect x="108" y="138" width="4" height="4" fill="#1a5924" />
+
+    <!-- Particle Explosion (Rose) -->
+    <g fill="#176624">
+      <circle cx="160" cy="10" r="2.5" />
+      <circle cx="156" cy="7" r="1.5" />
+      <circle cx="165" cy="8" r="1.8" />
+      <circle cx="158" cy="14" r="1.2" />
+      <circle cx="163" cy="13" r="2.0" />
+      <circle cx="152" cy="10" r="1.0" />
+      <circle cx="168" cy="11" r="1.4" />
+    </g>
+  </svg>
+  
+          
+  <table class="scoreboard-preview" style="background-color: #e8f5ea; color: #0b3612; border: 1px solid #47754f;">
+    <thead>
+      <tr style="border-bottom: 1px solid #47754f;">
+        <th style="text-align: left;">Rank</th>
+        <th style="text-align: left;">Player</th>
+        <th style="text-align: right;">Kills</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color: #0f4418;">#1</td>
+        <td style="color: #0a3312; font-weight: bold;">Tron</td>
+        <td style="text-align: right;">3</td>
+        <td style="text-align: right; font-weight: bold;">125</td>
+      </tr>
+      <tr>
+        <td style="color: #0f4418;">#2</td>
+        <td style="color: #06240c; font-weight: bold;">Clu</td>
+        <td style="text-align: right;">2</td>
+        <td style="text-align: right; font-weight: bold;">98</td>
+      </tr>
+      <tr>
+        <td>#3</td>
+        <td style="color: #207d2e; font-weight: bold;">Sark</td>
+        <td style="text-align: right;">1</td>
+        <td style="text-align: right; font-weight: bold;">74</td>
+      </tr>
+      <tr>
+        <td>#4</td>
+        <td style="color: #115034; font-weight: bold;">Yori</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">42</td>
+      </tr>
+      <tr>
+        <td>#5</td>
+        <td style="color: #1a5924; font-weight: bold;">Ram</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">30</td>
+      </tr>
+      <tr>
+        <td style="color: #176624;">💥</td>
+        <td style="color: #176624; font-weight: bold;">Flynn</td>
+        <td style="text-align: right;">0</td>
+        <td style="text-align: right; font-weight: bold;">15</td>
+      </tr>
+    </tbody>
+  </table>
+  
+        </div>
+        
+  <div class="swatch-bar">
+    
+      <div class="swatch-item" title="BG: #e8f5ea">
+        <div class="swatch-color" style="background-color: #e8f5ea; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#e8f5ea</span>
+        <span class="swatch-name">BG</span>
+      </div>
+      <div class="swatch-item" title="FG: #0b3612">
+        <div class="swatch-color" style="background-color: #0b3612; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#0b3612</span>
+        <span class="swatch-name">FG</span>
+      </div>
+      <div class="swatch-item" title="Rose: #176624">
+        <div class="swatch-color" style="background-color: #176624; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#176624</span>
+        <span class="swatch-name">Rose</span>
+      </div>
+      <div class="swatch-item" title="P0 Water: #0a3312">
+        <div class="swatch-color" style="background-color: #0a3312; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#0a3312</span>
+        <span class="swatch-name">P0 Water</span>
+      </div>
+      <div class="swatch-item" title="P1 Wood: #207d2e">
+        <div class="swatch-color" style="background-color: #207d2e; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#207d2e</span>
+        <span class="swatch-name">P1 Wood</span>
+      </div>
+      <div class="swatch-item" title="P2 Leaf: #0f4418">
+        <div class="swatch-color" style="background-color: #0f4418; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#0f4418</span>
+        <span class="swatch-name">P2 Leaf</span>
+      </div>
+      <div class="swatch-item" title="P3 Blossom: #115034">
+        <div class="swatch-color" style="background-color: #115034; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#115034</span>
+        <span class="swatch-name">P3 Blossom</span>
+      </div>
+      <div class="swatch-item" title="P4 Sky: #06240c">
+        <div class="swatch-color" style="background-color: #06240c; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#06240c</span>
+        <span class="swatch-name">P4 Sky</span>
+      </div>
+      <div class="swatch-item" title="P5 Rock: #1a5924">
+        <div class="swatch-color" style="background-color: #1a5924; border: 1px solid #0b3612;"></div>
+        <span class="swatch-code">#1a5924</span>
+        <span class="swatch-name">P5 Rock</span>
+      </div>
+  </div>
+      </div>
+    </div>
+  </section>
+  
+  </main>
+
+  <script>
+    const cvdButtons = document.querySelectorAll('.cvd-btn');
+    const galleryRoot = document.getElementById('gallery-root');
+
+    cvdButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        cvdButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filterClass = btn.dataset.filter;
+        
+        galleryRoot.className = 'gallery-container ' + filterClass;
+      });
+    });
+  </script>
+</body>
+</html>
