@@ -36,9 +36,37 @@ Inspection of [`server/Explosion.js`](../../server/Explosion.js) and [`server/Ar
 6. **Destructive Wall Breaching & Escaping:** As particles travel, they clear previous grid cells to `CELL_TYPE.EMPTY` (`Arena.js`). When an explosion occurs adjacent to an arena wall, particles tear irregular, organic gaps in the border. If an active light-cycle navigates into any border coordinate (`x === 0 || x === xMax || y === 0 || y === yMax`) that has been cleared (`fields[x][y] === CELL_TYPE.EMPTY`), the player does not crash; instead, `player.escaped = true` is set, awarding $3\times$ round points and an instant victory.
 7. **Killzone Window:** Kills are not awarded for collisions with arbitrary light trails. A kill is only scored if a victim crashes into the killer's `killzone` — the trailing 32 pixels directly behind the cycle's head (`KILLZONE_LENGTH = 32`). Crashing into older trails is classified as an obstacle collision (suicide).
 
+#### Q4: What are the authentic colors of the original Commodore 64 game?
+**Answer: Verified from original C64 assembly source and disk release screenshots.**
+Inspection of Oliver Stiller's original source code (`mist64/ultimatetron2`) and the Lemon64 release screenshots reveals:
+- **Graphics Architecture:** The original 1989 C64 game utilized the VIC-II chip's **1-bit hi-res bitmap mode** ($320 \times 200$) where each $8 \times 8$ character block contains exactly two colors (`F1` background and `F2` foreground).
+- **Default Color Registers:** In `basic.bas`, line 133 sets `F1=12` (Commodore 64 color 12: Medium Gray, `#838383` / `#777777`) and `F2=0` (Commodore 64 color 0: Black, `#000000`).
+- **Visual Appearance:**
+  - The arena canvas is solid Medium Gray (`#838383`).
+  - The arena boundary is a solid 1-pixel Black line (`#000000`).
+  - All light-cycle trails are solid Black lines (`#000000`).
+  - Explosion particles are Black debris pixels clearing paths in the gray arena and borders.
+  - Scoreboards and text prompts use White (`#ffffff`, C64 color 1) and Black.
+- **Tribute Differentiation:** Adding an authentic `c64-original` palette preset allows the project to honor both the multi-color VIC-II synthwave look (`c64`) and the authentic historical 1-bit hi-res aesthetic (`c64-original`).
+
 ---
 
-## 2. Architecture & Data Flow
+## 2. Roadmap Dependencies & Prerequisites
+
+Before recording final video clips and generating official repository GIFs for GitHub, the following active roadmap items should be completed to ensure high recording fidelity:
+
+1. **Authentic C64 Original Color Scheme (`c64-original`):**
+   - Must be implemented in `palettes.css` and registered in the palette catalog so it can be prominently featured in the theme showcase demo and repository previews.
+2. **Dynamic Theme Registry & Plug-and-Play Palette Catalog:**
+   - Centralizes theme metadata (`shared/palettes.json`), enabling the demo engine to cycle dynamically through all registered themes without hardcoding or list drift.
+3. **Explosion Ghosting Bug Verification:**
+   - Verifies that `Arena.reset()` and `Renderer.js` local `Int8Array` buffers cleanly wipe residual explosion debris so that repeated demo loops produce clean, non-corrupted frames.
+4. **Scoreboard Sorted by Score:**
+   - Ensures post-round result screens (following kills and wall breaches) present clearly ordered standings in captured video media.
+
+---
+
+## 3. Architecture & Data Flow
 
 ```mermaid
 flowchart TD
@@ -83,11 +111,11 @@ flowchart TD
 
 ---
 
-## 3. Showcase Scenarios
+## 4. Showcase Scenarios
 
 ### 1. Palette Hot-Swapping (`themes`)
 - **Action:** A four-cycle match runs in a serpentine pattern across the grid.
-- **Showcase:** The demo smoothly cycles through color palettes (`forestbones` -> `c64` -> `arcade-neon` -> `amber-crt` -> `rosebones` -> `tokyobones`), demonstrating live CSS variable re-resolution, light-dark adaptability, and instant canvas recoloring without resetting match state.
+- **Showcase:** The demo smoothly cycles through color palettes (`c64-original` authentic hi-res -> `c64` VIC-II tribute -> `forestbones` -> `arcade-neon` -> `amber-crt` -> `rosebones` -> `tokyobones`), demonstrating live CSS variable re-resolution, light-dark adaptability, and instant canvas recoloring without resetting match state.
 
 ### 2. Close-Quarters Killzone Cut-Off (`kill`)
 - **Action:** Player 0 (water) races parallel to Player 1 (wood). Player 0 executes a 90-degree turn directly cutting across Player 1's path within the 32-pixel `killzone` window.
@@ -103,7 +131,7 @@ flowchart TD
 
 ---
 
-## 4. Implementation Checklist & Execution Phases
+## 5. Implementation Checklist & Execution Phases
 
 ### Phase 1: In-Engine Scripted Demo Engine & Scenarios
 - [ ] Implement `public/javascripts/demo/demoScenarios.js` defining deterministic keyframes and turn sequences for the 4 showcase scenarios (`themes`, `kill`, `escape`, `explosions`).

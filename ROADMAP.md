@@ -57,8 +57,19 @@ Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and 
     - Dynamically populate the Settings dropdown selector (`<select id="game-palette">`) in Pug / `settingsView.js` from the manifest.
     - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover, verify, and generate swatch triads for all registered palettes dynamically without maintaining hardcoded arrays.
     - _Documentation:_ Update and expand `README.md` to document the plug-and-play theme architecture and provide clear developer instructions for creating, testing, and submitting custom palettes.
+- [ ] **Authentic C64 Original Hi-Res Color Scheme (`c64-original`)**
+  - _Problem:_ The existing `c64` palette is a multi-color VIC-II tribute with colored trails on dark backgrounds. Oliver Stiller's original 1989 *Ultimate Tron II* Commodore 64 game (published on *64'er* cover disk 54, documented on [Lemon64](https://www.lemon64.com/game/ultimate-tron-2)) utilized the C64's 1-bit hi-res bitmap mode featuring a distinct Medium Gray (`#838383` / `#777777`, C64 color 12) arena background, crisp Black (`#000000`, C64 color 0) borders, light-cycle trails, and explosion particles, with White (`#ffffff`, C64 color 1) text highlights.
+  - _Proposed Solution:_
+    - Add a dedicated `c64-original` palette preset accurately replicating the authentic 1989 Commodore 64 hi-res bitmap look.
+    - Provide high-contrast black light-cycle trails and explosion debris on the classic medium gray arena background, with subtle stepped monochrome luminance or distinctive head markers to distinguish multi-player cycles.
+    - Update palette test suites and gallery verification.
 - [ ] **Feature Demo Showcase & Automated Media Recording Pipeline (GIFs / Video)**
   - _Dedicated Plan:_ [`docs/plans/2026-09-06-feature-demos-and-media-pipeline.md`](docs/plans/2026-09-06-feature-demos-and-media-pipeline.md)
+  - _Prerequisites / Dependencies (Complete Before Recording Final Assets):_
+    - **Authentic C64 Original Color Scheme (`c64-original`):** Required so the historical tribute look can be prominently recorded and showcased in media clips and documentation.
+    - **Dynamic Theme Registry & Plug-and-Play Palette Catalog:** Required so the in-engine theme switcher demo dynamically loops across all registered palettes without hardcoded list drift.
+    - **Explosion Ghosting Bug Verification:** Required to verify that particle arrays and canvas `Int8Array` buffers cleanly reset between demo loops with zero visual artifacts during capture.
+    - **Scoreboard Sorted by Score:** Required so post-round demo screens (after kills and wall escapes) display a clean, ranked scoreboard in captured videos.
   - _Problem:_ The repository and GitHub README currently lack visual gameplay animations (GIFs/videos) demonstrating unique mechanics:
     - Dynamic hot-swappable color palettes (Zenbones and retro CRT presets).
     - The 32-cell killzone trail cut-off mechanic and scoring bonuses.
