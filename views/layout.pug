@@ -21,9 +21,14 @@ html
           if (t === 'light' || t === 'dark') {
             document.documentElement.style.colorScheme = t;
           }
+          var p = JSON.parse(localStorage.getItem('palette'));
+          if (p) {
+            document.documentElement.dataset.palette = p;
+          }
         } catch (e) {}
       })();
     style
+      include ../public/stylesheets/palettes.css
       include ../public/stylesheets/var.css
       include ../public/stylesheets/layout.css
       include ../public/stylesheets/defaults.css

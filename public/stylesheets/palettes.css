@@ -1,0 +1,327 @@
+/**
+ * Multi-Palette Color Schemes for Bitcycles
+ * Supports 12 curated palettes:
+ * - Zenbones Neovim Family: forestbones, zenbones, zenburned, tokyobones, rosebones, nordbones, duckbones, seoulbones
+ * - Retro & Display Aesthetics: c64, arcade-neon, amber-crt, green-crt
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Derived highlight and muted variants cascading across all palettes */
+  --color-rose-hl: light-dark(
+    hsl(from var(--color-rose) h calc(s * 1.2) calc(l * 1.2)),
+    hsl(from var(--color-rose) h calc(s * 1.1) calc(l * 0.9))
+  );
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h calc(s * 0.4) calc(l * 1.15)),
+    hsl(from var(--color-rose) h calc(s * 0.4) calc(l * 0.65))
+  );
+
+  --color-leaf-hl: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 1.3) calc(l * 1.1)),
+    hsl(from var(--color-leaf) h calc(s * 1.3) calc(l * 0.9))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 0.4) calc(l * 1.8)),
+    hsl(from var(--color-leaf) h calc(s * 0.4) calc(l * 0.7))
+  );
+
+  --color-wood-hl: light-dark(
+    hsl(from var(--color-wood) h calc(s * 1.3) calc(l * 1.1)),
+    hsl(from var(--color-wood) h calc(s * 1.3) calc(l * 0.9))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h calc(s * 0.6) calc(l * 1.5)),
+    hsl(from var(--color-wood) h calc(s * 0.6) calc(l * 0.7))
+  );
+
+  --color-water-hl: light-dark(
+    hsl(from var(--color-water) h calc(s * 1.3) calc(l * 1.3)),
+    hsl(from var(--color-water) h calc(s * 1.3) calc(l * 0.7))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h calc(s * 0.4) calc(l * 1.5)),
+    hsl(from var(--color-water) h calc(s * 0.4) calc(l * 0.7))
+  );
+
+  --color-blossom-hl: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 1.3) calc(l * 1.2)),
+    hsl(from var(--color-blossom) h calc(s * 1.3) calc(l * 0.8))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 0.4) calc(l * 1.3)),
+    hsl(from var(--color-blossom) h calc(s * 0.4) calc(l * 0.7))
+  );
+
+  --color-sky-hl: light-dark(
+    hsl(from var(--color-sky) h calc(s * 1.2) calc(l * 1.2)),
+    hsl(from var(--color-sky) h calc(s * 1.2) calc(l * 0.8))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h calc(s * 0.6) calc(l * 1.6)),
+    hsl(from var(--color-sky) h calc(s * 0.6) calc(l * 0.7))
+  );
+
+  --color-rock-hl: light-dark(
+    hsl(from var(--color-rock) h calc(s * 1.3) calc(l * 1.2)),
+    hsl(from var(--color-rock) h calc(s * 1.3) calc(l * 0.8))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h calc(s * 0.4) calc(l * 1.2)),
+    hsl(from var(--color-rock) h calc(s * 0.4) calc(l * 0.7))
+  );
+}
+
+/* ==========================================================================
+   1. Forestbones (Default Baseline)
+   ========================================================================== */
+:root,
+[data-palette="forestbones"] {
+  --color-bg: light-dark(#faf3e1, #2c343a);
+  --color-bg-hl: light-dark(#f6ebc8, #374149);
+  --color-bg-muted: light-dark(#fbf6ea, #2a3238);
+
+  --color-fg: light-dark(#4f5b62, #e7dcc4);
+  --color-fg-hl: light-dark(#ac995f, #537ea0);
+  --color-fg-muted: light-dark(#9a9071, #6e7b85);
+
+  --color-rose: light-dark(#c8322c, #e67c7f);
+  --color-water: light-dark(#297ca6, #7fbcb4);
+  --color-wood: light-dark(#b88200, #ddbd7f);
+  --color-leaf: light-dark(#728800, #b4cf7a);
+  --color-blossom: light-dark(#b94695, #e59bb9);
+  --color-sky: light-dark(#1e8e6c, #6ec596);
+  --color-rock: light-dark(#8146c2, #b88ee0);
+}
+
+/* ==========================================================================
+   2. Zenbones (Neutral, balanced monochromatic bone)
+   ========================================================================== */
+[data-palette="zenbones"] {
+  --color-bg: light-dark(#f0edec, #1c1917);
+  --color-bg-hl: light-dark(#e3dedb, #2c2724);
+  --color-bg-muted: light-dark(#f5f3f2, #24201e);
+
+  --color-fg: light-dark(#2c363c, #b4bdc3);
+  --color-fg-hl: light-dark(#4f5e68, #888f94);
+  --color-fg-muted: light-dark(#948985, #6e6763);
+
+  --color-rose: light-dark(#a8334c, #de6e7c);
+  --color-water: light-dark(#286486, #6099c0);
+  --color-wood: light-dark(#944927, #cf8662);
+  --color-leaf: light-dark(#4f6c31, #94b574);
+  --color-blossom: light-dark(#a04878, #c7789e);
+  --color-sky: light-dark(#2b7e88, #5bb8c4);
+  --color-rock: light-dark(#604285, #a88ad4);
+}
+
+/* ==========================================================================
+   3. Zenburned (Warm vintage Zenburn-inspired amber/charcoal)
+   ========================================================================== */
+[data-palette="zenburned"] {
+  --color-bg: light-dark(#f5eedc, #404040);
+  --color-bg-hl: light-dark(#ebdfc5, #4c4c4c);
+  --color-bg-muted: light-dark(#faf5eb, #383838);
+
+  --color-fg: light-dark(#3f3f3f, #f0e4cf);
+  --color-fg-hl: light-dark(#7f6f5f, #c0ab86);
+  --color-fg-muted: light-dark(#8a8275, #848484);
+
+  --color-rose: light-dark(#b04340, #e3716e);
+  --color-water: light-dark(#255e77, #6cb8bc);
+  --color-wood: light-dark(#965d2c, #dfaf8f);
+  --color-leaf: light-dark(#587438, #92b370);
+  --color-blossom: light-dark(#944772, #dc8cc3);
+  --color-sky: light-dark(#23737b, #7cdfe3);
+  --color-rock: light-dark(#5e437b, #baa0de);
+}
+
+/* ==========================================================================
+   4. Tokyobones (Tokyo Night-inspired cool slate and vibrant neon)
+   ========================================================================== */
+[data-palette="tokyobones"] {
+  --color-bg: light-dark(#d6d7dc, #1a1b26);
+  --color-bg-hl: light-dark(#c4c6d0, #24283b);
+  --color-bg-muted: light-dark(#e6e7ec, #16161e);
+
+  --color-fg: light-dark(#333a57, #c0caf5);
+  --color-fg-hl: light-dark(#34548c, #7aa2f7);
+  --color-fg-muted: light-dark(#7c7e89, #65677d);
+
+  --color-rose: light-dark(#8b4351, #f77890);
+  --color-water: light-dark(#2b5299, #7aa2f7);
+  --color-wood: light-dark(#8f5e14, #e0af68);
+  --color-leaf: light-dark(#2c6d48, #6ddac9);
+  --color-blossom: light-dark(#793e77, #c678dd);
+  --color-sky: light-dark(#146f82, #2ac3de);
+  --color-rock: light-dark(#4e3380, #9d7cd8);
+}
+
+/* ==========================================================================
+   5. Rosebones (Rosé Pine-inspired dusty rose and muted cedar)
+   ========================================================================== */
+[data-palette="rosebones"] {
+  --color-bg: light-dark(#fbf6f0, #1a1825);
+  --color-bg-hl: light-dark(#f2e9de, #26233a);
+  --color-bg-muted: light-dark(#faf4ed, #191724);
+
+  --color-fg: light-dark(#575279, #e1d4d4);
+  --color-fg-hl: light-dark(#b4637a, #eb6f92);
+  --color-fg-muted: light-dark(#9893a5, #69657e);
+
+  --color-rose: light-dark(#b5637a, #eb6f92);
+  --color-water: light-dark(#31748f, #9ccfd8);
+  --color-wood: light-dark(#b86b10, #f6c177);
+  --color-leaf: light-dark(#2e7552, #56949f);
+  --color-blossom: light-dark(#914972, #ebbcba);
+  --color-sky: light-dark(#247a8a, #3e8fb0);
+  --color-rock: light-dark(#6b498f, #c4a7e7);
+}
+
+/* ==========================================================================
+   6. Nordbones (Nordic arctic blues, frosted glass, and cold stone)
+   ========================================================================== */
+[data-palette="nordbones"] {
+  --color-bg: light-dark(#eceff4, #2f3541);
+  --color-bg-hl: light-dark(#e5e9f0, #3b4252);
+  --color-bg-muted: light-dark(#f0f2f7, #272c36);
+
+  --color-fg: light-dark(#2e3440, #ebeef3);
+  --color-fg-hl: light-dark(#4c566a, #88c0d0);
+  --color-fg-muted: light-dark(#7b88a1, #737c90);
+
+  --color-rose: light-dark(#a83d47, #c1616a);
+  --color-water: light-dark(#356a9a, #81a1c1);
+  --color-wood: light-dark(#966c1e, #ebcb8b);
+  --color-leaf: light-dark(#437d35, #a3be8c);
+  --color-blossom: light-dark(#884378, #b48ead);
+  --color-sky: light-dark(#227488, #88c0d0);
+  --color-rock: light-dark(#564483, #9382b0);
+}
+
+/* ==========================================================================
+   7. Duckbones (Deep ocean teal and dusk hues)
+   ========================================================================== */
+[data-palette="duckbones"] {
+  --color-bg: light-dark(#eef1f2, #0e101a);
+  --color-bg-hl: light-dark(#dfe5e8, #1b1e2e);
+  --color-bg-muted: light-dark(#f5f7f8, #090b12);
+
+  --color-fg: light-dark(#151b29, #ebefc0);
+  --color-fg-hl: light-dark(#0a4c5e, #e39500);
+  --color-fg-muted: light-dark(#6b7385, #5a5f7b);
+
+  --color-rose: light-dark(#b82e07, #e03600);
+  --color-water: light-dark(#006d8a, #00a3cb);
+  --color-wood: light-dark(#9a6200, #e39500);
+  --color-leaf: light-dark(#187440, #5dcd97);
+  --color-blossom: light-dark(#823b6b, #ce74b4);
+  --color-sky: light-dark(#0a7779, #2de2c4);
+  --color-rock: light-dark(#583f94, #9a6bf7);
+}
+
+/* ==========================================================================
+   8. Seoulbones (Seoul256 soft low-contrast pastels)
+   ========================================================================== */
+[data-palette="seoulbones"] {
+  --color-bg: light-dark(#e2e2e2, #4b4b4b);
+  --color-bg-hl: light-dark(#d4d4d4, #565656);
+  --color-bg-muted: light-dark(#ececec, #3f3f3f);
+
+  --color-fg: light-dark(#454545, #dddddd);
+  --color-fg-hl: light-dark(#c48562, #ffdf9b);
+  --color-fg-muted: light-dark(#628562, #9a9a9a);
+
+  --color-rose: light-dark(#b5285e, #e388a3);
+  --color-water: light-dark(#00708f, #8bb8e0);
+  --color-wood: light-dark(#a76b48, #ffdf9b);
+  --color-leaf: light-dark(#3b743c, #98bd99);
+  --color-blossom: light-dark(#894676, #cca5c5);
+  --color-sky: light-dark(#006f70, #68c4c2);
+  --color-rock: light-dark(#5d4782, #a894d8);
+}
+
+/* ==========================================================================
+   9. Commodore 64 (VIC-II Ultimate Tron II Tribute)
+   ========================================================================== */
+[data-palette="c64"] {
+  --color-bg: light-dark(#b8b8b8, #000000);
+  --color-bg-hl: light-dark(#a8a8a8, #1c1822);
+  --color-bg-muted: light-dark(#c8c8c8, #0c0a10);
+
+  --color-fg: light-dark(#000000, #ffffff);
+  --color-fg-hl: light-dark(#383088, #88e060);
+  --color-fg-muted: light-dark(#505050, #7869c4);
+
+  --color-rose: light-dark(#881b10, #e05038);
+  --color-water: light-dark(#283898, #68a0e8);
+  --color-wood: light-dark(#704800, #e8e458);
+  --color-leaf: light-dark(#186818, #44b830);
+  --color-blossom: light-dark(#581858, #984498);
+  --color-sky: light-dark(#105058, #70b8c8);
+  --color-rock: light-dark(#782810, #d07030);
+}
+
+/* ==========================================================================
+   10. Arcade Neon (High-contrast synthwave neon)
+   ========================================================================== */
+[data-palette="arcade-neon"] {
+  --color-bg: light-dark(#f6f0fa, #080810);
+  --color-bg-hl: light-dark(#ebdff5, #161626);
+  --color-bg-muted: light-dark(#faf6fc, #04040a);
+
+  --color-fg: light-dark(#1a102e, #f0f0ff);
+  --color-fg-hl: light-dark(#9900aa, #00ffff);
+  --color-fg-muted: light-dark(#6b5882, #505078);
+
+  --color-rose: light-dark(#bd003e, #ff0055);
+  --color-water: light-dark(#0077b6, #00bfff);
+  --color-wood: light-dark(#a67c00, #ffe600);
+  --color-leaf: light-dark(#008a38, #00ff66);
+  --color-blossom: light-dark(#aa00aa, #ff00ff);
+  --color-sky: light-dark(#008272, #00ffcc);
+  --color-rock: light-dark(#6f00b3, #b030ff);
+}
+
+/* ==========================================================================
+   11. Amber Phosphor CRT (Monochrome stepped luminance)
+   ========================================================================== */
+[data-palette="amber-crt"] {
+  --color-bg: light-dark(#fbf4e4, #0f0700);
+  --color-bg-hl: light-dark(#f2e4bf, #221200);
+  --color-bg-muted: light-dark(#fffbf2, #0a0500);
+
+  --color-fg: light-dark(#452600, #ffb000);
+  --color-fg-hl: light-dark(#7a4800, #ffcc33);
+  --color-fg-muted: light-dark(#8f6830, #805000);
+
+  --color-rose: light-dark(#8e3000, #ff5500);
+  --color-water: light-dark(#4f3000, #e07a00);
+  --color-wood: light-dark(#754d00, #ffb833);
+  --color-leaf: light-dark(#613c00, #ff9900);
+  --color-blossom: light-dark(#823800, #ff6a00);
+  --color-sky: light-dark(#3d2400, #ffd166);
+  --color-rock: light-dark(#6e4000, #c85a00);
+}
+
+/* ==========================================================================
+   12. Green Phosphor CRT (P1 monochrome green phosphor)
+   ========================================================================== */
+[data-palette="green-crt"] {
+  --color-bg: light-dark(#e8f5ea, #030d05);
+  --color-bg-hl: light-dark(#d0ebd5, #0a210e);
+  --color-bg-muted: light-dark(#f0faf2, #020803);
+
+  --color-fg: light-dark(#0b3612, #33ff33);
+  --color-fg-hl: light-dark(#155c20, #66ff66);
+  --color-fg-muted: light-dark(#47754f, #186624);
+
+  --color-rose: light-dark(#176624, #00ee55);
+  --color-water: light-dark(#0a3312, #00cc44);
+  --color-wood: light-dark(#207d2e, #88ff88);
+  --color-leaf: light-dark(#0f4418, #33ff33);
+  --color-blossom: light-dark(#115034, #00ff88);
+  --color-sky: light-dark(#06240c, #aaffaa);
+  --color-rock: light-dark(#1a5924, #00aa33);
+}
