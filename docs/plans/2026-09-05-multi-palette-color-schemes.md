@@ -30,7 +30,7 @@
      - `green-crt` (vintage monochrome P1 green phosphor CRT monitor)
 
 3. **User Experience & Settings Integration:**
-   - Add a "Color Scheme" dropdown selector to the Settings modal ([`SettingsView`](file:///home/hidden/projects/tron/public/javascripts/ui/settingsView.js)).
+   - Add a "Color Scheme" dropdown selector to the Settings modal ([`SettingsView`](../../public/javascripts/ui/settingsView.js)).
    - Persist selected palette in `localStorage` (`palette`).
    - Dynamically re-resolve CSS variables on the fly: instantly updating canvas light-cycle trails, arena borders, particle explosions, scoreboard text, and UI modals without page reloads.
 

@@ -11,7 +11,8 @@
     "test": "node test/runAll.js",
     "test:palettes": "node scripts/generate-palette-gallery.js",
     "benchmark": "node benchmark/stress.js --quick",
-    "benchmark:stress": "node benchmark/stress.js"
+    "benchmark:stress": "node benchmark/stress.js",
+    "setup:hooks": "scripts/setup-git-hooks.sh"
   },
   "dependencies": {
     "@prometheus-io/client": "^0.16.1",

@@ -14,7 +14,7 @@ Focus on room creation options, host permissions, privacy, and process recovery.
     - **Lobby Game Creation:** Add a speed selection dropdown/control in the lobby creation form (`LobbyView`), initializing the room with the selected interval.
     - **Host-Only Authorization:** Restrict `MSG_TYPE.SET_INTERVAL` permissions strictly to the room creator / host.
     - **Round-Gated Adjustment:** Enforce that speed can only be modified between rounds (when no active round is running, e.g. in config, round finish, or game reset states).
-    - **HUD Speed Indicator Icon:** Display a visual indicator icon in the header / HUD whenever game speed is not `NORMAL` (e.g. snail icon for `SLOW`, and a high-speed icon for `FAST`). Note: Icons will be supplied and imported into `public/remixicon/` following [`public/remixicon/README.md`](file:///home/hidden/projects/tron/public/remixicon/README.md).
+    - **HUD Speed Indicator Icon:** Display a visual indicator icon in the header / HUD whenever game speed is not `NORMAL` (e.g. snail icon for `SLOW`, and a high-speed icon for `FAST`). Note: Icons will be supplied and imported into `public/remixicon/` following [`public/remixicon/README.md`](public/remixicon/README.md).
 - [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
   - _Problem:_ Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
   - _Proposed Solution:_
@@ -65,7 +65,7 @@ Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and 
 Focus on mobile ergonomics, touch input latency, and display scaling.
 
 - [ ] **Mobile Landscape 16:10 Layout**
-  - _Dedicated Plan:_ [`docs/plans/2026-08-17-mobile-landscape-layout.md`](file:///home/hidden/projects/tron/docs/plans/2026-08-17-mobile-landscape-layout.md)
+  - _Dedicated Plan:_ [`docs/plans/2026-08-17-mobile-landscape-layout.md`](docs/plans/2026-08-17-mobile-landscape-layout.md)
   - Height-driven 16:10 aspect ratio scaling for smartphones and tablets.
   - Ergonomic split thumb controls flanking the arena canvas (Retro handheld style).
 - [ ] **Instant Touch Reactivity (`pointerdown` & Input Queue)**

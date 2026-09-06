@@ -9,6 +9,7 @@
 ## Code Comments & Documentation Rules
 * **Preserve Meaningful Comments:** Maintain all existing comments, explanations, and docstrings unless they are clearly redundant or obsolete. Never strip out design notes, lifecycle descriptions, or contextual comments.
 * **Emoji & Emoticon Hesitancy:** Avoid emojis and emoticons in source code, shell scripts, CLI output, commit messages, and documentation unless explicitly requested.
+* **Relative Links in Repository Markdown Files:** In all repository documentation and tracked markdown files (`README.md`, `CHANGELOG.md`, `ROADMAP.md`, `GEMINI.md`, `docs/plans/`, `docs/architecture/`, etc.), ALWAYS use relative repository paths for markdown links (e.g. `[scripts/deploy.sh](scripts/deploy.sh)` or `[testing.md](docs/architecture/testing.md)`). NEVER write absolute machine paths or `file://` URIs into repository files so links render and navigate correctly on GitHub and across developer machines without leaking local filesystem structures. (Note: The `file://` absolute URI scheme is strictly reserved for the assistant's interactive chat output to the user, never for committed repo files.)
 
 
 ## Testing Guidelines
@@ -18,7 +19,7 @@
 
 ## Git & Workflow Rules
 * **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).
-* **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` so the user can easily review and copy it.
+* **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` (which is gitignored) so the user can easily review and copy it. When configured via `./scripts/setup-git-hooks.sh`, commits initiated via Neovim Fugitive (`cc` in `:G`) or CLI `git commit` automatically pre-populate the commit buffer from `tmpcommit.md`.
 * **Plan Execution (One Phase per Reviewable Commit):** When executing a plan or task with defined phases or milestone checklists (e.g. in `docs/plans/`), execute strictly **one phase at a time**. Each phase must produce a runnable, reviewable commit:
   - Implement the changes and verify all test suites pass (`npm test`).
   - Update the corresponding phase checkboxes in the plan document.

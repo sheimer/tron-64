@@ -10,35 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Developer Git Hooks & Commit Automation Tooling:**
+  - Added version-controlled Git hooks in `.githooks/` and setup script in [scripts/setup-git-hooks.sh](scripts/setup-git-hooks.sh) (executable via `npm run setup:hooks`).
+  - Added `prepare-commit-msg` hook to automatically pre-populate the commit buffer from `tmpcommit.md` when committing via Neovim Fugitive (`cc` in `:G`) or standard CLI `git commit`.
+  - Added `post-commit` hook to automatically reset `tmpcommit.md` upon successful commit creation.
+  - Added `tmpcommit.md` to [.gitignore](.gitignore) and updated developer documentation in [README.md](README.md) and [GEMINI.md](GEMINI.md).
 - **Headless Server Concurrency Stress Benchmark Tool:**
-  - Implemented dynamic load-scaling benchmark in [benchmark/stress.js](file:///home/hidden/projects/tron/benchmark/stress.js) replacing `concurrency.js`, executable via `npm run benchmark` (fast `--quick` sanity check) or `npm run benchmark:stress` (full progressive saturation test).
+  - Implemented dynamic load-scaling benchmark in [benchmark/stress.js](benchmark/stress.js) replacing `concurrency.js`, executable via `npm run benchmark` (fast `--quick` sanity check) or `npm run benchmark:stress` (full progressive saturation test).
   - Progressively provisions active 4-player game sessions in incremental stages with steering input injection and binary delta buffer encoding until event-loop jitter and latency spikes breach real-time 40 FPS gameplay tolerances.
   - Detects single-frame drop warnings (jitter $\ge 5\text{ms}$ or spike $\ge 25\text{ms}$) and critical event-loop saturation (jitter $\ge 10\text{ms}$ or spike $\ge 40\text{ms}$).
   - Automatically identifies the exact single-thread saturation capacity, failure point, and recommended safe operating ceiling with safe graceful session teardown.
 - **Multi-Palette Color Scheme Architecture & Curated Preset Catalog:**
-  - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](file:///home/hidden/projects/tron/public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution.
+  - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution.
   - Curated 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display aesthetics (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` monochrome amber phosphor, `green-crt` P1 green phosphor).
-  - Added grouped "Color Scheme" dropdown selector in the Settings menu ([views/controls.pug](file:///home/hidden/projects/tron/views/controls.pug), [public/javascripts/ui/settingsView.js](file:///home/hidden/projects/tron/public/javascripts/ui/settingsView.js)) with `localStorage` persistence.
-  - Dynamic live color re-resolution via [public/javascripts/theme.js](file:///home/hidden/projects/tron/public/javascripts/theme.js), recoloring active arena light trails, borders, particle explosions, scoreboards, and UI modals in real time with zero page reload.
-  - Pre-render script in [views/layout.pug](file:///home/hidden/projects/tron/views/layout.pug) restoring saved palette preferences before DOM painting to eliminate visual flash.
-  - Documented palette architecture in [README.md](file:///home/hidden/projects/tron/README.md), added showcase card to the `#welcome` view ([views/index.pug](file:///home/hidden/projects/tron/views/index.pug)), and added MIT attribution for `mcchrish/zenbones.nvim`.
+  - Added grouped "Color Scheme" dropdown selector in the Settings menu ([views/controls.pug](views/controls.pug), [public/javascripts/ui/settingsView.js](public/javascripts/ui/settingsView.js)) with `localStorage` persistence.
+  - Dynamic live color re-resolution via [public/javascripts/theme.js](public/javascripts/theme.js), recoloring active arena light trails, borders, particle explosions, scoreboards, and UI modals in real time with zero page reload.
+  - Pre-render script in [views/layout.pug](views/layout.pug) restoring saved palette preferences before DOM painting to eliminate visual flash.
+  - Documented palette architecture in [README.md](README.md), added showcase card to the `#welcome` view ([views/index.pug](views/index.pug)), and added MIT attribution for `mcchrish/zenbones.nvim`.
 - **Automated Palette Verification Suite & Visual Comparison Gallery:**
-  - Automated contrast and accessibility test ([test/palette.test.js](file:///home/hidden/projects/tron/test/palette.test.js)) running during `npm test` verifying WCAG 2.1 AA text ($\ge 4.5:1$) and trail ($\ge 3.0:1$) contrast, CIELAB perceptual Euclidean color distance ($\Delta E^*$), and simulated Deuteranopia / Protanopia CVD matrices.
-  - Standalone offline visual gallery generator ([scripts/generate-palette-gallery.js](file:///home/hidden/projects/tron/scripts/generate-palette-gallery.js), `npm run test:palettes`) generating [test/reports/palette-gallery.html](file:///home/hidden/projects/tron/test/reports/palette-gallery.html) with side-by-side Dark/Light mode mockups and interactive SVG CVD simulation filters.
+  - Automated contrast and accessibility test ([test/palette.test.js](test/palette.test.js)) running during `npm test` verifying WCAG 2.1 AA text ($\ge 4.5:1$) and trail ($\ge 3.0:1$) contrast, CIELAB perceptual Euclidean color distance ($\Delta E^*$), and simulated Deuteranopia / Protanopia CVD matrices.
+  - Standalone offline visual gallery generator ([scripts/generate-palette-gallery.js](scripts/generate-palette-gallery.js), `npm run test:palettes`) generating [test/reports/palette-gallery.html](test/reports/palette-gallery.html) with side-by-side Dark/Light mode mockups and interactive SVG CVD simulation filters.
 - **Full-Stack Prometheus Telemetry & Performance Instrumentation:**
-  - Implemented application telemetry collector ([server/metrics.js](file:///home/hidden/projects/tron/server/metrics.js)) with `@prometheus-io/client`.
+  - Implemented application telemetry collector ([server/metrics.js](server/metrics.js)) with `@prometheus-io/client`.
   - Exposed dynamic gauges for room counts (`bitcycles_active_rooms{visibility}`), active driving players (`bitcycles_connected_players`), and open sockets (`bitcycles_ws_clients_active`).
   - Added event counters for finished match rounds, cycle collisions/crashes, and WebSocket text/binary frame throughput.
   - Added 40 FPS game loop tick duration summary timer (`bitcycles_tick_duration_seconds`).
   - Exposed secured `GET /metrics` endpoint in `app.js` with application-level IP whitelist (`METRICS_ALLOWED_IPS`) and optional Bearer token auth (`METRICS_TOKEN`) in addition to Nginx reverse proxy restrictions.
-  - Added unit test suite ([test/metrics.test.js](file:///home/hidden/projects/tron/test/metrics.test.js)) testing gauge calculations, counter increments, and 403/200 authorization rules.
+  - Added unit test suite ([test/metrics.test.js](test/metrics.test.js)) testing gauge calculations, counter increments, and 403/200 authorization rules.
 - **Centralized Prometheus Monitoring & Postfix Alerting Pipeline:**
   - Deployed `prometheus-node-exporter` on the game host for system CPU, memory, disk, and network telemetry with firewall isolation on port 9100.
   - Configured Prometheus scraping over HTTPS (`bitcycles_game`) and Node Exporter (`bitcycles_host`).
   - Set up Grafana operations dashboard and automated email alerting (`BitcyclesDown`, `BitcyclesHighMemory`, `BitcyclesEventLoopLag`) routing through local Postfix mail server (`127.0.0.1:25`).
 - **Hardened Deployment Architecture & Service Templates:**
-  - Introduced hardened systemd service template ([bitcycles.service](file:///home/hidden/projects/tron/bitcycles.service)) utilizing system Node 24 and Linux cgroups resource limits (`CPUQuota=80%`, `MemoryMax=1G`, `TasksMax=50`).
-  - Added legacy FNM service template ([bitcycles-fnm.service](file:///home/hidden/projects/tron/bitcycles-fnm.service)) and configurable `DEPLOY_USE_FNM` toggle in `.env.example`.
+  - Introduced hardened systemd service template ([bitcycles.service](bitcycles.service)) utilizing system Node 24 and Linux cgroups resource limits (`CPUQuota=80%`, `MemoryMax=1G`, `TasksMax=50`).
+  - Added legacy FNM service template ([bitcycles-fnm.service](bitcycles-fnm.service)) and configurable `DEPLOY_USE_FNM` toggle in `.env.example`.
   - Added approved `allowScripts` in `package.json` for WebSocket native acceleration modules (`bufferutil`, `utf-8-validate`).
   - Implemented fast incremental deployments in `scripts/deploy.sh` reusing cached `node_modules` and zero-sudo unprivileged file operations.
 - **Landing / Welcome View & Ultimate Tron II Homage:**

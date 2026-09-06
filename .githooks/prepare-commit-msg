@@ -1,0 +1,23 @@
+#!/bin/sh
+# .githooks/prepare-commit-msg
+# Pre-populates the git commit message buffer with tmpcommit.md if present.
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+SHA1="$3"
+
+# Only populate if this is a standard commit (not a merge, squash, or amend)
+# and tmpcommit.md exists and is not empty.
+if [ -z "$COMMIT_SOURCE" ] && [ -s "tmpcommit.md" ]; then
+  TMP_MSG=$(cat "tmpcommit.md")
+  if [ -n "$TMP_MSG" ]; then
+    if [ -f "$COMMIT_MSG_FILE" ] && [ -s "$COMMIT_MSG_FILE" ]; then
+      TEMP_COMBINED=$(mktemp)
+      printf "%s\n\n" "$TMP_MSG" > "$TEMP_COMBINED"
+      cat "$COMMIT_MSG_FILE" >> "$TEMP_COMBINED"
+      mv "$TEMP_COMBINED" "$COMMIT_MSG_FILE"
+    else
+      printf "%s\n" "$TMP_MSG" > "$COMMIT_MSG_FILE"
+    fi
+  fi
+fi

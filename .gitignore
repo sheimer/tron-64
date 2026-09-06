@@ -60,6 +60,7 @@ typings/
 # Local state data & temporary files
 data/
 *.tmp
+tmpcommit.md
 
 # next.js build output
 .next

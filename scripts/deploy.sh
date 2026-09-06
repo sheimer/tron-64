@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Sudoers Configuration on Target Server (/etc/sudoers.d/bitcycles-service or /etc/sudoers.d/hidden):
+# Sudoers Configuration on Target Server (/etc/sudoers.d/bitcycles-service or /etc/sudoers.d/<user>):
 # <user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop bitcycles.service
 # <user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl start bitcycles.service
 # <user> ALL=(ALL) NOPASSWD: /usr/bin/systemctl status bitcycles.service

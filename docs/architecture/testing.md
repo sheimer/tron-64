@@ -42,7 +42,7 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 
 ## 4. Headless Concurrency Stress Benchmark (`npm run benchmark` / `npm run benchmark:stress`)
 
-* Located in [benchmark/stress.js](file:///home/hidden/projects/tron/benchmark/stress.js).
+* Located in [benchmark/stress.js](../../benchmark/stress.js).
 * **Quick Sanity Mode (`npm run benchmark`):**
   * Automatically applies `--quick` to run a fast (~1.5s) health verification against the default server limit (`MAX_ACTIVE_GAMES = 50`) at 40 FPS without pegging system resources.
 * **Progressive Saturation & Stress Mode (`npm run benchmark:stress`):**

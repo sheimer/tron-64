@@ -112,7 +112,24 @@ npm run benchmark
 
 # 7. Run linter
 npx eslint .
+
+# 8. (Optional) Configure Git hooks (auto-fills Fugitive 'cc' commits from tmpcommit.md)
+./scripts/setup-git-hooks.sh
 ```
+
+### Developer Git Hooks (Optional)
+
+To streamline the commit workflow in Neovim Fugitive (`cc` in `:G`) or standard CLI `git commit`, run:
+```bash
+./scripts/setup-git-hooks.sh
+# Or via npm:
+npm run setup:hooks
+```
+This configures `core.hooksPath` to point to version-controlled hooks in [`.githooks/`](.githooks):
+* **`prepare-commit-msg`**: Automatically pre-populates the commit message editor buffer with the contents of `tmpcommit.md` when present and non-empty (for standard new commits).
+* **`post-commit`**: Resets `tmpcommit.md` after a successful commit to prevent stale messages from carrying over into subsequent manual commits.
+* **Deactivation**: To disable hooks at any time, run `git config --unset core.hooksPath`.
+
 
 ### Server Concurrency & Capacity Configuration
 * **`MAX_ACTIVE_GAMES` (Default: `50`):** Maximum concurrent active game rooms allowed on the server. Configurable via environment variable:
