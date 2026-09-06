@@ -82,6 +82,7 @@ tron/
 3. **Input Sanitization**: Server-side clamping of grid size, frame intervals, player names, and movement directions.
 4. **Hybrid Delta Canvas Renderer**: Local `Int8Array` grid buffer with delta cell painting ($O(k)$ per frame) and full redraws on theme or DPR changes.
 5. **Simultaneous 2-in-1 Spot Collision**: Equal mutual kill credit and position rollback when two players enter the same cell in the same tick.
+6. **Multi-Palette Theming & Accessibility**: 12 hot-swappable color schemes (Zenbones Neovim family, Commodore 64 VIC-II tribute, synthwave arcade, and monochrome phosphor CRTs) with `light-dark()` CSS resolution, live canvas recoloring without page reload, and automated WCAG 2.1 AA / CVD accessibility verification.
 
 ---
 
@@ -100,13 +101,16 @@ npx playwright install chromium
 # 3. Start development server (default: port 3000)
 npm start
 
-# 4. Run automated test suites (server lifecycles, memory GC, Playwright browser leak tests)
+# 4. Run automated test suites (server lifecycles, memory GC, palette accessibility, Playwright browser leak tests)
 npm test
 
-# 5. Run headless concurrency benchmark (10, 25, 50 concurrent active games)
+# 5. Generate visual palette comparison gallery (generates test/reports/palette-gallery.html)
+npm run test:palettes
+
+# 6. Run headless concurrency benchmark (10, 25, 50 concurrent active games)
 npm run benchmark
 
-# 6. Run linter
+# 7. Run linter
 npx eslint .
 ```
 
@@ -160,6 +164,12 @@ To allow automated deployments to restart the service and update systemd unit fi
 
 * **Roadmap & Planned Features:** See [ROADMAP.md](ROADMAP.md) for the active milestone backlog (Game Room Lifecycles, Audio SFX, Single-player Bot, Mobile Layouts).
 * **Release History:** See [CHANGELOG.md](CHANGELOG.md) for detailed version release notes.
+
+## Acknowledgments & Credits
+
+* **Ultimate Tron II:** Gameplay rules, 6-player local keyboard ergonomics, and nostalgic inspiration by Oliver Stiller / Masters' Design Group (1989, *64'er* Magazine).
+* **Zenbones Color Schemes:** Palette values and design aesthetics adapted from [`zenbones.nvim`](https://github.com/mcchrish/zenbones.nvim) created by [Michael Chris Lopez (mcchrish)](https://github.com/mcchrish), licensed under the [MIT License](https://github.com/mcchrish/zenbones.nvim/blob/main/LICENSE). Includes derivative adaptations of [Tokyo Night](https://github.com/folke/tokyonight.nvim) (Folke Lemaitre), [Nord](https://www.nordtheme.com/) (Arctic Ice Studio), [Rosé Pine](https://rosepinetheme.com/), and [Gruvbox](https://github.com/morhetz/gruvbox).
+* **Commodore 64 Palette:** Authentic 16-color VIC-II hardware palette based on vintage C64 video signal standards.
 
 ---
 
