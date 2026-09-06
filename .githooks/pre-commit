@@ -16,7 +16,7 @@ fi
 STAGED_FORMATTABLE=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|css|json)$' || true)
 if [ -n "$STAGED_FORMATTABLE" ]; then
   echo "🎨 Checking formatting with Prettier..."
-  echo "$STAGED_FORMATTABLE" | xargs npx prettier --check || {
+  echo "$STAGED_FORMATTABLE" | xargs npx prettier --check --log-level warn --no-color || {
     echo ""
     echo "❌ Prettier formatting check failed."
     echo "💡 Run 'npx prettier --write <file>' on unformatted files, stage the updates, and re-commit."
