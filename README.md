@@ -110,10 +110,11 @@ npm run test:palettes
 # 6. Run headless concurrency benchmark (10, 25, 50 concurrent active games)
 npm run benchmark
 
-# 7. Run linter
-npx eslint .
+# 7. Run linter & code formatter checks
+npm run lint
+npm run format:check
 
-# 8. (Optional) Configure Git hooks (auto-fills Fugitive 'cc' commits from tmpcommit.md)
+# 8. (Optional) Configure Git hooks (enforces ESLint/Prettier on staged files & auto-fills Fugitive 'cc' commits from tmpcommit.md)
 ./scripts/setup-git-hooks.sh
 ```
 
@@ -126,6 +127,7 @@ To streamline the commit workflow in Neovim Fugitive (`cc` in `:G`) or standard 
 npm run setup:hooks
 ```
 This configures `core.hooksPath` to point to version-controlled hooks in [`.githooks/`](.githooks):
+* **`pre-commit`**: Automatically runs ESLint static analysis on staged JavaScript files and checks Prettier formatting on staged `.js`, `.css`, and `.json` files, preventing syntax errors, unused variables, or formatting drift from being committed.
 * **`prepare-commit-msg`**: Automatically pre-populates the commit message editor buffer with the contents of `tmpcommit.md` when present and non-empty (for standard new commits).
 * **`post-commit`**: Resets `tmpcommit.md` after a successful commit to prevent stale messages from carrying over into subsequent manual commits.
 * **Deactivation**: To disable hooks at any time, run `git config --unset core.hooksPath`.
