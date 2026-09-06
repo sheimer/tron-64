@@ -1,5 +1,10 @@
 import client from '@prometheus-io/client'
-import { gameServer } from './GameServer.js'
+
+let gameServerInstance = null
+
+export function setGameServer(gs) {
+  gameServerInstance = gs
+}
 
 export const register = new client.Registry()
 
@@ -15,8 +20,8 @@ export const activeRoomsGauge = new client.Gauge({
   collect() {
     let pub = 0
     let priv = 0
-    if (gameServer && Array.isArray(gameServer.games)) {
-      for (const g of gameServer.games) {
+    if (gameServerInstance && Array.isArray(gameServerInstance.games)) {
+      for (const g of gameServerInstance.games) {
         if (g.isPublic) pub++
         else priv++
       }
@@ -32,8 +37,8 @@ export const connectedPlayersGauge = new client.Gauge({
   registers: [register],
   collect() {
     let total = 0
-    if (gameServer && Array.isArray(gameServer.games)) {
-      for (const g of gameServer.games) {
+    if (gameServerInstance && Array.isArray(gameServerInstance.games)) {
+      for (const g of gameServerInstance.games) {
         total += g.arena?.players?.length || 0
       }
     }

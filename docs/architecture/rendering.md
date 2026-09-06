@@ -37,9 +37,10 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 * **Modes & Palettes:**
   - Color scheme modes: `dark`, `light`, and `auto` (respects `prefers-color-scheme`).
   - Hot-swappable color palettes via `[data-palette="..."]` attribute selectors on `<html>`, defaulting to `forestbones`.
-  - Curated 12-palette catalog:
+  - Curated 12 active palettes (+ 1 disabled prototype):
     - **Zenbones Neovim Family:** `forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`.
     - **Retro & Display Aesthetics:** `c64` (Commodore 64 VIC-II tribute), `arcade-neon` (synthwave neon), `amber-crt` (stepped luminance amber phosphor), `green-crt` (P1 monochrome green phosphor).
+    - **Experimental / Disabled:** `c64-original` (1-bit hi-res medium gray/black homage, disabled in UI pending custom bitmap typography, cycle head markers, and inverted white UI hierarchy).
 * **Token Contract:**
   - Each palette defines the 13 semantic tokens in both light and dark variants using `light-dark(lightVal, darkVal)`:
     - UI Backgrounds: `--color-bg`, `--color-bg-hl`, `--color-bg-muted`
@@ -56,7 +57,7 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
   - `:root` establishes the universal baseline so palettes only need to declare their 13 primary semantic tokens.
   - Specialized display aesthetics selectively override `--color-*-hl` and `--color-*-muted` inside their scoped `[data-palette="..."]` selector:
     - **`arcade-neon`:** Replaces the standard saturation clamp with high-radiance electric bloom for highlights ($L \times 1.25$ in dark mode) and glowing wireframe phosphors for muted elements ($S \times 0.75, L \times 0.5$).
-    - **`amber-crt` & `green-crt`:** Locks hue and saturation strictly to the physical phosphor emission wavelengths (585nm amber / 525nm green) while driving pure radiometric luminance steps (beam overdrive for `-hl`, afterglow decay for `-muted`).
+    - **`amber-crt`, `green-crt` & `c64-original`:** Locks hue and saturation strictly to the physical phosphor emission wavelengths (585nm amber / 525nm green) or 1-bit hi-res monochrome channels while driving pure radiometric luminance steps (beam overdrive for `-hl`, afterglow decay for `-muted`).
     - **`rosebones`:** Preserves soft pastel and dusty cedar personality by retaining higher saturation ($S \times 0.7$) rather than collapsing into neutral gray.
 * **Live CSS Resolution (`getThemeColors()`):**  
   Reads computed colors directly from documentElement CSS custom properties and resolves `light-dark()` expressions dynamically without hardcoded hex constants in JS.

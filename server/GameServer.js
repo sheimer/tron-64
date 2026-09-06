@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 
 import { GameSession } from './GameSession.js'
 import { storage } from './Storage.js'
+import { setGameServer } from './metrics.js'
 import { MAX_ACTIVE_GAMES } from '../shared/constants.js'
 
 class GameServer {
@@ -134,5 +135,6 @@ class GameServer {
 }
 
 const gameServer = new GameServer()
+setGameServer(gameServer)
 
 export { gameServer }

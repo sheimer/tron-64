@@ -1,8 +1,8 @@
 /**
  * Multi-Palette Color Schemes for Bitcycles
- * Supports 12 curated palettes:
+ * Supports 13 curated palettes:
  * - Zenbones Neovim Family: forestbones, zenbones, zenburned, tokyobones, rosebones, nordbones, duckbones, seoulbones
- * - Retro & Display Aesthetics: c64, arcade-neon, amber-crt, green-crt
+ * - Retro & Display Aesthetics: c64, c64-original, arcade-neon, amber-crt, green-crt
  *
  * Color Science & Relative HSL Derivation Notes:
  * 1. Per-Hue Compensation for Perceptual Non-Uniformity:
@@ -287,7 +287,54 @@
 }
 
 /* ==========================================================================
-   10. Arcade Neon (High-contrast synthwave neon)
+   10. Commodore 64 Original Hi-Res (WIP / Disabled pending visual refinement)
+       NOTE: Disabled in UI controls. The authentic 1-bit hi-res medium-gray and
+       black aesthetic requires dedicated Commodore 64 bitmap font rendering,
+       cycle head glyphs, and custom white UI accent inversion to look authentic
+       and legible on modern high-DPI displays without appearing harsh.
+   ========================================================================== */
+[data-palette="c64-original"] {
+  --color-bg: light-dark(#838383, #000000);
+  --color-bg-hl: light-dark(#909090, #161616);
+  --color-bg-muted: light-dark(#767676, #080808);
+
+  --color-fg: light-dark(#000000, #ffffff);
+  --color-fg-hl: light-dark(#1a1a1a, #eaeaea);
+  --color-fg-muted: light-dark(#3a3a3a, #838383);
+
+  --color-rose: light-dark(#000000, #ffffff);
+  --color-water: light-dark(#000000, #ffffff);
+  --color-wood: light-dark(#141414, #e4e4e4);
+  --color-leaf: light-dark(#242424, #c8c8c8);
+  --color-blossom: light-dark(#303030, #b0b0b0);
+  --color-sky: light-dark(#101010, #f0f0f0);
+  --color-rock: light-dark(#1c1c1c, #d8d8d8);
+
+  /* Override derived variants: 1-bit monochrome stepped luminance */
+  --color-rose-hl: light-dark(hsl(from var(--color-rose) h s calc(l * 0.8)), hsl(from var(--color-rose) h s calc(l * 1.15)));
+  --color-rose-muted: light-dark(hsl(from var(--color-rose) h s calc(l * 1.25)), hsl(from var(--color-rose) h s calc(l * 0.65)));
+
+  --color-water-hl: light-dark(hsl(from var(--color-water) h s calc(l * 0.8)), hsl(from var(--color-water) h s calc(l * 1.15)));
+  --color-water-muted: light-dark(hsl(from var(--color-water) h s calc(l * 1.25)), hsl(from var(--color-water) h s calc(l * 0.65)));
+
+  --color-wood-hl: light-dark(hsl(from var(--color-wood) h s calc(l * 0.8)), hsl(from var(--color-wood) h s calc(l * 1.15)));
+  --color-wood-muted: light-dark(hsl(from var(--color-wood) h s calc(l * 1.25)), hsl(from var(--color-wood) h s calc(l * 0.65)));
+
+  --color-leaf-hl: light-dark(hsl(from var(--color-leaf) h s calc(l * 0.8)), hsl(from var(--color-leaf) h s calc(l * 1.15)));
+  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h s calc(l * 1.25)), hsl(from var(--color-leaf) h s calc(l * 0.65)));
+
+  --color-blossom-hl: light-dark(hsl(from var(--color-blossom) h s calc(l * 0.8)), hsl(from var(--color-blossom) h s calc(l * 1.15)));
+  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h s calc(l * 1.25)), hsl(from var(--color-blossom) h s calc(l * 0.65)));
+
+  --color-sky-hl: light-dark(hsl(from var(--color-sky) h s calc(l * 0.8)), hsl(from var(--color-sky) h s calc(l * 1.15)));
+  --color-sky-muted: light-dark(hsl(from var(--color-sky) h s calc(l * 1.25)), hsl(from var(--color-sky) h s calc(l * 0.65)));
+
+  --color-rock-hl: light-dark(hsl(from var(--color-rock) h s calc(l * 0.8)), hsl(from var(--color-rock) h s calc(l * 1.15)));
+  --color-rock-muted: light-dark(hsl(from var(--color-rock) h s calc(l * 1.25)), hsl(from var(--color-rock) h s calc(l * 0.65)));
+}
+
+/* ==========================================================================
+   11. Arcade Neon (High-contrast synthwave neon)
    ========================================================================== */
 [data-palette="arcade-neon"] {
   --color-bg: light-dark(#f6f0fa, #080810);

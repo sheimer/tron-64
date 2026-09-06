@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Detects single-frame drop warnings (jitter $\ge 5\text{ms}$ or spike $\ge 25\text{ms}$) and critical event-loop saturation (jitter $\ge 10\text{ms}$ or spike $\ge 40\text{ms}$).
   - Automatically identifies the exact single-thread saturation capacity, failure point, and recommended safe operating ceiling with safe graceful session teardown.
 - **Multi-Palette Color Scheme Architecture & Curated Preset Catalog:**
-  - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution.
+  - Implemented 12 hot-swappable color schemes in [public/stylesheets/palettes.css](public/stylesheets/palettes.css) using `[data-palette="..."]` attribute selectors and `light-dark()` color resolution (with prototype `c64-original` disabled pending bitmap typography refinement).
   - Curated 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display aesthetics (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` monochrome amber phosphor, `green-crt` P1 green phosphor).
   - Added grouped "Color Scheme" dropdown selector in the Settings menu ([views/controls.pug](views/controls.pug), [public/javascripts/ui/settingsView.js](public/javascripts/ui/settingsView.js)) with `localStorage` persistence.
   - Dynamic live color re-resolution via [public/javascripts/theme.js](public/javascripts/theme.js), recoloring active arena light trails, borders, particle explosions, scoreboards, and UI modals in real time with zero page reload.

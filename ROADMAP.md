@@ -4,9 +4,65 @@ This document outlines upcoming architectural improvements, networking enhanceme
 
 ---
 
-## Milestone 2: Game Room & Server Lifecycle
+## Target Release: v1.4.0 — Scoring UX, Stability & Polish
 
-Focus on room creation options, host permissions, privacy, and process recovery.
+Finalizing post-round scoring UX and engine cleanup for the v1.4.0 release.
+
+- [ ] **Scoreboard Sorted by Score**
+  - _Problem:_ Scoreboard currently displays players in registration order (Player 0, 1, 2...).
+  - _Proposed Solution:_ Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
+- [ ] **Explosion Ghosting Bug Verification**
+  - _Problem:_ In earlier versions, residual explosion particles from a previous round would occasionally persist or flash on the canvas at the start of a new round.
+  - _Proposed Solution:_ Verify that `Arena.reset()` cleanly clears `this.explosions = []` and that the hybrid delta renderer's local `Int8Array` buffer resets all cells to `CELL_TYPE.EMPTY` / `CELL_TYPE.BORDER` upon match start.
+
+---
+
+## Target Release: v1.5.0 — Showcase, Demo Engine & Palette Extensibility
+
+Focus on interactive in-browser demonstration, automated media asset generation, plug-and-play theme architecture, and authentic retro bitmap rendering.
+
+- [ ] **Authentic C64 Original Hi-Res Color Scheme (`c64-original` - Refinement & Font Engine)**
+  - _Status / Known Issues:_ A prototype CSS definition exists in `public/stylesheets/palettes.css` but is disabled in UI controls for v1.4.0. The 1-bit hi-res medium gray arena (`#838383`) and black cycle trails (`#000000`) look harsh and unbalanced when rendered with standard modern browser typography and vector UI elements.
+  - _Required Refinements Before Enabling:_
+    - **Authentic C64 Bitmap Typography:** Render arena HUD text, scoreboards, and prompt badges using authentic Commodore 64 PETSCII/bitmap typography.
+    - **Player Cycle Head Markers:** Supply distinctive head pixel glyphs or directional markers so identical/subtle monochrome cycle trails can be easily distinguished during chaotic 6-player matches.
+    - **Inverted White UI Hierarchy:** Rebalance white and black contrast boundaries for tables, borders, and modals to reproduce the true 1989 *Ultimate Tron II* visual hierarchy.
+- [ ] **Dynamic Theme Registry & Plug-and-Play Palette Catalog**
+  - _Problem:_ Adding a new theme/palette currently requires modifying multiple hardcoded locations across the codebase: CSS definitions in `public/stylesheets/palettes.css`, `<option>` elements in `views/controls.pug`, `EXPECTED_PALETTES` in `test/palette.test.js`, and `PALETTE_META` in `scripts/generate-palette-gallery.js`.
+  - _Proposed Solution:_
+    - Centralize palette metadata into a single data manifest (e.g. `shared/palettes.json` or individual CSS theme files with structured metadata headers).
+    - **Custom Derivation Overrides Support:** Ensure the theme manifest/parser supports optional per-palette `-hl` and `-muted` derivation formulas (or raw CSS override blocks) so themes with unique optics (e.g. `arcade-neon` bloom, monochrome CRT decay) retain their specialized behaviors.
+    - Dynamically populate the Settings dropdown selector (`<select id="game-palette">`) in Pug / `settingsView.js` from the manifest.
+    - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover, verify, and generate swatch triads for all registered palettes dynamically without maintaining hardcoded arrays.
+    - _Documentation:_ Update and expand `README.md` to document the plug-and-play theme architecture and provide clear developer instructions for creating, testing, and submitting custom palettes.
+- [ ] **Feature Demo Showcase & Automated Media Recording Pipeline (GIFs / Video)**
+  - _Dedicated Plan:_ [`docs/plans/2026-09-06-feature-demos-and-media-pipeline.md`](docs/plans/2026-09-06-feature-demos-and-media-pipeline.md)
+  - _Prerequisites / Dependencies (Addressed in v1.4.0 & v1.5.0):_
+    - **Authentic C64 Original Color Scheme (`c64-original`):** Included in v1.4.0 for prominent feature capture.
+    - **Scoreboard Sorted by Score:** Included in v1.4.0 for ranked post-round demo screens.
+    - **Explosion Ghosting Bug Verification:** Verified in v1.4.0 for clean capture loops.
+    - **Dynamic Theme Registry & Plug-and-Play Palette Catalog:** Included in v1.5.0 for dynamic palette cycling.
+  - _Problem:_ The repository and GitHub README currently lack visual gameplay animations (GIFs/videos) demonstrating unique mechanics:
+    - Dynamic hot-swappable color palettes (Zenbones and retro CRT presets).
+    - The 32-cell killzone trail cut-off mechanic and scoring bonuses.
+    - Wall breach escaping through ragged holes blasted into arena borders.
+    - Organic particle explosion dispersion and debris physics.
+    Additionally, there is no in-engine feature demo or replay script allowing players or visitors to preview these mechanics interactively from the web UI.
+  - _Proposed Solution:_
+    - **In-Engine Scripted Demo Modes:**
+      - Implement deterministic scripted sequences (or scripted bot routines) showcasing each core feature (`themes`, `kill`, `escape`, `explosions`).
+      - Make demos selectable directly from the game UI (e.g. "Watch Feature Demos" in the Welcome screen or settings modal) and via deep-link hash or query parameters (e.g. `#demo=escape`).
+    - **Automated Headless Video & GIF Generation Script:**
+      - Build a headless automation CLI script (`scripts/record-demos.js` or `npm run record:demos`) using Playwright to run the scripted scenarios at native canvas resolution.
+      - Pipe frames or captured video to system `ffmpeg` using high-fidelity color quantization (`palettegen` / `paletteuse`) to generate crisp, loopable, lightweight `.gif` and `.mp4`/`.webm` assets in `docs/media/`.
+    - **GitHub README & Documentation Assets:**
+      - Embed the generated demo GIFs into `README.md` and feature documentation to illustrate game mechanics and visual aesthetics.
+
+---
+
+## Target Release: v1.6.0 — Room Lifecycles, Host Controls & Dynamic Matchmaking
+
+Focus on room creation options, host round authority, privacy, and mid-game slot acquisition.
 
 - [ ] **Game Speed Setting & Host Round Lifecycle Controls**
   - _Problem:_ Game speed currently defaults globally to `NORMAL` (40 FPS / 25ms interval), cannot be chosen during room creation in the lobby, and can be changed mid-round by any participant. Additionally, there is no HUD indicator showing when a match runs at non-standard speeds.
@@ -15,31 +71,25 @@ Focus on room creation options, host permissions, privacy, and process recovery.
     - **Host-Only Authorization:** Restrict `MSG_TYPE.SET_INTERVAL` permissions strictly to the room creator / host.
     - **Round-Gated Adjustment:** Enforce that speed can only be modified between rounds (when no active round is running, e.g. in config, round finish, or game reset states).
     - **HUD Speed Indicator Icon:** Display a visual indicator icon in the header / HUD whenever game speed is not `NORMAL` (e.g. snail icon for `SLOW`, and a high-speed icon for `FAST`). Note: Icons will be supplied and imported into `public/remixicon/` following [`public/remixicon/README.md`](public/remixicon/README.md).
-- [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
-  - _Problem:_ Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
-  - _Proposed Solution:_
-    - Allow players to explicitly surrender/vacate a slot (clearing session ownership).
-    - Allow new lobby players to join ongoing matches by taking over abandoned light-cycles.
-    - Provide a "Lock Room" toggle for room hosts who want private rosters.
 - [ ] **Hidden / Unlisted Private Games**
   - _Problem:_ All games are currently broadcast publicly to the lobby list.
   - _Proposed Solution:_
     - Add a "Private / Unlisted" toggle in the game creation form (`isPublic: false`).
     - Exclude unlisted games from `MSG_TYPE.LOBBY_LIST`.
     - Allow players to join directly via URL hash (`https://domain.com/#gameId`) or a "Join by Game ID" input field.
+- [ ] **Player Slot Relinquishing & Mid-Game Replacement Joining**
+  - _Problem:_ Once a player disconnects or leaves, their slot remains locked to their `sessionStorage` identity unless manually re-joined. New lobby visitors cannot take over vacated light-cycle slots in ongoing matches.
+  - _Proposed Solution:_
+    - Allow players to explicitly surrender/vacate a slot (clearing session ownership).
+    - Allow new lobby players to join ongoing matches by taking over abandoned light-cycles.
+    - Provide a "Lock Room" toggle for room hosts who want private rosters.
 
 ---
 
-## Milestone 3: Polish & Game Modes
+## Target Release: v2.0.0 — The Complete Retro Arcade Edition
 
-Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and single-player options.
+Major milestone transforming Bitcycles into a full cross-platform audiovisual arcade game with autonomous solo play.
 
-- [ ] **Scoreboard Sorted by Score**
-  - _Problem:_ Scoreboard currently displays players in registration order (Player 0, 1, 2...).
-  - _Proposed Solution:_ Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
-- [ ] **Explosion Ghosting Bug Verification**
-  - _Problem:_ In earlier versions, residual explosion particles from a previous round would occasionally persist or flash on the canvas at the start of a new round.
-  - _Proposed Solution:_ Verify that `Arena.reset()` cleanly clears `this.explosions = []` and that the hybrid delta renderer's local `Int8Array` buffer resets all cells to `CELL_TYPE.EMPTY` / `CELL_TYPE.BORDER` upon match start.
 - [ ] **Procedural Retro Web Audio SFX (Zero Assets)**
   - _Proposed Solution:_ Implement synthesized chiptune audio via the browser's native Web Audio API (zero audio file downloads):
     - Light-cycle engine hum
@@ -49,65 +99,13 @@ Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and 
     - Mute audio toggle in Settings.
 - [ ] **Single-Player Practice Bot (AI)**
   - _Proposed Solution:_ A lightweight survival heuristic bot (wall avoidance + flood-fill open space navigation) for offline or solo practice when no lobby opponents are available.
-- [ ] **Dynamic Theme Registry & Plug-and-Play Palette Catalog**
-  - _Problem:_ Adding a new theme/palette currently requires modifying multiple hardcoded locations across the codebase: CSS definitions in `public/stylesheets/palettes.css`, `<option>` elements in `views/controls.pug`, `EXPECTED_PALETTES` in `test/palette.test.js`, and `PALETTE_META` in `scripts/generate-palette-gallery.js`.
-  - _Proposed Solution:_
-    - Centralize palette metadata into a single data manifest (e.g. `shared/palettes.json` or individual CSS theme files with structured metadata headers).
-    - **Custom Derivation Overrides Support:** Ensure the theme manifest/parser supports optional per-palette `-hl` and `-muted` derivation formulas (or raw CSS override blocks) so themes with unique optics (e.g. `arcade-neon` bloom, monochrome CRT decay) retain their specialized behaviors.
-    - Dynamically populate the Settings dropdown selector (`<select id="game-palette">`) in Pug / `settingsView.js` from the manifest.
-    - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover, verify, and generate swatch triads for all registered palettes dynamically without maintaining hardcoded arrays.
-    - _Documentation:_ Update and expand `README.md` to document the plug-and-play theme architecture and provide clear developer instructions for creating, testing, and submitting custom palettes.
-- [ ] **Authentic C64 Original Hi-Res Color Scheme (`c64-original`)**
-  - _Problem:_ The existing `c64` palette is a multi-color VIC-II tribute with colored trails on dark backgrounds. Oliver Stiller's original 1989 *Ultimate Tron II* Commodore 64 game (published on *64'er* cover disk 54, documented on [Lemon64](https://www.lemon64.com/game/ultimate-tron-2)) utilized the C64's 1-bit hi-res bitmap mode featuring a distinct Medium Gray (`#838383` / `#777777`, C64 color 12) arena background, crisp Black (`#000000`, C64 color 0) borders, light-cycle trails, and explosion particles, with White (`#ffffff`, C64 color 1) text highlights.
-  - _Proposed Solution:_
-    - Add a dedicated `c64-original` palette preset accurately replicating the authentic 1989 Commodore 64 hi-res bitmap look.
-    - Provide high-contrast black light-cycle trails and explosion debris on the classic medium gray arena background, with subtle stepped monochrome luminance or distinctive head markers to distinguish multi-player cycles.
-    - Update palette test suites and gallery verification.
-- [ ] **Feature Demo Showcase & Automated Media Recording Pipeline (GIFs / Video)**
-  - _Dedicated Plan:_ [`docs/plans/2026-09-06-feature-demos-and-media-pipeline.md`](docs/plans/2026-09-06-feature-demos-and-media-pipeline.md)
-  - _Prerequisites / Dependencies (Complete Before Recording Final Assets):_
-    - **Authentic C64 Original Color Scheme (`c64-original`):** Required so the historical tribute look can be prominently recorded and showcased in media clips and documentation.
-    - **Dynamic Theme Registry & Plug-and-Play Palette Catalog:** Required so the in-engine theme switcher demo dynamically loops across all registered palettes without hardcoded list drift.
-    - **Explosion Ghosting Bug Verification:** Required to verify that particle arrays and canvas `Int8Array` buffers cleanly reset between demo loops with zero visual artifacts during capture.
-    - **Scoreboard Sorted by Score:** Required so post-round demo screens (after kills and wall escapes) display a clean, ranked scoreboard in captured videos.
-  - _Problem:_ The repository and GitHub README currently lack visual gameplay animations (GIFs/videos) demonstrating unique mechanics:
-    - Dynamic hot-swappable color palettes (Zenbones and retro CRT presets).
-    - The 32-cell killzone trail cut-off mechanic and scoring bonuses.
-    - Wall breach escaping through ragged holes blasted into arena borders.
-    - Organic particle explosion dispersion and debris physics.
-    Additionally, there is no in-engine feature demo or replay script allowing players or visitors to preview these mechanics interactively from the web UI.
-  - _Proposed Solution:_
-    - **In-Engine Scripted Demo Modes:**
-      - Implement deterministic scripted sequences (or scripted bot routines) showcasing each core feature:
-        - `themes`: Live gameplay demonstrating dynamic switching across the 12 color palettes in real-time.
-        - `kill`: Two light-cycles engaging in a close-quarters interception where Player 2 crashes into Player 1's trailing killzone (last 32 cells), triggering the kill banner and kill score points.
-        - `escape`: A light-cycle crashes directly adjacent to the arena border, explosive particles blast away border cells creating a breach, and a surviving light-cycle navigates through the opening to trigger the 3x-point `escaped!!!` round win.
-        - `explosions`: A comparison or slow-motion sequence demonstrating the organic randomness of explosions (variable particle counts 16–20, randomized frame launch delays, non-linear velocity distribution, and random travel distances).
-      - Make demos selectable directly from the game UI (e.g. "Watch Feature Demos" in the Welcome screen or settings modal) and via deep-link hash or query parameters (e.g. `#demo=escape`).
-    - **Automated Headless Video & GIF Generation Script:**
-      - Build a headless automation CLI script (`scripts/record-demos.js` or `npm run record:demos`) using Playwright to run the scripted scenarios at native canvas resolution.
-      - Pipe frames or captured video to system `ffmpeg` using high-fidelity color quantization (`palettegen` / `paletteuse`) to generate crisp, loopable, lightweight `.gif` and `.mp4`/`.webm` assets in `docs/media/`.
-    - **GitHub README & Documentation Assets:**
-      - Embed the generated demo GIFs into `README.md` and feature documentation to illustrate game mechanics and visual aesthetics.
-
-
----
-
-## Milestone 4: Mobile & Touch Experience
-
-Focus on mobile ergonomics, touch input latency, and display scaling.
-
-- [ ] **Mobile Landscape 16:10 Layout**
+- [ ] **Mobile Landscape 16:10 Layout & Touch Ergonomics**
   - _Dedicated Plan:_ [`docs/plans/2026-08-17-mobile-landscape-layout.md`](docs/plans/2026-08-17-mobile-landscape-layout.md)
-  - Height-driven 16:10 aspect ratio scaling for smartphones and tablets.
-  - Ergonomic split thumb controls flanking the arena canvas (Retro handheld style).
-- [ ] **Instant Touch Reactivity (`pointerdown` & Input Queue)**
-  - _Problem:_ Standard `click` handlers on mobile have a 100–300ms tap delay, and rapid successive taps get dropped or misinterpreted as zoom gestures.
   - _Proposed Solution:_
-    - Switch button touch handlers to `pointerdown` / `touchstart` with `touch-action: manipulation`.
-    - Implement a client-side direction buffer queue so rapid turns (e.g. Left $\rightarrow$ Right within $<30\text{ms}$) are not lost before the server's next physics tick.
-- [ ] **High-DPI / Zoom & Resolution Audit**
-  - Verify that canvas sharpness, CSS variables, and touch boundaries adapt cleanly across 1x, 2x, and 3x device pixel ratios (Retina displays, foldable phones, and zoomed browser windows).
+    - Height-driven 16:10 aspect ratio scaling for smartphones and tablets.
+    - Ergonomic split thumb controls flanking the arena canvas (retro handheld style).
+    - Instant touch reactivity via `pointerdown` / `touchstart` with `touch-action: manipulation` and client-side direction buffer queue.
+    - High-DPI and zoom boundary audit across 1x, 2x, and 3x device pixel ratios.
 
 ---
 

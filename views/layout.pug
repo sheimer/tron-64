@@ -22,7 +22,7 @@ html
             document.documentElement.style.colorScheme = t;
           }
           var p = JSON.parse(localStorage.getItem('palette'));
-          if (p) {
+          if (p && p !== 'c64-original') {
             document.documentElement.dataset.palette = p;
           }
         } catch (e) {}

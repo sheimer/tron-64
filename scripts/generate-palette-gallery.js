@@ -237,6 +237,10 @@ const PALETTE_META = {
   duckbones: { name: 'Duckbones', group: 'Zenbones Family' },
   seoulbones: { name: 'Seoulbones', group: 'Zenbones Family' },
   c64: { name: 'Commodore 64 (VIC-II)', group: 'Retro & Display' },
+  'c64-original': {
+    name: 'Commodore 64 (Original Hi-Res - Prototype)',
+    group: 'Retro & Display',
+  },
   'arcade-neon': { name: 'Arcade Neon', group: 'Retro & Display' },
   'amber-crt': { name: 'Amber Phosphor CRT', group: 'Retro & Display' },
   'green-crt': { name: 'Green Phosphor CRT', group: 'Retro & Display' },

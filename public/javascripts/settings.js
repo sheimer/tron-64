@@ -29,8 +29,11 @@ class Settings {
       speed: new Set(),
     }
     this.theme = JSON.parse(localStorage.getItem('theme')) ?? AUTO
+    const savedPalette = JSON.parse(localStorage.getItem('palette'))
     this.palette =
-      JSON.parse(localStorage.getItem('palette')) ?? DEFAULT_PALETTE
+      savedPalette && savedPalette !== 'c64-original'
+        ? savedPalette
+        : DEFAULT_PALETTE
 
     this.coloredPlayers =
       JSON.parse(localStorage.getItem('coloredPlayers')) ?? true

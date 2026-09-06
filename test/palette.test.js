@@ -136,6 +136,7 @@ const EXPECTED_PALETTES = [
   'duckbones',
   'seoulbones',
   'c64',
+  'c64-original',
   'arcade-neon',
   'amber-crt',
   'green-crt',
@@ -166,7 +167,7 @@ const REQUIRED_TOKENS = [
   'rock',
 ]
 const PLAYER_KEYS = ['water', 'wood', 'leaf', 'blossom', 'sky', 'rock']
-const MONOCHROME_PALETTES = new Set(['amber-crt', 'green-crt'])
+const MONOCHROME_PALETTES = new Set(['c64-original', 'amber-crt', 'green-crt'])
 
 for (const id of EXPECTED_PALETTES) {
   const p = palettes[id]
@@ -309,6 +310,6 @@ for (const id of EXPECTED_PALETTES) {
     `controls.pug must include option for '${id}'`,
   )
 }
-console.log('✔ controls.pug contains all 12 palette selection options.')
+console.log(`✔ controls.pug contains all ${EXPECTED_PALETTES.length} palette selection options.`)
 
 console.log('--- ALL PALETTE & ACCESSIBILITY TESTS PASSED! ---')
