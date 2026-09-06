@@ -57,6 +57,27 @@ Focus on scoring UX, color palettes, visual artifact cleanups, retro audio, and 
     - Dynamically populate the Settings dropdown selector (`<select id="game-palette">`) in Pug / `settingsView.js` from the manifest.
     - Automate `test/palette.test.js` and `scripts/generate-palette-gallery.js` to discover, verify, and generate swatch triads for all registered palettes dynamically without maintaining hardcoded arrays.
     - _Documentation:_ Update and expand `README.md` to document the plug-and-play theme architecture and provide clear developer instructions for creating, testing, and submitting custom palettes.
+- [ ] **Feature Demo Showcase & Automated Media Recording Pipeline (GIFs / Video)**
+  - _Dedicated Plan:_ [`docs/plans/2026-09-06-feature-demos-and-media-pipeline.md`](docs/plans/2026-09-06-feature-demos-and-media-pipeline.md)
+  - _Problem:_ The repository and GitHub README currently lack visual gameplay animations (GIFs/videos) demonstrating unique mechanics:
+    - Dynamic hot-swappable color palettes (Zenbones and retro CRT presets).
+    - The 32-cell killzone trail cut-off mechanic and scoring bonuses.
+    - Wall breach escaping through ragged holes blasted into arena borders.
+    - Organic particle explosion dispersion and debris physics.
+    Additionally, there is no in-engine feature demo or replay script allowing players or visitors to preview these mechanics interactively from the web UI.
+  - _Proposed Solution:_
+    - **In-Engine Scripted Demo Modes:**
+      - Implement deterministic scripted sequences (or scripted bot routines) showcasing each core feature:
+        - `themes`: Live gameplay demonstrating dynamic switching across the 12 color palettes in real-time.
+        - `kill`: Two light-cycles engaging in a close-quarters interception where Player 2 crashes into Player 1's trailing killzone (last 32 cells), triggering the kill banner and kill score points.
+        - `escape`: A light-cycle crashes directly adjacent to the arena border, explosive particles blast away border cells creating a breach, and a surviving light-cycle navigates through the opening to trigger the 3x-point `escaped!!!` round win.
+        - `explosions`: A comparison or slow-motion sequence demonstrating the organic randomness of explosions (variable particle counts 16–20, randomized frame launch delays, non-linear velocity distribution, and random travel distances).
+      - Make demos selectable directly from the game UI (e.g. "Watch Feature Demos" in the Welcome screen or settings modal) and via deep-link hash or query parameters (e.g. `#demo=escape`).
+    - **Automated Headless Video & GIF Generation Script:**
+      - Build a headless automation CLI script (`scripts/record-demos.js` or `npm run record:demos`) using Playwright to run the scripted scenarios at native canvas resolution.
+      - Pipe frames or captured video to system `ffmpeg` using high-fidelity color quantization (`palettegen` / `paletteuse`) to generate crisp, loopable, lightweight `.gif` and `.mp4`/`.webm` assets in `docs/media/`.
+    - **GitHub README & Documentation Assets:**
+      - Embed the generated demo GIFs into `README.md` and feature documentation to illustrate game mechanics and visual aesthetics.
 
 
 ---
