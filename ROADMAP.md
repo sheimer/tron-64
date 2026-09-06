@@ -4,18 +4,7 @@ This document outlines upcoming architectural improvements, networking enhanceme
 
 ---
 
-## Target Release: v1.4.0 — Scoring UX, Stability & Polish
 
-Finalizing post-round scoring UX and engine cleanup for the v1.4.0 release.
-
-- [x] **Scoreboard Sorted by Score**
-  - _Problem:_ Scoreboard currently displays players in registration order (Player 0, 1, 2...).
-  - _Proposed Solution:_ Sort the scoreboard rows descending by total points (`total`), with visual position rank badges (1st, 2nd, 3rd, etc.).
-- [ ] **Explosion Ghosting Bug Verification**
-  - _Problem:_ In earlier versions, residual explosion particles from a previous round would occasionally persist or flash on the canvas at the start of a new round.
-  - _Proposed Solution:_ Verify that `Arena.reset()` cleanly clears `this.explosions = []` and that the hybrid delta renderer's local `Int8Array` buffer resets all cells to `CELL_TYPE.EMPTY` / `CELL_TYPE.BORDER` upon match start.
-
----
 
 ## Target Release: v1.5.0 — Showcase, Demo Engine & Palette Extensibility
 
@@ -151,3 +140,9 @@ For a chronological release history, see [CHANGELOG.md](CHANGELOG.md).
 - **Curated 12-Palette Catalog:** 8 Zenbones family palettes (`forestbones`, `zenbones`, `zenburned`, `tokyobones`, `rosebones`, `nordbones`, `duckbones`, `seoulbones`) and 4 retro display presets (`c64` Commodore 64 VIC-II tribute, `arcade-neon` synthwave, `amber-crt` amber phosphor CRT, `green-crt` P1 green phosphor CRT).
 - **Settings UI & Hot-Swapping:** Grouped dropdown selector in Settings modal with `localStorage` persistence, dynamically updating canvas light trails, arena borders, particle explosions, and UI without page reload.
 - **Automated Verification & Visual Gallery:** Automated contrast and CVD test suite (`test/palette.test.js`) and standalone visual gallery generator (`scripts/generate-palette-gallery.js`, `npm run test:palettes`).
+
+### Post-Round Scoring UX & Engine Polish
+
+- **Scoreboard Sorted by Score:** Players sorted descending by total points with tie-breaking rules and visual rank badges (1st, 2nd, 3rd) in post-round summaries.
+- **Explosion Ghosting Bug Verification & Lifecycle Hygiene:** Verified zero particle ghosting across mid-round crashes, round resets, player disconnects, and cold daemon reboots via automated regression suite (`test/explosion.test.js`).
+

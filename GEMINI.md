@@ -12,6 +12,11 @@
 * **Relative Links in Repository Markdown Files:** In all repository documentation and tracked markdown files (`README.md`, `CHANGELOG.md`, `ROADMAP.md`, `GEMINI.md`, `docs/plans/`, `docs/architecture/`, etc.), ALWAYS use relative repository paths for markdown links (e.g. `[scripts/deploy.sh](scripts/deploy.sh)` or `[testing.md](docs/architecture/testing.md)`). NEVER write absolute machine paths or `file://` URIs into repository files so links render and navigate correctly on GitHub and across developer machines without leaking local filesystem structures. (Note: The `file://` absolute URI scheme is strictly reserved for the assistant's interactive chat output to the user, never for committed repo files.)
 
 
+## Code Quality, Linting & Formatting Rules
+* **Linter Hygiene (ESLint):** The codebase enforces ESLint (`eslint.config.js`) with `'no-unused-vars': 'error'`. Never leave unused imports, variables, or functions in new or modified files. Always run `npx eslint <modified_files>` before proposing changes.
+* **Code Formatting (Prettier):** Maintain formatting consistency across all JavaScript and configuration files by running `npx prettier --write <modified_files>`. Adhere to the established code style (single quotes, no semicolons, trailing commas, 80-character print width).
+
+
 ## Testing Guidelines
 * **Test Location:** Place all unit and integration test scripts in the `test/` directory using the `.test.js` naming convention (e.g. `test/<feature>.test.js`).
 * **Test Runner:** All test suites are aggregated and executed in isolated processes by `test/runAll.js` via `npm test`.
@@ -35,9 +40,9 @@
 ## Architecture & Domain Guides (Read On-Demand)
 When working on specific subsystems, consult the corresponding domain guide in `docs/architecture/`:
 * **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Single WebSocket model, binary frame formats, opcode fast-paths, latency CQI.
-* **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Client screen routing (`welcome`/`lobby`/`config`/`game`), header navigation (`btn-header-lobby`), match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper.
+* **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Client screen routing (`welcome`/`lobby`/`config`/`game`), header navigation (`btn-header-lobby`), match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper, non-blocking unreferenced maintenance timers, explosion lifecycle hygiene.
 * **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, multi-palette theming (Zenbones & retro presets), live CSS resolution, dual layout modes (natural welcome scroll vs fixed grid arena), accessible legal modals, anti-scraping email hydration.
-* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests, mathematical palette contrast & CVD verification, and visual gallery generation (`npm run test:palettes`).
+* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests, mathematical palette contrast & CVD verification, explosion ghosting verification, scoreboard ranking tests, and visual gallery generation (`npm run test:palettes`).
 
 
 

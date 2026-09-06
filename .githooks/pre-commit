@@ -1,0 +1,25 @@
+#!/bin/sh
+# Git pre-commit hook: Verify ESLint and Prettier compliance on staged files
+
+# 1. ESLint static analysis on staged JavaScript files
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.js$' || true)
+if [ -n "$STAGED_JS" ]; then
+  echo "🔍 Running ESLint on staged JavaScript files..."
+  echo "$STAGED_JS" | xargs npx eslint || {
+    echo ""
+    echo "❌ ESLint check failed. Please fix the lint errors above before committing."
+    exit 1
+  }
+fi
+
+# 2. Prettier formatting check on staged JavaScript, CSS, and JSON files
+STAGED_FORMATTABLE=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|css|json)$' || true)
+if [ -n "$STAGED_FORMATTABLE" ]; then
+  echo "🎨 Checking formatting with Prettier..."
+  echo "$STAGED_FORMATTABLE" | xargs npx prettier --check || {
+    echo ""
+    echo "❌ Prettier formatting check failed."
+    echo "💡 Run 'npx prettier --write <file>' on unformatted files, stage the updates, and re-commit."
+    exit 1
+  }
+fi

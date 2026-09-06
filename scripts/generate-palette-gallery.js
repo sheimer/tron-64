@@ -29,7 +29,7 @@ function parsePalettes(css) {
     const props = {}
     const propMatches = [
       ...body.matchAll(
-        /--color-([a-z-]+):\s*light-dark\(\s*([^,\)]+)\s*,\s*([^,\)]+)\s*\);/g,
+        /--color-([a-z-]+):\s*light-dark\(\s*([^,)]+)\s*,\s*([^,)]+)\s*\);/g,
       ),
     ]
     for (const p of propMatches) {
@@ -46,7 +46,11 @@ const palettes = parsePalettes(cssContent)
 
 function hexToRgb(hex) {
   hex = hex.replace('#', '')
-  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('')
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('')
   const num = parseInt(hex, 16)
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255]
 }
@@ -245,9 +249,6 @@ const PALETTE_META = {
   'amber-crt': { name: 'Amber Phosphor CRT', group: 'Retro & Display' },
   'green-crt': { name: 'Green Phosphor CRT', group: 'Retro & Display' },
 }
-
-const PLAYER_NAMES = ['Tron', 'Sark', 'Flynn', 'Yori', 'Clu', 'Ram']
-const COLOR_KEYS = ['water', 'wood', 'leaf', 'blossom', 'sky', 'rock']
 
 function renderArenaSvg(colors) {
   // Arena coordinates based on 320x200 grid

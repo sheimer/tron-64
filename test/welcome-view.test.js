@@ -1,6 +1,16 @@
 import assert from 'node:assert'
 import http from 'node:http'
-import { app } from '../app.js'
+import path from 'node:path'
+import fs from 'node:fs'
+
+const testDataDir = path.resolve(process.cwd(), 'data-test-welcome')
+process.env.DATA_DIR = testDataDir
+
+if (fs.existsSync(testDataDir)) {
+  fs.rmSync(testDataDir, { recursive: true, force: true })
+}
+
+const { app } = await import('../app.js')
 import { state } from '../public/javascripts/state.js'
 import { WelcomeView } from '../public/javascripts/ui/welcomeView.js'
 
@@ -8,7 +18,9 @@ async function runTests() {
   console.log('--- Testing Welcome View, Route Rendering & Navigation ---')
 
   // 1. Test Express Route & Pug Template Rendering
-  console.log('1. Verifying Express route rendering for Bitcycles and welcome components...')
+  console.log(
+    '1. Verifying Express route rendering for Bitcycles and welcome components...',
+  )
   const testServer = http.createServer(app)
   await new Promise((resolve) => testServer.listen(0, resolve))
   const port = testServer.address().port
@@ -26,18 +38,40 @@ async function runTests() {
   await new Promise((resolve) => testServer.close(resolve))
 
   assert.ok(html.includes('Bitcycles'), 'HTML should contain Bitcycles title')
-  assert.ok(html.includes('id="welcome"'), 'HTML should contain #welcome container')
-  assert.ok(html.includes('id="btn-header-enter-lobby"'), 'HTML should contain #btn-header-enter-lobby')
+  assert.ok(
+    html.includes('id="welcome"'),
+    'HTML should contain #welcome container',
+  )
+  assert.ok(
+    html.includes('id="btn-header-enter-lobby"'),
+    'HTML should contain #btn-header-enter-lobby',
+  )
   assert.ok(html.includes('id="btn-info"'), 'HTML should contain #btn-info')
-  assert.ok(html.includes('id="modal-legal"'), 'HTML should contain #modal-legal')
-  assert.ok(html.includes('id="modal-privacy"'), 'HTML should contain #modal-privacy')
-  assert.ok(html.includes('Ultimate Tron II'), 'HTML should reference Ultimate Tron II tribute')
-  assert.ok(html.includes('Telemetrie'), 'HTML should mention game telemetry in privacy section')
+  assert.ok(
+    html.includes('id="modal-legal"'),
+    'HTML should contain #modal-legal',
+  )
+  assert.ok(
+    html.includes('id="modal-privacy"'),
+    'HTML should contain #modal-privacy',
+  )
+  assert.ok(
+    html.includes('Ultimate Tron II'),
+    'HTML should reference Ultimate Tron II tribute',
+  )
+  assert.ok(
+    html.includes('Telemetrie'),
+    'HTML should mention game telemetry in privacy section',
+  )
 
   // 2. Test State Store Initial Screen and Navigation
   console.log('2. Verifying State store default screen and transitions...')
-  assert.strictEqual(state.screen, 'welcome', 'State default screen must be "welcome"')
-  
+  assert.strictEqual(
+    state.screen,
+    'welcome',
+    'State default screen must be "welcome"',
+  )
+
   let screenChanged = null
   const unsub = state.subscribe('screen', (newScreen) => {
     screenChanged = newScreen
@@ -83,9 +117,9 @@ async function runTests() {
   const originalWindow = global.window
 
   const elements = {
-    'layout': createMockElement('layout'),
-    'welcome': createMockElement('welcome'),
-    'footer': createMockElement('footer'),
+    layout: createMockElement('layout'),
+    welcome: createMockElement('welcome'),
+    footer: createMockElement('footer'),
     'btn-header-enter-lobby': createMockElement('btn-header-enter-lobby'),
     'btn-info': createMockElement('btn-info'),
     'modal-legal': createMockElement('modal-legal', ['modal']),
@@ -117,7 +151,11 @@ async function runTests() {
 
   // Test header enter lobby button
   elements['btn-header-enter-lobby'].dispatchEvent('click')
-  assert.strictEqual(enteredLobbyCount, 1, 'onEnterLobby must be triggered on header button click')
+  assert.strictEqual(
+    enteredLobbyCount,
+    1,
+    'onEnterLobby must be triggered on header button click',
+  )
 
   // Test opening legal modal
   let defaultPrevented = false
@@ -141,7 +179,9 @@ async function runTests() {
   assert.strictEqual(elements['modal-privacy'].style.display, 'flex')
 
   // Test closing modal via Escape key
-  const escapeHandler = windowListeners.find((l) => l.evt === 'keydown')?.handler
+  const escapeHandler = windowListeners.find(
+    (l) => l.evt === 'keydown',
+  )?.handler
   assert.ok(escapeHandler, 'Escape key listener should be registered')
   escapeHandler({ key: 'Escape' })
   assert.strictEqual(elements['modal-privacy'].style.display, 'none')
@@ -151,19 +191,28 @@ async function runTests() {
   assert.strictEqual(elements['welcome'].style.display, 'none')
   assert.strictEqual(elements['btn-header-enter-lobby'].style.display, 'none')
   assert.strictEqual(elements['btn-info'].style.display, '')
-  assert.strictEqual(elements['layout'].classList.contains('screen-welcome'), false)
+  assert.strictEqual(
+    elements['layout'].classList.contains('screen-welcome'),
+    false,
+  )
 
   welcomeView.show()
   assert.strictEqual(elements['welcome'].style.display, '')
   assert.strictEqual(elements['btn-header-enter-lobby'].style.display, '')
   assert.strictEqual(elements['btn-info'].style.display, 'none')
-  assert.strictEqual(elements['layout'].classList.contains('screen-welcome'), true)
+  assert.strictEqual(
+    elements['layout'].classList.contains('screen-welcome'),
+    true,
+  )
 
   // Restore globals
   global.document = originalDocument
   global.window = originalWindow
 
   console.log('--- ALL WELCOME VIEW UNIT & ROUTE TESTS PASSED! ---')
+  if (fs.existsSync(testDataDir)) {
+    fs.rmSync(testDataDir, { recursive: true, force: true })
+  }
 }
 
 runTests()

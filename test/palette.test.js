@@ -13,7 +13,11 @@ console.log('--- Testing Multi-Palette Color Schemes & Accessibility ---')
 // --------------------------------------------------------------------------
 function hexToRgb(hex) {
   hex = hex.replace('#', '')
-  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('')
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('')
   const num = parseInt(hex, 16)
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255]
 }
@@ -28,7 +32,11 @@ function linearToSrgb(c) {
 }
 
 function relativeLuminance([r, g, b]) {
-  return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b)
+  return (
+    0.2126 * srgbToLinear(r) +
+    0.7152 * srgbToLinear(g) +
+    0.0722 * srgbToLinear(b)
+  )
 }
 
 function wcagContrast(c1, c2) {
@@ -43,8 +51,8 @@ function rgbToLab([r, g, b]) {
   const B = srgbToLinear(b)
 
   let X = (R * 0.4124564 + G * 0.3575761 + B * 0.1804375) / 0.95047
-  let Y = (R * 0.2126729 + G * 0.7151522 + B * 0.0721750) / 1.00000
-  let Z = (R * 0.0193339 + G * 0.1191920 + B * 0.9503041) / 1.08883
+  let Y = (R * 0.2126729 + G * 0.7151522 + B * 0.072175) / 1.0
+  let Z = (R * 0.0193339 + G * 0.119192 + B * 0.9503041) / 1.08883
 
   const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116)
   const fX = f(X)
@@ -73,8 +81,8 @@ function simulateCVD([r, g, b], type) {
     bSim = 0.0 * R + 0.24167 * G + 0.75833 * B
   } else if (type === 'deuteranopia') {
     rSim = 0.625 * R + 0.375 * G + 0.0 * B
-    gSim = 0.700 * R + 0.300 * G + 0.0 * B
-    bSim = 0.0 * R + 0.300 * G + 0.700 * B
+    gSim = 0.7 * R + 0.3 * G + 0.0 * B
+    bSim = 0.0 * R + 0.3 * G + 0.7 * B
   } else {
     return [r, g, b]
   }
@@ -111,7 +119,7 @@ function parsePalettes(css) {
     const props = {}
     const propMatches = [
       ...body.matchAll(
-        /--color-([a-z-]+):\s*light-dark\(\s*([^,\)]+)\s*,\s*([^,\)]+)\s*\);/g,
+        /--color-([a-z-]+):\s*light-dark\(\s*([^,)]+)\s*,\s*([^,)]+)\s*\);/g,
       ),
     ]
     for (const p of propMatches) {
@@ -216,12 +224,16 @@ for (const id of EXPECTED_PALETTES) {
     }
   }
 }
-console.log('✔ All palettes meet WCAG text (>=4.5:1) and trail (>=3.0:1) contrast.')
+console.log(
+  '✔ All palettes meet WCAG text (>=4.5:1) and trail (>=3.0:1) contrast.',
+)
 
 // --------------------------------------------------------------------------
 // 5. Perceptual Color Distance (CIELAB ΔE*)
 // --------------------------------------------------------------------------
-console.log('4. Verifying perceptual color discriminability across player pairs...')
+console.log(
+  '4. Verifying perceptual color discriminability across player pairs...',
+)
 for (const id of EXPECTED_PALETTES) {
   if (MONOCHROME_PALETTES.has(id)) continue
   const pal = palettes[id]
@@ -291,7 +303,9 @@ for (const id of EXPECTED_PALETTES) {
     }
   }
 }
-console.log('✔ All palettes pass Deuteranopia and Protanopia CVD accessibility tests.')
+console.log(
+  '✔ All palettes pass Deuteranopia and Protanopia CVD accessibility tests.',
+)
 
 // --------------------------------------------------------------------------
 // 7. Template & Settings View Integration
@@ -315,6 +329,8 @@ assert.ok(
   !controlsContent.includes("value='c64-original'"),
   "controls.pug must not contain disabled 'c64-original'",
 )
-console.log(`✔ controls.pug contains all ${ACTIVE_PALETTES.length} active palette selection options.`)
+console.log(
+  `✔ controls.pug contains all ${ACTIVE_PALETTES.length} active palette selection options.`,
+)
 
 console.log('--- ALL PALETTE & ACCESSIBILITY TESTS PASSED! ---')

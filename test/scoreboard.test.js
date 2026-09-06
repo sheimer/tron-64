@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { app } from '../app.js'
-import { sortScoreboardPlayers, ordinalSuffixOf } from '../shared/utils.js'
+import path from 'node:path'
+import fs from 'node:fs'
+
+const testDataDir = path.resolve(process.cwd(), 'data-test-scoreboard')
+process.env.DATA_DIR = testDataDir
+
+if (fs.existsSync(testDataDir)) {
+  fs.rmSync(testDataDir, { recursive: true, force: true })
+}
+
+const { app } = await import('../app.js')
+const { sortScoreboardPlayers } = await import('../shared/utils.js')
 
 console.log('--- Testing Scoreboard Sorting, Ranking & Table Markup ---')
 
 // 1. Test sortScoreboardPlayers utility
-console.log('1. Verifying sortScoreboardPlayers descending sort and tie-breaking...')
+console.log(
+  '1. Verifying sortScoreboardPlayers descending sort and tie-breaking...',
+)
 
 // Test case A: Clear descending totals
 const testPlayersA = [
@@ -55,7 +67,11 @@ assert.strictEqual(sortedD[0]._rank, 1, 'Tied player should be 1st')
 assert.strictEqual(sortedD[0]._rankLabel, '1st')
 assert.strictEqual(sortedD[1]._rank, 1, 'Tied player should also be 1st')
 assert.strictEqual(sortedD[1]._rankLabel, '1st')
-assert.strictEqual(sortedD[2]._rank, 3, 'Next player should be 3rd (1224 competition rank)')
+assert.strictEqual(
+  sortedD[2]._rank,
+  3,
+  'Next player should be 3rd (1224 competition rank)',
+)
 assert.strictEqual(sortedD[2]._rankLabel, '3rd')
 
 // Test case E: Initial 0-score start
@@ -65,12 +81,19 @@ const testPlayersE = [
   { id: 'p2', name: 'Flynn', total: 0, kills: 0, escaped: 0 },
 ]
 const sortedE = sortScoreboardPlayers(testPlayersE)
-assert.strictEqual(sortedE.every((p) => p._rank === 1 && p._rankLabel === '1st'), true, 'All 0-score players start tied at 1st')
+assert.strictEqual(
+  sortedE.every((p) => p._rank === 1 && p._rankLabel === '1st'),
+  true,
+  'All 0-score players start tied at 1st',
+)
 
 // Test case F: Empty and edge inputs
 assert.deepStrictEqual(sortScoreboardPlayers([]), [])
 assert.deepStrictEqual(sortScoreboardPlayers(null), [])
-assert.strictEqual(sortScoreboardPlayers([{ id: 'p0', total: 10 }])[0]._rankLabel, '1st')
+assert.strictEqual(
+  sortScoreboardPlayers([{ id: 'p0', total: 10 }])[0]._rankLabel,
+  '1st',
+)
 
 console.log('✔ sortScoreboardPlayers logic and ranking verified.')
 
@@ -93,11 +116,21 @@ const html = await new Promise((resolve, reject) => {
 await new Promise((resolve) => testServer.close(resolve))
 
 assert.ok(html.includes('id="scoretable"'), 'HTML should contain #scoretable')
-assert.ok(html.includes('id="body-scoretable"'), 'HTML should contain tbody#body-scoretable')
+assert.ok(
+  html.includes('id="body-scoretable"'),
+  'HTML should contain tbody#body-scoretable',
+)
 assert.ok(html.includes('>Rank</th>'), 'HTML should contain Rank column header')
 assert.ok(html.includes('>Name</th>'), 'HTML should contain Name column header')
-assert.ok(html.includes('>Total</th>'), 'HTML should contain Total column header')
+assert.ok(
+  html.includes('>Total</th>'),
+  'HTML should contain Total column header',
+)
 
 console.log('✔ #scoretable HTML markup and headers verified.')
+
+if (fs.existsSync(testDataDir)) {
+  fs.rmSync(testDataDir, { recursive: true, force: true })
+}
 
 console.log('--- ALL SCOREBOARD TESTS PASSED! ---')

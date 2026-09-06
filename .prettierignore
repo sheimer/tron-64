@@ -1,0 +1,15 @@
+# Dependencies & builds
+node_modules/
+package-lock.json
+
+# Generated reports & artifacts
+test/reports/
+data*/
+
+# Vendored assets
+public/remixicon/
+public/favicon/
+
+# Temporary & runtime files
+*.log
+tmpcommit.md

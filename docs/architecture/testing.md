@@ -19,11 +19,14 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 | :--- | :--- | :--- |
 | `test/concurrency.test.js` | Verifies `MAX_ACTIVE_GAMES` limits and room creation guardrails. | Rapid allocation past limit and validation of room rejection errors. |
 | `test/disconnect.test.js` | Verifies the 4 phases of disconnected client handling and trail ghosting. | Mock WebSocket drops, mid-round elimination checks, and zero-trail restart verification. |
+| `test/explosion.test.js` | Verifies explosion particle cleanup, `Arena.reset()` flushing, wall breaches, client `Int8Array` buffer resets, and persistence isolation. | Mid-round crash simulation, expiration force-timeouts, border restoration, client buffer reset checks, and cold reboot disk isolation. |
+| `test/leak.test.js` | Verifies zero server-side memory leaks over 500 game sessions. | 10 cycles creating/destroying 50 rooms with 2,000 players under `node --expose-gc`, asserting net heap $\Delta < 0.5\text{MB}$. |
+| `test/metrics.test.js` | Verifies Prometheus metrics collector, gauges, counters, summary timers, and secured `/metrics` authorization. | Gauge room/player calculation checks, counter increments, tick summary timer assertions, and IP/token authorization testing. |
+| `test/palette.test.js` | Verifies mathematical WCAG contrast, CIELAB color distance, CVD simulation, and template bindings. | Headless CSS parsing, WCAG 2.1 AA ratios ($\ge 4.5:1$ text, $\ge 3.0:1$ trails), CIELAB $\Delta E^*$, and Brettel/Viénot CVD matrices. |
 | `test/persistence.test.js` | Verifies atomic snapshot storage and crash recovery. | Disk snapshot verification, cold server reboot simulation, and state restoration. |
+| `test/scoreboard.test.js` | Verifies descending point sorting, tie-breaking heuristics, shared rankings (1224 competition rank), and scoretable HTML markup. | Standard competition ranking tests, tie-breaking assertions on kills/escapes, and Express template markup checks. |
 | `test/spectator-speed.test.js` | Verifies spectator action locks and room speed synchronization. | Spectator authorization rejection on `START_GAME` / `SET_INTERVAL`. |
 | `test/welcome-view.test.js` | Verifies route rendering, welcome view lifecycle, legal modals, and email hydration. | Express template rendering assertions, state transition checks, and DOM modal controller tests. |
-| `test/palette.test.js` | Verifies mathematical WCAG contrast, CIELAB color distance, CVD simulation, and template bindings. | Headless CSS parsing, WCAG 2.1 AA ratios ($\ge 4.5:1$ text, $\ge 3.0:1$ trails), CIELAB $\Delta E^*$, and Brettel/Viénot CVD matrices. |
-| `test/leak.test.js` | Verifies zero server-side memory leaks over 500 game sessions. | 10 cycles creating/destroying 50 rooms with 2,000 players under `node --expose-gc`, asserting net heap $\Delta < 0.5\text{MB}$. |
 | `test/client-leak.test.js` | Verifies zero client browser memory and DOM element leaks. | Headless Chromium via Playwright, CDP `Performance.getMetrics`, and multi-round match lifecycles. |
 
 ---
@@ -65,4 +68,20 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 * **Offline Visual Gallery Generator (`scripts/generate-palette-gallery.js`):**
   - Executed via `npm run test:palettes`.
   - Generates `test/reports/palette-gallery.html` featuring side-by-side Dark and Light mode mockups for all 12 palettes, arena delta traces, scoreboard overlays, color swatches, and interactive SVG CVD filter simulation toggles.
+
+---
+
+## 6. Code Quality, Static Analysis & Formatting
+
+Static analysis and formatting tools maintain codebase readability and prevent silent runtime errors:
+
+* **ESLint (`eslint.config.js`):**
+  - Configured with ESLint flat config (`@eslint/js.configs.recommended`) and Node/Browser global environments.
+  - Strictly enforces zero unused variables, imports, or dead symbols via `'no-unused-vars': ['error', { args: 'none' }]`.
+  - Run static analysis: `npx eslint <files>` or `npx eslint .`.
+* **Prettier (`prettier`):**
+  - Enforces uniform code style across the repository: single quotes, trailing commas, 80-character print width, and no semicolons.
+  - Format files: `npx prettier --write <files>`.
+  - Check formatting without modifying: `npx prettier --check <files>`.
+
 

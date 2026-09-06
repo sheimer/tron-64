@@ -9,11 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.4.0] - 2026-09-06
+
 ### Added
-- **Developer Git Hooks & Commit Automation Tooling:**
+- **Developer Git Hooks, Linting & Formatting Automation:**
   - Added version-controlled Git hooks in `.githooks/` and setup script in [scripts/setup-git-hooks.sh](scripts/setup-git-hooks.sh) (executable via `npm run setup:hooks`).
+  - Added `pre-commit` hook to automatically enforce ESLint rules and Prettier formatting on staged files before commit creation.
   - Added `prepare-commit-msg` hook to automatically pre-populate the commit buffer from `tmpcommit.md` when committing via Neovim Fugitive (`cc` in `:G`) or standard CLI `git commit`.
   - Added `post-commit` hook to automatically reset `tmpcommit.md` upon successful commit creation.
+  - Added standard npm scripts in [package.json](package.json): `npm run lint`, `npm run lint:fix`, `npm run format`, `npm run format:check`.
+  - Added `.prettierignore` to exclude vendored assets, temporary files, and test reports.
   - Added `tmpcommit.md` to [.gitignore](.gitignore) and updated developer documentation in [README.md](README.md) and [GEMINI.md](GEMINI.md).
 - **Headless Server Concurrency Stress Benchmark Tool:**
   - Implemented dynamic load-scaling benchmark in [benchmark/stress.js](benchmark/stress.js) replacing `concurrency.js`, executable via `npm run benchmark` (fast `--quick` sanity check) or `npm run benchmark:stress` (full progressive saturation test).
@@ -56,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added score-descending sorting in [shared/utils.js](shared/utils.js) (`sortScoreboardPlayers`) ranking players by total points, kills, and escapes with standard competition ranks (1224 ranking).
   - Added dedicated "Rank" column with `.rank-badge` indicators (1st, 2nd, 3rd, etc.) in [views/index.pug](views/index.pug), [public/javascripts/ui/gameView.js](public/javascripts/ui/gameView.js), and [public/stylesheets/components.css](public/stylesheets/components.css).
   - Added unit test suite ([test/scoreboard.test.js](test/scoreboard.test.js)) validating descending point sorting, tie-breaking heuristics, shared rankings, and Express route table markup.
+- **Explosion Ghosting Bug Verification Suite:**
+  - Added comprehensive automated regression suite ([test/explosion.test.js](test/explosion.test.js)) verifying mid-round particle dispersion, instant `Arena.reset()` explosion flushing, natural decay and expiration timeouts, wall breach cleanup, disconnected client explosions, client `Int8Array` buffer resets, and persistence isolation.
 - **Automated Welcome View & Route Tests:**
   - `test/welcome-view.test.js`: Verified Express route rendering of `Bitcycles`, `#welcome`, `#footer-welcome`, modals, and `WelcomeView` lifecycle (backdrop click, escape key, and screen transitions).
 
@@ -69,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved missing arena border in Round 1 and scoreboard flicker by synchronizing `resetGrid()` with a 50ms paint tick on `GAME_RESET`.
   - Immediately dismissed scoreboard overlays (`setMatchState('start')`) and cleared stale round bitmaps (`Renderer.clear()`) on `GAME_FINISH` and `GAME_RESET` to eliminate visual flicker and trail artifacts between rounds.
   - Added dynamic `ResizeObserver` listener in `Renderer.js` to automatically repaint canvas buffers on internal CSS Grid container reflows.
+- **Background Connection Status Timer Event-Loop Retention:**
+  - Added `.unref()` to `statusTimer` in [server/GameSession.js](server/GameSession.js) so background 60-second idle room checks do not hold the Node.js event loop active or block test runners.
+  - Isolated `process.env.DATA_DIR` across test suites ([test/scoreboard.test.js](test/scoreboard.test.js), [test/welcome-view.test.js](test/welcome-view.test.js), [test/explosion.test.js](test/explosion.test.js)) ensuring test execution never loads or mutates live daemon data snapshots.
 
 ---
 

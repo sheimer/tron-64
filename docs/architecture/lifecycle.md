@@ -98,8 +98,27 @@ When a player clicks the "← Lobby" header button (`#btn-header-lobby`):
 
 ## 5. Room Reaping & Inactivity Timeout
 
-* **`IDLE_ROOM_TIMEOUT_MS` (5 Minutes):** When all clients disconnect from a room, a 5-minute timer starts.
+* **`IDLE_ROOM_TIMEOUT_MS` (5 Minutes):** When all clients disconnect from a room, a 5-minute inactivity countdown begins.
+* **Non-Blocking Status Timer (`statusTimer.unref()`):** Periodic connection checks in `GameSession.js` execute via an unreferenced timer (`statusTimer.unref()`), ensuring background room status checks do not hold the Node.js event loop active or stall test runners and process termination.
 * If no client reconnects within 5 minutes, `game.destroy()` is called:
-  * Timers and loops are cleared via `clearInterval()`.
-  * Grid buffers and references are unlinked for GC.
+  * Timers and physics tick loops are cleared.
+  * Grid buffers and player references are unlinked for GC.
   * The room is removed from `gameServer.games` and snapshots on disk.
+
+---
+
+## 6. Round Reset & Explosion Lifecycle Hygiene
+
+To guarantee zero visual or logical particle ghosting across consecutive match rounds:
+* **Server State Flushing (`Arena.reset()` & `Arena.init()`):**
+  * `Arena.init()` unconditionally flushes `this.explosions = []` and completely rebuilds `this.fields` (border cells set to `CELL_TYPE.BORDER`, all interior cells set to `CELL_TYPE.EMPTY`).
+  * `this.fieldChanges` emits *only* active player starting dots on reset, preventing stale explosion debris from transmitting over the network.
+* **Duration Limits & Natural Particle Decay:**
+  * Active explosions enforce duration limits: `EXPLOSION_MAX_MS_RUNNING` (6s while multiple players are alive) and `EXPLOSION_MAX_MS_FINISHED` (4s after match finish).
+  * Upon particle expiration or completion, previous coordinates are explicitly cleared back to `CELL_TYPE.EMPTY` (including wall breach coordinates blasted through borders).
+* **Client Grid Buffer & GPU Paint Synchronization:**
+  * On `GAME_RESET`, the client immediately clears the canvas (`Renderer.clear()`) and transitions to `'start'` match state.
+  * A 50ms paint synchronization tick ensures container DOM reflow completes before `Renderer.resetGrid()` resets the local `Int8Array` buffer to pristine border/empty state, sends `ARENA_READY`, and repaints cleanly.
+* **Persistence Isolation:**
+  * `Storage.js` serializes only room metadata and match score statistics. Grid buffers, active explosion objects, and particle arrays are never written to disk, ensuring clean cold reboot initialization.
+

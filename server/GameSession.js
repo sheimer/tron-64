@@ -2,7 +2,11 @@ import WebSocket from 'ws'
 
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
-import { GRID_SIZE, MAX_PLAYERS, IDLE_ROOM_TIMEOUT_MS } from '../shared/constants.js'
+import {
+  GRID_SIZE,
+  MAX_PLAYERS,
+  IDLE_ROOM_TIMEOUT_MS,
+} from '../shared/constants.js'
 import { roundsPlayedCounter, tickDurationSummary } from './metrics.js'
 
 export class GameSession {
@@ -97,13 +101,14 @@ export class GameSession {
         this.checkConnectionStatus()
       }
     }, 60 * 1000)
+    if (this.statusTimer?.unref) {
+      this.statusTimer.unref()
+    }
   }
 
   connect({ client, ondraw, onfinish, onreset }) {
     // Prune closed socket references before adding new client
-    this.clients = this.clients.filter(
-      (c) => c?.readyState === WebSocket.OPEN,
-    )
+    this.clients = this.clients.filter((c) => c?.readyState === WebSocket.OPEN)
     this.clients.push(client)
     this.allDisconnected = null
     this.arena.addHandler({
