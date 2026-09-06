@@ -29,6 +29,23 @@ div(class='flex-row small-gap align-center')
             div(class="flex-row")
               i(class='ri-palette-fill')
               | Auto
+        div(class='flex-row small-gap align-center')
+          select(id='game-palette')
+            optgroup(label='Zenbones Themes')
+              option(value='forestbones' selected=true) Forestbones
+              option(value='zenbones') Zenbones
+              option(value='zenburned') Zenburned
+              option(value='tokyobones') Tokyobones
+              option(value='rosebones') Rosebones
+              option(value='nordbones') Nordbones
+              option(value='duckbones') Duckbones
+              option(value='seoulbones') Seoulbones
+            optgroup(label='Retro & Display')
+              option(value='c64') Commodore 64
+              option(value='arcade-neon') Arcade Neon
+              option(value='amber-crt') Amber CRT
+              option(value='green-crt') Green CRT
+          div palette
         +checkbox({"id":"show-palette", "label": "Show Color Palette"})
       h2 Settings
       div(class="flex-column medium-gap")

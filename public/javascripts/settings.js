@@ -2,6 +2,8 @@ export const AUTO = 'light dark'
 export const LIGHT = 'light'
 export const DARK = 'dark'
 
+export const DEFAULT_PALETTE = 'forestbones'
+
 export const FAST = 50
 export const NORMAL = 40
 export const SLOW = 25
@@ -9,6 +11,7 @@ export const SPEED = { FAST, NORMAL, SLOW }
 
 class Settings {
   theme
+  palette
   coloredPlayers
   showPalette
   showGamestats
@@ -19,12 +22,15 @@ class Settings {
   constructor() {
     this.listeners = {
       theme: new Set(),
+      palette: new Set(),
       coloredPlayers: new Set(),
       showGamestats: new Set(),
       showPalette: new Set(),
       speed: new Set(),
     }
     this.theme = JSON.parse(localStorage.getItem('theme')) ?? AUTO
+    this.palette =
+      JSON.parse(localStorage.getItem('palette')) ?? DEFAULT_PALETTE
 
     this.coloredPlayers =
       JSON.parse(localStorage.getItem('coloredPlayers')) ?? true

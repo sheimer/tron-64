@@ -11,12 +11,14 @@ export class SettingsView {
       coloredPlayers: document.querySelector('#colored-players input'),
       showGamestats: document.querySelector('#show-gamestats input'),
       showPalette: document.querySelector('#show-palette input'),
+      palette: document.getElementById('game-palette'),
       speed: document.getElementById('game-speed'),
       pingDiv: document.getElementById('ping'),
       paletteDiv: document.getElementById('palette'),
     }
 
     this.initThemeButtons()
+    this.initPaletteSelect()
     this.initCheckboxes()
     this.initSpeedSelect()
     this.initVisibilityListeners()
@@ -45,6 +47,21 @@ export class SettingsView {
 
     updateThemeSelected(settings.theme)
     settings.addListener('theme', updateThemeSelected)
+  }
+
+  initPaletteSelect() {
+    if (this.elements.palette) {
+      this.elements.palette.value = settings.palette || 'forestbones'
+      this.elements.palette.onchange = (evt) => {
+        settings.set('palette', evt.target.value)
+      }
+
+      settings.addListener('palette', (newPalette) => {
+        if (this.elements.palette) {
+          this.elements.palette.value = newPalette
+        }
+      })
+    }
   }
 
   initCheckboxes() {

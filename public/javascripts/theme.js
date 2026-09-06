@@ -1,4 +1,4 @@
-import { AUTO, DARK, LIGHT, settings } from './settings.js'
+import { AUTO, DARK, LIGHT, DEFAULT_PALETTE, settings } from './settings.js'
 
 const darkThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -91,6 +91,8 @@ const notifyThemeChange = () => {
 export const initTheme = () => {
   document.documentElement.style.colorScheme = settings.theme
   document.body.style.colorScheme = settings.theme
+  document.documentElement.dataset.palette =
+    settings.palette || DEFAULT_PALETTE
 
   darkThemeMq.addEventListener('change', () => {
     if (settings.theme === AUTO) {
@@ -101,6 +103,11 @@ export const initTheme = () => {
   settings.addListener('theme', (theme) => {
     document.documentElement.style.colorScheme = theme
     document.body.style.colorScheme = theme
+    notifyThemeChange()
+  })
+
+  settings.addListener('palette', (palette) => {
+    document.documentElement.dataset.palette = palette
     notifyThemeChange()
   })
 }
