@@ -299,17 +299,22 @@ console.log('✔ All palettes pass Deuteranopia and Protanopia CVD accessibility
 console.log('6. Verifying Settings UI and template dropdown bindings...')
 const controlsPugPath = path.join(rootDir, 'views/controls.pug')
 const controlsContent = fs.readFileSync(controlsPugPath, 'utf-8')
+const ACTIVE_PALETTES = EXPECTED_PALETTES.filter((id) => id !== 'c64-original')
 
 assert.ok(
   controlsContent.includes("select(id='game-palette')"),
   "controls.pug must contain select(id='game-palette')",
 )
-for (const id of EXPECTED_PALETTES) {
+for (const id of ACTIVE_PALETTES) {
   assert.ok(
     controlsContent.includes(`value='${id}'`),
     `controls.pug must include option for '${id}'`,
   )
 }
-console.log(`✔ controls.pug contains all ${EXPECTED_PALETTES.length} palette selection options.`)
+assert.ok(
+  !controlsContent.includes("value='c64-original'"),
+  "controls.pug must not contain disabled 'c64-original'",
+)
+console.log(`✔ controls.pug contains all ${ACTIVE_PALETTES.length} active palette selection options.`)
 
 console.log('--- ALL PALETTE & ACCESSIBILITY TESTS PASSED! ---')
