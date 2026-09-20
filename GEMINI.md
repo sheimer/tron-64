@@ -30,6 +30,7 @@
   - Update the corresponding phase checkboxes in the plan document.
   - Write the proposed commit message tailored for that specific phase to `tmpcommit.md`.
   - Stop execution and prompt the user to review in their editor, stage, and commit before beginning the next phase. Never bundle multiple planned phases into a single turn unless explicitly instructed.
+* **Roadmap Work:** Work through roadmap items individually, splitting into reviewable commits as needed. Briefly explain what and why before implementation; wait for confirmation. Update roadmap/docs after implementation review, before the user commits. Refine the roadmap along the way.
 * **Changelog & Roadmap Maintenance:**
   - Update `CHANGELOG.md` with human-readable, player-facing release notes under `[Unreleased]` or the corresponding version tag following the *Keep a Changelog* format.
   - When milestones or roadmap items are completed, move them from active sections in `ROADMAP.md` into `## Completed Milestones`, linking them to their respective documentation plans and `CHANGELOG.md`.
