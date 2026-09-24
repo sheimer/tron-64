@@ -1,49 +1,53 @@
-# Antigravity Workspace Guidelines
+# Bitcycles Workspace Guidelines
 
 ## File Modification Rules
-* **Modifying Existing Files:** Always use `replace_file_content` for making edits or updates to existing files. Inspect existing file content with `view_file` before making modifications.
-* **Creating Files:** Use `write_to_file` exclusively when creating brand new files or when an explicit complete file rewrite is requested. Never use `write_to_file` on existing files. Always check for existing files (including dotfiles like `.env.example`, `.nvmrc`, `.gitignore`) before creating files.
-* **Config & Template Preservation:** Never strip, overwrite, or truncate configuration files, env templates (`.env.example`), deployment settings, or existing project assets. When adding new parameters or options to template files (e.g. `.env.example` or service templates), always preserve all existing environment variables, defaults, sections, and explanatory comments.
 
+- **Modifying Existing Files:** Inspect the relevant existing content before editing. Use the available editing tools to make targeted changes, preserve unrelated content and user edits, and review the resulting diff. Reuse content already inspected unless it may have changed.
+- **Creating Files:** Check whether a file already exists, including dotfiles such as `.env.example`, `.nvmrc`, and `.gitignore`. Do not overwrite an existing file as though it were new; use a complete rewrite only when explicitly requested.
+- **Config & Template Preservation:** Never strip, overwrite, or truncate configuration files, env templates (`.env.example`), deployment settings, or existing project assets. When adding new parameters or options to template files (e.g. `.env.example` or service templates), always preserve all existing environment variables, defaults, sections, and explanatory comments.
 
 ## Code Comments & Documentation Rules
-* **Preserve Meaningful Comments:** Maintain all existing comments, explanations, and docstrings unless they are clearly redundant or obsolete. Never strip out design notes, lifecycle descriptions, or contextual comments.
-* **Emoji & Emoticon Hesitancy:** Avoid emojis and emoticons in source code, shell scripts, CLI output, commit messages, and documentation unless explicitly requested.
-* **Relative Links in Repository Markdown Files:** In all repository documentation and tracked markdown files (`README.md`, `CHANGELOG.md`, `ROADMAP.md`, `GEMINI.md`, `docs/plans/`, `docs/architecture/`, etc.), ALWAYS use relative repository paths for markdown links (e.g. `[scripts/deploy.sh](scripts/deploy.sh)` or `[testing.md](docs/architecture/testing.md)`). NEVER write absolute machine paths or `file://` URIs into repository files so links render and navigate correctly on GitHub and across developer machines without leaking local filesystem structures. (Note: The `file://` absolute URI scheme is strictly reserved for the assistant's interactive chat output to the user, never for committed repo files.)
 
+- **Preserve Meaningful Comments:** Maintain all existing comments, explanations, and docstrings unless they are clearly redundant or obsolete. Never strip out design notes, lifecycle descriptions, or contextual comments.
+- **Emoji & Emoticon Hesitancy:** Avoid emojis and emoticons in source code, shell scripts, CLI output, commit messages, and documentation unless explicitly requested.
+- **Relative Links in Repository Markdown Files:** In all repository documentation and tracked markdown files (`README.md`, `CHANGELOG.md`, `ROADMAP.md`, `GEMINI.md`, `docs/plans/`, `docs/architecture/`, etc.), ALWAYS use relative repository paths for markdown links (e.g. `[scripts/deploy.sh](scripts/deploy.sh)` or `[testing.md](docs/architecture/testing.md)`). NEVER write absolute machine paths or `file://` URIs into repository files so links render and navigate correctly on GitHub and across developer machines without leaking local filesystem structures.
 
 ## Code Quality, Linting & Formatting Rules
-* **Linter Hygiene (ESLint):** The codebase enforces ESLint (`eslint.config.js`) with `'no-unused-vars': 'error'`. Never leave unused imports, variables, or functions in new or modified files. Always run `npx eslint <modified_files>` before proposing changes.
-* **Code Formatting (Prettier):** Maintain formatting consistency across all JavaScript and configuration files by running `npx prettier --write <modified_files>`. Adhere to the established code style (single quotes, no semicolons, trailing commas, 80-character print width).
 
+- **Linter Hygiene (ESLint):** The codebase enforces ESLint (`eslint.config.js`) with `'no-unused-vars': 'error'`. Never leave unused imports, variables, or functions in new or modified files. Run `npx eslint <changed_js_files>` on changed JavaScript files covered by the ESLint configuration before handing off implementation changes. Do not pass Markdown or other unsupported files to ESLint.
+- **Code Formatting (Prettier):** Run `npx prettier --write <changed_supported_files>` on changed files supported by Prettier and not excluded by `.prettierignore`. Follow `.prettierrc` (single quotes, no semicolons, trailing commas, 80-character print width). Keep formatting scoped to the requested changes.
 
 ## Testing Guidelines
-* **Test Location:** Place all unit and integration test scripts in the `test/` directory using the `.test.js` naming convention (e.g. `test/<feature>.test.js`).
-* **Test Runner:** All test suites are aggregated and executed in isolated processes by `test/runAll.js` via `npm test`.
-* **Benchmarks:** Place load, stress, and latency benchmark tools in the `benchmark/` directory (e.g. `benchmark/stress.js`), executed via `npm run benchmark` or `npm run benchmark:stress`.
+
+- **Test Location:** Place all unit and integration test scripts in the `test/` directory using the `.test.js` naming convention (e.g. `test/<feature>.test.js`).
+- **Test Runner:** All test suites are aggregated and executed in isolated processes by `test/runAll.js` via `npm test`.
+- **Verification Scope:** Use affected tests during implementation and run `npm test` before handing off an implementation phase. Fix failures caused by the change and rerun the relevant checks; repeat the full suite when subsequent changes could invalidate its result. Report unrelated failures or unavailable checks explicitly. For documentation-only changes, check the diff, links, and formatting; application tests are not required. Run benchmarks when performance is affected or measurement is requested.
+- **Benchmarks:** Place load, stress, and latency benchmark tools in the `benchmark/` directory (e.g. `benchmark/stress.js`), executed via `npm run benchmark` or `npm run benchmark:stress`.
 
 ## Git & Workflow Rules
-* **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).
-* **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` (which is gitignored) so the user can easily review and copy it. When configured via `./scripts/setup-git-hooks.sh`, commits initiated via Neovim Fugitive (`cc` in `:G`) or CLI `git commit` automatically pre-populate the commit buffer from `tmpcommit.md`.
-* **Plan Execution (One Phase per Reviewable Commit):** When executing a plan or task with defined phases or milestone checklists (e.g. in `docs/plans/`), execute strictly **one phase at a time**. Each phase must produce a runnable, reviewable commit:
-  - Implement the changes and verify all test suites pass (`npm test`).
-  - Update the corresponding phase checkboxes in the plan document.
+
+- **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).
+- **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` (which is gitignored) so the user can easily review and copy it. When configured via `./scripts/setup-git-hooks.sh`, commits initiated via Neovim Fugitive (`cc` in `:G`) or CLI `git commit` automatically pre-populate the commit buffer from `tmpcommit.md`.
+- **Plan Execution (One Phase per Reviewable Commit):** When executing a plan or task with defined phases or milestone checklists (e.g. in `docs/plans/`), execute strictly **one phase at a time**. An explicitly requested phase is authorization to complete that phase, including necessary fixes, verification, and documentation, without asking again for routine steps. Each phase must end with a complete, verified change ready for review and commit:
+  - Implement the full phase and complete the applicable checks under Testing Guidelines. Do not stop at a first implementation while required fixes or verification remain.
+  - Update the corresponding phase checkboxes and any affected documentation before review. Mark only verified work complete.
   - Write the proposed commit message tailored for that specific phase to `tmpcommit.md`.
-  - Stop execution and prompt the user to review in their editor, stage, and commit before beginning the next phase. Never bundle multiple planned phases into a single turn unless explicitly instructed.
-* **Roadmap Work:** Work through roadmap items individually, splitting into reviewable commits as needed. Briefly explain what and why before implementation; wait for confirmation. Update roadmap/docs after implementation review, before the user commits. Refine the roadmap along the way.
-* **Changelog & Roadmap Maintenance:**
-  - Update `CHANGELOG.md` with human-readable, player-facing release notes under `[Unreleased]` or the corresponding version tag following the *Keep a Changelog* format.
-  - When milestones or roadmap items are completed, move them from active sections in `ROADMAP.md` into `## Completed Milestones`, linking them to their respective documentation plans and `CHANGELOG.md`.
-* **Living Architecture & Domain Guide Maintenance:**
-  - Whenever introducing, refactoring, or modifying architectural patterns, network protocols, screen routing, rendering lifecycles, or test suites, proactively update the corresponding domain guide in `docs/architecture/` (`protocol.md`, `lifecycle.md`, `rendering.md`, `testing.md`).
-  - Keep the guide summaries and links under `## Architecture & Domain Guides` in `GEMINI.md` synchronized with any new or updated architecture documentation.
+  - Stop at the completed phase boundary for the user to review, stage, and commit before beginning the next phase. If blocked before completion, explain the blocker and remaining work. Never bundle multiple planned phases into a single turn unless explicitly instructed.
+- **Roadmap Work:** Work through roadmap items individually, splitting into reviewable commits as needed. Briefly explain what and why before implementation. Proceed when the user has explicitly requested the item or phase; ask for confirmation when proposing additional scope or when a material unresolved decision prevents implementation. Include roadmap and documentation updates in the reviewable change, and incorporate review feedback before commit. Refine the roadmap along the way.
+- **Changelog & Roadmap Maintenance:**
+
+  - For player-facing changes, update `CHANGELOG.md` with human-readable release notes under `[Unreleased]` or the corresponding version tag following the _Keep a Changelog_ format.
+  - When milestones or roadmap items are completed, move them from active sections in `ROADMAP.md` into `## Implemented Foundation & Historical Milestones`, linking them to their respective documentation plans and `CHANGELOG.md`.
+
+- **Living Architecture & Domain Guide Maintenance:**
+  - Update the corresponding guide in `docs/architecture/` when a change affects documented behavior, architectural contracts, or development workflows. Editing an implementation or test without changing those facts does not require a guide update.
+  - Keep the guide links and brief scope descriptions below accurate when guides are added, renamed, or change scope. Keep subsystem details in the guides rather than duplicating them here.
 
 ## Architecture & Domain Guides (Read On-Demand)
-When working on specific subsystems, consult the corresponding domain guide in `docs/architecture/`:
-* **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Single WebSocket model, binary frame formats, opcode fast-paths, latency CQI.
-* **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Client screen routing (`welcome`/`lobby`/`config`/`game`), header navigation (`btn-header-lobby`), match state machines, mid-round disconnects, zero-trail restarts, session restoration, room reaper, non-blocking unreferenced maintenance timers, explosion lifecycle hygiene.
-* **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Hybrid delta renderer, Int8Array grid buffer, DPR media query scaling, multi-palette theming (Zenbones & retro presets), live CSS resolution, dual layout modes (natural welcome scroll vs fixed grid arena), accessible legal modals, anti-scraping email hydration.
-* **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Isolated child runner (`runAll.js`), `--expose-gc` heap tests, Playwright browser leak verification, concurrency benchmarks, welcome view route & modal tests, mathematical palette contrast & CVD verification, explosion ghosting verification, scoreboard ranking tests, and visual gallery generation (`npm run test:palettes`).
 
+Consult the relevant guide when the task touches its subsystem; unrelated guides need not be loaded:
 
-
+- **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Connection model, frame formats, and latency handling.
+- **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Screen routing, match and room state, session restoration, and cleanup.
+- **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Rendering, themes, layout, and UI lifecycle.
+- **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Test execution, browser verification, benchmarks, and palette gallery generation.
