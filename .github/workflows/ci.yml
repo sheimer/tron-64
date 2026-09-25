@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 15
     env:
       CI: 'true'
-      DATA_DIR: ${{ runner.temp }}/tron-ci-data
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +34,7 @@ jobs:
       - name: Run all suites including required browser smoke test
         shell: bash
         run: |
+          export DATA_DIR="$RUNNER_TEMP/tron-ci-data"
           mkdir -p test/artifacts
           set -o pipefail
           npm test 2>&1 | tee test/artifacts/tests.log
