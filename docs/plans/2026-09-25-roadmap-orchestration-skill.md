@@ -3,7 +3,7 @@
 Date: 2026-09-25.
 Scope: a repository-local workflow skill and its integration with project rules.
 Branch: `feat/roadmap-orchestration-skill`.
-Dependency: CI prerequisite PR #1, branch `ci/prove-browser-workflow`.
+Dependency: CI prerequisite PR #1 is merged into `main`.
 Status: implementation and scenario evaluation complete; live roadmap pilot pending.
 
 ## Agreed workflow
@@ -39,4 +39,4 @@ Independent review identified a stale-review gap after CI-driven repairs. Instru
 
 Host capabilities determine whether subagents, model selection, local execution, GitHub writes, and browser tests are available. The skill checks these rather than promising them. It is not a background service. Resume records preserve evidence but cannot invent approval or guarantee uninterrupted execution under usage limits.
 
-Merge the CI prerequisite first, then retarget the skill PR to main for final integration. Existing ownership/reconnection work remains on its own branch and is not implemented by this delivery.
+The skill branch is reconciled with `main` after PR #1 was rebased and merged; its PR targets `main` for final integration. Existing ownership/reconnection work remains on its own branch and is not implemented by this delivery.
