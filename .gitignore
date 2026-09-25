@@ -68,3 +68,6 @@ tmpcommit.md
 Session.vim
 .notes
 *:Zone.Identifier
+
+# Browser test diagnostics
+test/artifacts/

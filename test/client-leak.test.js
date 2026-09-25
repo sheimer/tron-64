@@ -14,8 +14,11 @@ let playwright
 try {
   playwright = await import('playwright')
 } catch {
-  console.log('\n⏩ [SKIPPED] test/client-leak.test.js (playwright not installed)\n')
-  process.exit(0)
+  if (process.env.CI) throw new Error('Playwright is required in CI')
+  console.log(
+    '\n⏩ [SKIPPED] test/client-leak.test.js (playwright not installed)\n',
+  )
+  process.exit(process.exitCode || 0)
 }
 
 // 1. Setup isolated test environment and dedicated server port
@@ -49,10 +52,17 @@ try {
   try {
     browser = await playwright.chromium.launch({
       headless: true,
-      args: ['--js-flags=--expose-gc', '--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--js-flags=--expose-gc',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+      ],
     })
   } catch (launchErr) {
-    console.log(`\n⏩ [SKIPPED] test/client-leak.test.js (Chromium cannot launch in this environment: ${launchErr.message.split('\n')[0]})\n`)
+    if (process.env.CI) throw launchErr
+    console.log(
+      `\n⏩ [SKIPPED] test/client-leak.test.js (Chromium cannot launch in this environment: ${launchErr.message.split('\n')[0]})\n`,
+    )
     await new Promise((resolve) => server.close(resolve))
     process.exit(0)
   }
@@ -62,7 +72,11 @@ try {
   cdp = await context.newCDPSession(page)
   await cdp.send('Performance.enable')
 
-  await page.goto(`http://localhost:${TEST_PORT}`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`http://localhost:${TEST_PORT}`, {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await page.click('#btn-header-enter-lobby')
 
   // Wait for initial lobby table to render
   await page.waitForSelector('#gamelisttable')
@@ -82,7 +96,9 @@ try {
     metrics.forEach((m) => {
       map[m.name] = m.value
     })
-    const domElements = await page.evaluate(() => document.querySelectorAll('*').length)
+    const domElements = await page.evaluate(
+      () => document.querySelectorAll('*').length,
+    )
     return {
       heapMB: (map.JSHeapUsedSize || 0) / 1024 / 1024,
       nodes: map.Nodes || 0,
@@ -93,7 +109,9 @@ try {
 
   // 2. Establish Initial Baseline in Lobby
   const initialMetrics = await getClientMetrics()
-  console.log(`📊 Initial Empty Lobby Baseline: Heap: ${initialMetrics.heapMB.toFixed(3)} MB | DOM Nodes: ${initialMetrics.nodes} | Event Listeners: ${initialMetrics.listeners}\n`)
+  console.log(
+    `📊 Initial Empty Lobby Baseline: Heap: ${initialMetrics.heapMB.toFixed(3)} MB | DOM Nodes: ${initialMetrics.nodes} | Event Listeners: ${initialMetrics.listeners}\n`,
+  )
 
   const TOTAL_CYCLES = 3
   let steadyBaseline = null
@@ -105,7 +123,9 @@ try {
       await page.click('#btn-create-game')
 
       // Step B: Wait for Config screen and add 2 local players
-      await page.waitForSelector('#playersconfig:not([style*="display: none"]):not([style*="display:none"])')
+      await page.waitForSelector(
+        '#playersconfig:not([style*="display: none"]):not([style*="display:none"])',
+      )
       await page.fill('#input-add-player', 'Alice')
       await page.selectOption('#select-keycodes', '66_78')
       await page.click('#btn-add-player')
@@ -128,7 +148,9 @@ try {
     }
 
     // Step D: Simulate active driving and collision
-    await page.waitForSelector('#arena:not([style*="display: none"]):not([style*="display:none"])')
+    await page.waitForSelector(
+      '#arena:not([style*="display: none"]):not([style*="display:none"])',
+    )
     // Steer Alice (b/n) and Bob (y/x)
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press('b')
@@ -137,14 +159,19 @@ try {
     }
 
     // Step E: Wait for match finish / scores screen
-    await page.waitForSelector('#scores:not([style*="display: none"]):not([style*="display:none"])', { timeout: 15000 })
+    await page.waitForSelector(
+      '#scores:not([style*="display: none"]):not([style*="display:none"])',
+      { timeout: 15000 },
+    )
 
     // Step F: Click Lobby button to return to Lobby
     await page.waitForSelector('#btn-leave-game')
     await page.click('#btn-leave-game')
 
     // Step G: Wait for Lobby screen to be visible again
-    await page.waitForSelector('#lobby:not([style*="display: none"]):not([style*="display:none"])')
+    await page.waitForSelector(
+      '#lobby:not([style*="display: none"]):not([style*="display:none"])',
+    )
 
     // Step H: Measure client metrics after GC
     const current = await getClientMetrics()
@@ -173,11 +200,21 @@ try {
   const netDeltaListeners = finalMetrics.listeners - steadyBaseline.listeners
 
   console.log(`\n======================================================`)
-  console.log(`📊 Client Memory & DOM Evaluation (across repeated match lifecycles):`)
-  console.log(`- Final Heap Delta: ${netDeltaHeapMB >= 0 ? '+' : ''}${(netDeltaHeapMB * 1024).toFixed(1)} KB (${netDeltaHeapMB.toFixed(3)} MB)`)
-  console.log(`- Attached DOM Elements Delta: ${netDeltaElements >= 0 ? '+' : ''}${netDeltaElements} (Total: ${finalMetrics.domElements})`)
-  console.log(`- Internal V8 DOM Nodes Delta: ${netDeltaNodes >= 0 ? '+' : ''}${netDeltaNodes} (Total: ${finalMetrics.nodes})`)
-  console.log(`- JS Event Listeners Delta: ${netDeltaListeners >= 0 ? '+' : ''}${netDeltaListeners} (Total: ${finalMetrics.listeners})`)
+  console.log(
+    `📊 Client Memory & DOM Evaluation (across repeated match lifecycles):`,
+  )
+  console.log(
+    `- Final Heap Delta: ${netDeltaHeapMB >= 0 ? '+' : ''}${(netDeltaHeapMB * 1024).toFixed(1)} KB (${netDeltaHeapMB.toFixed(3)} MB)`,
+  )
+  console.log(
+    `- Attached DOM Elements Delta: ${netDeltaElements >= 0 ? '+' : ''}${netDeltaElements} (Total: ${finalMetrics.domElements})`,
+  )
+  console.log(
+    `- Internal V8 DOM Nodes Delta: ${netDeltaNodes >= 0 ? '+' : ''}${netDeltaNodes} (Total: ${finalMetrics.nodes})`,
+  )
+  console.log(
+    `- JS Event Listeners Delta: ${netDeltaListeners >= 0 ? '+' : ''}${netDeltaListeners} (Total: ${finalMetrics.listeners})`,
+  )
 
   assert.ok(
     netDeltaHeapMB < 1.0,
@@ -197,8 +234,13 @@ try {
     `Event listener leak detected! JS event listeners grew by +${netDeltaListeners}.`,
   )
 
-  console.log(`🏆 ZERO CLIENT MEMORY / DOM LEAK CONFIRMED: Canvas, DOM tree, and event listeners cleanly reclaimed!`)
+  console.log(
+    `🏆 ZERO CLIENT MEMORY / DOM LEAK CONFIRMED: Canvas, DOM tree, and event listeners cleanly reclaimed!`,
+  )
   console.log(`======================================================\n`)
+} catch (err) {
+  console.error(err)
+  process.exitCode = 1
 } finally {
   if (cdp) await cdp.detach().catch(() => {})
   if (context) await context.close().catch(() => {})
@@ -210,5 +252,5 @@ try {
   if (fs.existsSync(testDataDir)) {
     fs.rmSync(testDataDir, { recursive: true, force: true })
   }
-  process.exit(0)
+  process.exit(process.exitCode || 0)
 }

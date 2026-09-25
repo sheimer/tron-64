@@ -25,8 +25,12 @@ for (const file of testFiles) {
 
   const result = spawnSync(process.execPath, ['--expose-gc', filePath], {
     stdio: 'inherit',
+    timeout: 120_000,
+    killSignal: 'SIGKILL',
     cwd: path.resolve(__dirname, '..'),
   })
+
+  if (result.error) console.error(result.error.message)
 
   const duration = Date.now() - fileStart
 
@@ -35,13 +39,17 @@ for (const file of testFiles) {
     console.log(`✔ [PASSED] test/${file} (${duration}ms)\n`)
   } else {
     failed++
-    console.error(`✖ [FAILED] test/${file} (exit code: ${result.status}, ${duration}ms)\n`)
+    console.error(
+      `✖ [FAILED] test/${file} (exit code: ${result.status}, ${duration}ms)\n`,
+    )
   }
 }
 
 const totalDuration = Date.now() - startTime
 console.log(`======================================================`)
-console.log(`📊 Test Summary: ${passed} passed, ${failed} failed in ${totalDuration}ms`)
+console.log(
+  `📊 Test Summary: ${passed} passed, ${failed} failed in ${totalDuration}ms`,
+)
 console.log(`======================================================\n`)
 
 if (failed > 0) {
