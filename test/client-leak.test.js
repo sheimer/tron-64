@@ -165,8 +165,8 @@ try {
     )
 
     // Step F: Click Lobby button to return to Lobby
-    await page.waitForSelector('#btn-leave-game')
-    await page.click('#btn-leave-game')
+    await page.waitForSelector('#btn-header-lobby')
+    await page.click('#btn-header-lobby')
 
     // Step G: Wait for Lobby screen to be visible again
     await page.waitForSelector(
