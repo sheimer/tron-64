@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Implement Roadmap Section'
+  short_description: 'Plan, approve, and orchestrate roadmap work'
+  default_prompt: 'Use $implement-roadmap-section to prepare a roadmap section for my review before implementation.'
