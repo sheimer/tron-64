@@ -65,14 +65,16 @@ Extend [shared/protocol.js](../../shared/protocol.js) with documented response t
 
 ### Binary movement
 
-Use a server-assigned, connection-local Uint8 inputHandle mapped to the canonical player ID. The final frame remains three bytes: opcode, inputHandle, direction byte (0 left, 1 right).
+Movement uses binary frames exclusively. Use a server-assigned, connection-local Uint8 inputHandle mapped to the canonical player ID. The final frame remains three bytes: opcode, inputHandle, direction byte (0 left, 1 right). JSON remains available for registration, reconnection, and other control messages, but never for movement.
 
-- Return handles only for acknowledged owned players. Both binary and JSON input call the same authorization/validation helper.
+- Introduce the handle mapping and ownership validation together in Phase 1. Return handles only for acknowledged owned players; validate the current owner, room, handle, and direction before any movement mutation.
+- Remove the client JSON movement fallback and server handlers for both CHANGE_DIR and the legacy changeDir spelling, including the action envelope. Reject JSON movement without changing state and give stale clients an actionable reload error. Remove the unused JSON movement constant while retaining the binary opcode.
 - Use the WebSocket message callback's isBinary argument to distinguish text buffers from binary frames. Reject malformed lengths, unknown opcodes/handles, and invalid direction bytes.
-- Do not reuse handles during a socket lifetime, including room switches and handovers. This prevents an old queued frame targeting a newly assigned player. After 256 allocations, use authorized JSON input until a fresh connection; never wrap.
+- Do not reuse handles during a socket lifetime, including room switches and handovers. This prevents an old queued frame targeting a newly assigned player. Repeated acknowledgement of an unchanged ownership binding reuses that active binding, not a new allocation.
+- After 256 allocations, never wrap or fall back to JSON. Preflight handle capacity before registration or ownership transfer; insufficient capacity returns a stable INPUT_HANDLE_EXHAUSTED error without partial mutation and preserves existing valid bindings. Explain that a fresh connection is required. From Phase 2, provide an explicit reconnect action that authenticates saved credentials on the new socket before enabling input; do not silently disconnect or enter an automatic reclaim loop. During Phase 1, explain that recovery requires a new connection and new registration (or a new room), since authenticated reconnection has not landed yet.
 - Invalidate mappings immediately when ownership is lost. Reconnection on a new socket receives new mappings.
 - Negotiate/require the updated protocol before accepting these frames so stale clients cannot interpret a public ID byte as a handle.
-- Preserve binary drawing deltas unchanged. Until this mapping lands, disable inbound binary movement and use authorized JSON rather than retaining a bypass.
+- Preserve binary drawing deltas unchanged. Phase 1 must deliver working authorized binary movement end to end; do not ship an intermediate JSON-only movement implementation.
 
 ### Handover and cleanup
 
@@ -101,21 +103,24 @@ On a room switch, validate target admission first, then release only currently o
 
 ## Implementation phases
 
-### Phase 1 — Secure registration and JSON ownership end to end
+### Phase 1 — Secure registration and binary-only ownership end to end
 
 - [ ] Add a focused server ownership component, owned by GameSession, for credentials, owner maps, and ownership checks.
 - [ ] Make GameSession.addPlayer validate nonempty unique string IDs, allowed controls, registration state, and the six-player limit before any mutation. Return an explicit success/failure result.
 - [ ] Grant ownership and issue a secret only after successful registration. Add private correlated acknowledgements and bounded same-socket retry handling.
 - [ ] Update main.js, state.js, network.js, and configuration feedback so controls and confirmed ownership are committed only after acknowledgement.
 - [ ] Replace unrestricted public serialization with an allowlist. Keep all credential state out of shared Player objects.
-- [ ] Guard JSON CHANGE_DIR and its legacy alias with the same owner check; disable binary movement until Phase 3.
+- [ ] Implement connection-local, non-reused input handles and private ID/handle acknowledgements. Replace Number(id) conversion with acknowledged handle lookup; send movement only as three-byte binary frames.
+- [ ] Decode movement using isBinary and validate exact length, opcode, handle, direction, room, and authoritative ownership before mutation.
+- [ ] Remove both JSON movement handlers and the client fallback; reject CHANGE_DIR and changeDir through either type or action without movement. Keep JSON control messages working.
+- [ ] Preflight handle exhaustion without partial registration or transfer; return INPUT_HANDLE_EXHAUSTED with the phase-appropriate recovery explanation.
 - [ ] Reject bare playerIds reconnection claims. Until Phase 2, reconnection fails closed with understandable feedback.
 - [ ] Add protocol-version mismatch handling on both endpoints before changing message semantics.
 - [ ] Normalize restored players to disconnected immediately; until Phase 4 persists verifiers, document that restart invalidates these interim credentials.
-- [ ] Test spectator/victim steering, foreign IDs, empty/duplicate IDs, invalid controls, seventh-player rejection, failed registration, lost/duplicate acknowledgement, and multi-player local registration. Assert rejection leaves state unchanged.
+- [ ] Test spectator/victim binary steering, foreign/unknown handles, malformed frames, invalid directions, rejection of both JSON movement spellings/envelopes, empty/duplicate IDs, invalid controls, seventh-player rejection, failed registration, lost/duplicate acknowledgement, and multi-player local registration. Verify ordinary hexadecimal IDs move correctly via binary frames and handle exhaustion does not wrap or partially mutate registration. Assert rejection leaves state unchanged.
 - [ ] Update protocol/lifecycle documentation and applicable Unreleased notes; run phase checks below.
 
-**Exit:** Only successful registration grants ownership; JSON steering and cleanup cannot affect another socket's players. Implement owner-checked leave/close now, even before handover is added.
+**Exit:** Only successful registration grants ownership; binary-only steering works for normal player IDs, and steering/cleanup cannot affect another socket's players. JSON movement is rejected. Implement owner-checked leave/close now, even before handover is added.
 
 ### Phase 2 — Authenticated reconnection and atomic handover
 
@@ -123,23 +128,23 @@ On a room switch, validate target admission first, then release only currently o
 - [ ] Restore saved credentials and bindings only for accepted IDs; display rejected/missing credentials without silently registering replacements.
 - [ ] Implement handover, ownership-revoked notifications, and idempotent release for leave, switch, and close. Preserve other players still owned by either socket.
 - [ ] Suspend bindings on transport loss and reject late responses from superseded sockets/rooms. A transferred-away client must not automatically reclaim in a loop.
+- [ ] Add explicit fresh-connection recovery for INPUT_HANDLE_EXHAUSTED using saved credentials. Test capacity preflight on reconnect batches, preservation of existing owners on failure, and input enabled only after new handles are acknowledged.
 - [ ] Test A-to-B handover followed by A steering/leaving/closing, unrelated C closing, two valid concurrent claimants, repeated joins, partial transfer of shared-keyboard players, and room switching with reused public IDs.
 - [ ] Test disconnected mid-round rejoin versus live handover: no resurrection, duplicate explosion, or false disconnected scoreboard state.
 - [ ] Update lifecycle/protocol documentation and Unreleased notes; run phase checks.
 
 **Exit:** Only valid credentials restore individual ownership, and a superseded socket cannot revoke the replacement's players.
 
-### Phase 3 — Authorized binary movement with explicit handles
+### Phase 3 — Binary-only movement edge cases and regression coverage
 
-- [ ] Add non-reused per-socket handle allocation and private ID/handle mappings; negotiate the updated frame contract.
-- [ ] Replace Number(id) conversion in network.js with acknowledged handle lookup and authorized JSON fallback.
-- [ ] Route decoded JSON and binary movement through one owner/room/direction validator.
+- [ ] Audit the Phase 1 handle mapping and Phase 2 handover/recovery paths together, including protocol negotiation, private mappings, and authoritative ownership validation.
+- [ ] Verify every client movement source uses acknowledged binary handles and no JSON movement sender or accepting handler remains.
 - [ ] Test hexadecimal and numeric-looking string IDs, all local players, unknown handles, stale handles after transfer/switch, handle exhaustion, malformed frames, and legacy clients.
-- [ ] Assert binary and JSON parity for accepted/rejected movement and preserve drawing-delta behavior.
+- [ ] Capture client frames to prove all valid steering is binary, including after reload, handover, and handle-exhaustion recovery. Assert JSON movement always fails without mutation while JSON control messages and binary drawing deltas retain their behavior.
 - [ ] Correct the protocol guide's ID representation and its input-queue description to match actual Player.changeDir/dirStack behavior.
 - [ ] Update Unreleased notes and run phase checks.
 
-**Exit:** Binary movement reaches the same canonical string identity and authorization rule as JSON, without coercion or stale-handle reuse.
+**Exit:** Binary-only movement retains correct canonical identity and authorization across all lifecycle transitions, with no numeric ID coercion, stale-handle reuse, or JSON fallback.
 
 ### Phase 4 — Durable credentials and restart recovery
 
@@ -165,14 +170,14 @@ On a room switch, validate target admission first, then release only currently o
 
 ## Acceptance matrix
 
-| Roadmap item                                                 | Required proof                                                                                                                    | Phases     |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Public IDs separate from secret credentials                  | Spectator can see public IDs but cannot recover ownership; public frames/logs contain no secret or verifier.                      | 1, 4, 5    |
-| Ownership only after registration or authenticated reconnect | Failed registration/claims leave maps, roster, controls, and scores unchanged; ID-only claims fail.                               | 1, 2       |
-| Every direction path authorized; binary identity aligned     | JSON, legacy alias, and binary target the same string ID and reject spectator, foreign, stale, and malformed input.               | 1, 3       |
-| Multiple local players                                       | One socket registers/reconnects multiple players; independent credentials and bindings work; partial transfer preserves the rest. | 1, 2, 3, 5 |
-| Safe reconnection handover                                   | Replacement retains control after old/unrelated socket input, leave, switch, and close; no false disconnect or extra explosion.   | 2, 5       |
-| Credential lifetime and restart                              | Saved verifiers authenticate after restart; all restored players begin disconnected; legacy data never enables takeover.          | 4, 5       |
+| Roadmap item                                                 | Required proof                                                                                                                                                                                                                  | Phases     |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Public IDs separate from secret credentials                  | Spectator can see public IDs but cannot recover ownership; public frames/logs contain no secret or verifier.                                                                                                                    | 1, 4, 5    |
+| Ownership only after registration or authenticated reconnect | Failed registration/claims leave maps, roster, controls, and scores unchanged; ID-only claims fail.                                                                                                                             | 1, 2       |
+| Binary-only movement authorized; identity aligned            | Binary handles map to canonical string IDs; spectator, foreign, stale, malformed, and all JSON movement inputs are rejected. Exhaustion requires authenticated recovery on a fresh connection without fallback or handle reuse. | 1, 2, 3    |
+| Multiple local players                                       | One socket registers/reconnects multiple players; independent credentials and bindings work; partial transfer preserves the rest.                                                                                               | 1, 2, 3, 5 |
+| Safe reconnection handover                                   | Replacement retains control after old/unrelated socket input, leave, switch, and close; no false disconnect or extra explosion.                                                                                                 | 2, 5       |
+| Credential lifetime and restart                              | Saved verifiers authenticate after restart; all restored players begin disconnected; legacy data never enables takeover.                                                                                                        | 4, 5       |
 
 ## Validation and review gate for every implementation phase
 
