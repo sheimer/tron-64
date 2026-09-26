@@ -37,7 +37,7 @@ Implementation plan: [Player ownership and reconnection](docs/plans/2026-09-25-p
 
 - [ ] Keep public player IDs separate from secret reconnection credentials. Never include credentials in lobby lists, shared game information, or logs.
 - [ ] Grant connection ownership only after successful player registration or authenticated reconnection; reject arbitrary `playerIds` claims.
-- [ ] Check ownership for every direction-change path, including JSON and binary messages. Align binary player identifiers with the actual server identity representation.
+- [ ] Make movement binary-only with ownership checks and explicit handles mapped to actual player identities; reject legacy JSON movement. Remove client-side JSON arena-delta compatibility while preserving binary drawing and full-state synchronization.
 - [ ] Allow multiple local players on one connection, with authorization for each player individually.
 - [ ] Define reconnection handover so an old or unrelated socket cannot disconnect a player owned by the replacement connection.
 - [ ] Define credential lifetime and restart behavior alongside persisted room state; do not restore an ownerless player as connected automatically.
