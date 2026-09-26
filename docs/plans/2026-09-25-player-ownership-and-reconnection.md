@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation not started  
+> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phase 1 verified
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -124,20 +124,20 @@ On a room switch, validate target admission first, then release only currently o
 
 ### Phase 1 — Secure registration and binary-only ownership end to end
 
-- [ ] Add a focused server ownership component, owned by GameSession, for credentials, owner maps, and ownership checks.
-- [ ] Make GameSession.addPlayer validate nonempty unique string IDs, allowed controls, registration state, and the six-player limit before any mutation. Return an explicit success/failure result.
-- [ ] Grant ownership and issue a secret only after successful registration. Add private correlated acknowledgements and bounded same-socket retry handling.
-- [ ] Update main.js, state.js, network.js, and configuration feedback so controls and confirmed ownership are committed only after acknowledgement.
-- [ ] Replace unrestricted public serialization with an allowlist. Keep all credential state out of shared Player objects.
-- [ ] Implement connection-local, non-reused input handles and private ID/handle acknowledgements. Replace Number(id) conversion with acknowledged handle lookup; send movement only as three-byte binary frames.
-- [ ] Decode movement using isBinary and validate exact length, opcode, handle, direction, room, and authoritative ownership before mutation.
-- [ ] Remove both JSON movement handlers and the client fallback; reject CHANGE_DIR and changeDir through either type or action without movement. Keep JSON control messages working.
-- [ ] Preflight handle exhaustion without partial registration or transfer; return INPUT_HANDLE_EXHAUSTED with the phase-appropriate recovery explanation.
-- [ ] Reject bare playerIds reconnection claims. Until Phase 2, reconnection fails closed with understandable feedback.
-- [ ] Add protocol-version mismatch handling on both endpoints before changing message semantics.
-- [ ] Normalize restored players to disconnected immediately; until Phase 4 persists verifiers, document that restart invalidates these interim credentials.
-- [ ] Test spectator/victim binary steering, foreign/unknown handles, malformed frames, invalid directions, rejection of both JSON movement spellings/envelopes, empty/duplicate IDs, invalid controls, seventh-player rejection, failed registration, lost/duplicate acknowledgement, and multi-player local registration. Verify ordinary hexadecimal IDs move correctly via binary frames and handle exhaustion does not wrap or partially mutate registration. Assert rejection leaves state unchanged.
-- [ ] Update protocol/lifecycle documentation and applicable Unreleased notes; run phase checks below.
+- [x] Add a focused server ownership component, owned by GameSession, for credentials, owner maps, and ownership checks.
+- [x] Make GameSession.addPlayer validate nonempty unique string IDs, allowed controls, registration state, and the six-player limit before any mutation. Return an explicit success/failure result.
+- [x] Grant ownership and issue a secret only after successful registration. Add private correlated acknowledgements and bounded same-socket retry handling.
+- [x] Update main.js, state.js, network.js, and configuration feedback so controls and confirmed ownership are committed only after acknowledgement.
+- [x] Replace unrestricted public serialization with an allowlist. Keep all credential state out of shared Player objects.
+- [x] Implement connection-local, non-reused input handles and private ID/handle acknowledgements. Replace Number(id) conversion with acknowledged handle lookup; send movement only as three-byte binary frames.
+- [x] Decode movement using isBinary and validate exact length, opcode, handle, direction, room, and authoritative ownership before mutation.
+- [x] Remove both JSON movement handlers and the client fallback; reject CHANGE_DIR and changeDir through either type or action without movement. Keep JSON control messages working.
+- [x] Preflight handle exhaustion without partial registration or transfer; return INPUT_HANDLE_EXHAUSTED with the phase-appropriate recovery explanation.
+- [x] Reject bare playerIds reconnection claims. Until Phase 2, reconnection fails closed with understandable feedback.
+- [x] Add protocol-version mismatch handling on both endpoints before changing message semantics.
+- [x] Normalize restored players to disconnected immediately; until Phase 4 persists verifiers, document that restart invalidates these interim credentials.
+- [x] Test spectator/victim binary steering, foreign/unknown handles, malformed frames, invalid directions, rejection of both JSON movement spellings/envelopes, empty/duplicate IDs, invalid controls, seventh-player rejection, failed registration, lost/duplicate acknowledgement, and multi-player local registration. Verify ordinary hexadecimal IDs move correctly via binary frames and handle exhaustion does not wrap or partially mutate registration. Assert rejection leaves state unchanged.
+- [x] Update protocol/lifecycle documentation and applicable Unreleased notes; run phase checks below.
 
 **Exit:** Only successful registration grants ownership; binary-only steering works for normal player IDs, and steering/cleanup cannot affect another socket's players. JSON movement is rejected. Implement owner-checked leave/close now, even before handover is added.
 

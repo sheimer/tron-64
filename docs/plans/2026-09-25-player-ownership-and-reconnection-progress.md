@@ -20,18 +20,18 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 1 CI repair; candidate `8cc2ef9a55b99c854ff7305a8f5ddba7b75a7ed5` failed client-leak rejoin fixture, no advancement.
+- Current phase: Phase 1 verified; Phase 2 ready after checkpoint CI. Latest verified candidate `69831312545e0df9b1641cbb815862110289a57e`.
 
 ## Evidence by phase
 
-| Phase | Candidate                                  | Local checks                                              | CI                                                                                                            | Independent review                               | Status    |
-| ----- | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------- |
-| 1     | `8cc2ef9a55b99c854ff7305a8f5ddba7b75a7ed5` | Non-browser checks pass; browser prerequisite unavailable | Push `36277138691` and PR `36277141072`: 14 pass, 1 failure, client-leak rejoin fixture; browser smoke passed | Astra clear before CI; repair requires re-review | CI repair |
-| 2–5   | None                                       | Not run                                                   | Not run                                                                                                       | Not started                                      | Pending   |
+| Phase | Candidate                                  | Local checks                                                             | CI                                                                                                  | Independent review                                                               | Status   |
+| ----- | ------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
+| 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser checks, lint and formatting pass; local Chromium unavailable | Push `36277783947` and PR `36277787537`: 15 pass, 0 failed; Chromium smoke and client leak executed | Astra clear; two feedback corrections and two reviewed CI fixture/timing repairs | Verified |
+| 2–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
 
 ## Blockers and next action
 
-Repair Phase 1 legacy client-leak rejoin fixture, then independent testing/re-review and exact-candidate CI. All leak assertions must remain intact. Use existing PR #4. Approval does not require routine human phase stops.
+No unresolved Phase 1 findings. Verify this administrative checkpoint's CI, then implement Phase 2 authenticated reconnection and atomic handover. Preserve all leak thresholds and add authenticated rejoin/handover browser coverage. Replace raw JSON parse exception logging before accepting submitted credentials. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -44,14 +44,6 @@ Repair Phase 1 legacy client-leak rejoin fixture, then independent testing/re-re
 - Outcome: Phase 1 implementation handed off. Scoped ESLint/Prettier and real-socket tests pass. Local `npm test`: 12 reported passed, 1 failed (mandatory browser smoke, missing Chromium); reported passes include a client-leak skip, so this is not full local coverage. Independent assessment pending.
 - Follow-ups: lead spot-check identified ownership-map cleanup placed in constructor instead of destruction; implementer corrected it.
 - Difficulty: cross-file authority and client state coordination; explicit handle-capacity and cleanup boundaries.
-
-## Final acceptance audit
-
-Pending; no roadmap items marked complete.
-
-## Model-efficiency review
-
-Pending real task evidence. Task usage and lead orchestration overhead are unmeasured. No cheaper-model equivalence or savings claimed.
 
 ### P1-T — Phase 1 independent testing
 
@@ -115,3 +107,11 @@ Pending real task evidence. Task usage and lead orchestration overhead are unmea
 - P1-CI2 independent Sol/high tester ended 2026-09-27T00:53:16+02:00: same RGB/crop condition and exception assertion retained, no missing-render acceptance; lint/format/diff pass; local browser prerequisite still unavailable.
 
 - P1-CI2 Astra/high review observed 2026-09-27T00:53:38–00:53:47+02:00: no blocking findings; source confirms timing and assertions retained; follow-up CI required.
+
+## Final acceptance audit
+
+Phase 1 secure registration, binary authorization/handle lifecycle, rejection invariance, client acknowledgement gating, owner-safe cleanup, and disconnected restore verified. Reconnect, drawing cleanup, durable credentials, and integrated acceptance remain pending. No complete roadmap section marked finished yet.
+
+## Model-efficiency review — Interim
+
+P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two visible-feedback issues; CI additionally exposed an obsolete reconnect fixture and reset/countdown timing. Independent review and real browser CI materially improved the result. Formatting/documentation and bounded test-fixture edits are untested candidates for a later lower-effort trial; no cheaper-model equivalence or savings claimed. Retain Sol/high implementation/testing and Astra/high review for remaining ownership/concurrency work. Task token usage, quota and lead orchestration overhead are unavailable; elapsed times include tool/CI waits and cannot be treated as compute or cost.
