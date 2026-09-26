@@ -26,6 +26,14 @@
 
 ## Git & Workflow Rules
 
+### Opt-in autonomous roadmap workflow
+
+When the user explicitly invokes [implement-roadmap-section](.agents/skills/implement-roadmap-section/SKILL.md), use its prepare/review/execute workflow. A request to prepare a section authorizes creating or reusing its feature branch and committing/pushing the requested planning documents for review, while preserving unrelated work. Preparing a plan does not authorize implementation. Stop for the user's review and explicit approval of the specific plan and autonomous execution policy before starting implementation agents.
+
+For that approved workflow only, the assistant may stage its own intended changes, commit, push independently reviewed feature-branch candidates, and create/update a PR. Continue to the next approved phase only after required CI passes for the exact candidate. This exception supersedes the manual staging/commit and per-phase user-stop rules below; it does not authorize unrelated edits, force pushes, merges, releases, deployments, or permission changes. Preserve user work. Material plan changes return to user review. In other tasks, retain the manual workflow below unless the user explicitly instructs otherwise.
+
+### Default manual workflow
+
 - **No Staging / Commits by Assistant:** Never run `git add`, `git commit`, `git rm`, or `git restore` on behalf of the user. Staging is actively used by the user to review changes incrementally. Only run non-mutating status/diff checks (e.g. `git status`, `git diff`).
 - **Commit Message in `tmpcommit.md`:** Whenever the user indicates readiness to commit (or asks for a commit message), write the proposed developer commit message and description to `tmpcommit.md` (which is gitignored) so the user can easily review and copy it. When configured via `./scripts/setup-git-hooks.sh`, commits initiated via Neovim Fugitive (`cc` in `:G`) or CLI `git commit` automatically pre-populate the commit buffer from `tmpcommit.md`.
 - **Plan Execution (One Phase per Reviewable Commit):** When executing a plan or task with defined phases or milestone checklists (e.g. in `docs/plans/`), execute strictly **one phase at a time**. An explicitly requested phase is authorization to complete that phase, including necessary fixes, verification, and documentation, without asking again for routine steps. Each phase must end with a complete, verified change ready for review and commit:

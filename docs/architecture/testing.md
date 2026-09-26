@@ -96,3 +96,11 @@ Static analysis and formatting tools maintain codebase readability and prevent s
 The workflow checks the CI test JavaScript with ESLint. Browser smoke failures retain a screenshot and Playwright trace where capture is possible. Test output is retained in a diagnostics artifact for seven days, including failed runs. The shell preserves the test command's failure through `tee`.
 
 For autonomous work, a push is a validation candidate. Require a successful Tests run for the exact candidate commit before marking a package verified. Read failed job logs, fix the cause, push a follow-up commit, and check the new run. A cancelled, skipped, timed-out, or missing run is not passing evidence. This workflow does not configure branch protection or merge a PR automatically.
+
+## 8. Roadmap orchestration skill
+
+The repository-local [implement-roadmap-section skill](../../.agents/skills/implement-roadmap-section/SKILL.md) uses two human review points: the implementation plan before coding and the final PR. Explicit approval enables independent implementation/testing/review agents and phase-by-phase candidate pushes with CI verification. A progress document records the approved revision, real test evidence, and resume action.
+
+Invoke `$implement-roadmap-section` to prepare a named roadmap section. Review and refine the plan, then explicitly request implementation of that approved revision. To resume, name the plan/branch; the agent verifies approval and current remote evidence first. Existing branches and plans are reused.
+
+The skill travels with checkouts containing `.agents/skills/`. Hosts that do not discover repository skills automatically can be instructed to read its `SKILL.md` and follow its references. Merely connecting the GitHub repository does not install a personal ChatGPT skill. Available agents, model controls, GitHub permissions, and shell/browser capabilities still depend on the host.
