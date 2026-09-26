@@ -189,35 +189,43 @@ async function smokeTest() {
     const { state } = await import('/javascripts/state.js')
     return state.screen === 'game' && state.matchState === 'running'
   })
-  // The running announcement precedes simulation startup; require actual player deltas.
+  // A reset can emit player dots before the canvas is cleared. The running
+  // announcement also precedes simulation startup by one second, so wait for
+  // real interior pixels after that countdown rather than sampling once.
   await page.waitForFunction(() => window.smokePlayerDrawReceived === true)
-  const rendered = await page.locator('#arena').evaluate(async (canvas) => {
-    const { GRID_WIDTH, GRID_HEIGHT } = await import('/shared/constants.js')
-    const { width, height } = canvas
-    if (!width || !height) return false
-    const insetX = Math.ceil(width / GRID_WIDTH)
-    const insetY = Math.ceil(height / GRID_HEIGHT)
-    const pixels = canvas
-      .getContext('2d')
-      .getImageData(
-        insetX,
-        insetY,
-        width - 2 * insetX,
-        height - 2 * insetY,
-      ).data
-    // Exclude the static border: the interior must contain painted player trails.
-    for (let i = 4; i < pixels.length; i += 4) {
-      if (
-        pixels[i] !== pixels[0] ||
-        pixels[i + 1] !== pixels[1] ||
-        pixels[i + 2] !== pixels[2]
-      )
-        return true
-    }
-    return false
-  })
-  assert.ok(
-    rendered,
+  const rendered = await page.waitForFunction(
+    async () => {
+      const { GRID_WIDTH, GRID_HEIGHT } = await import('/shared/constants.js')
+      const canvas = document.getElementById('arena')
+      const { width, height } = canvas
+      if (!width || !height) return false
+      const insetX = Math.ceil(width / GRID_WIDTH)
+      const insetY = Math.ceil(height / GRID_HEIGHT)
+      const pixels = canvas
+        .getContext('2d')
+        .getImageData(
+          insetX,
+          insetY,
+          width - 2 * insetX,
+          height - 2 * insetY,
+        ).data
+      // Exclude the static border: the interior must contain painted player trails.
+      for (let i = 4; i < pixels.length; i += 4) {
+        if (
+          pixels[i] !== pixels[0] ||
+          pixels[i + 1] !== pixels[1] ||
+          pixels[i + 2] !== pixels[2]
+        )
+          return true
+      }
+      return false
+    },
+    null,
+    { timeout: 10000 },
+  )
+  assert.equal(
+    await rendered.jsonValue(),
+    true,
     'Gameplay must paint player trails inside the arena border',
   )
   assert.deepEqual(pageErrors, [], 'The game must not raise browser exceptions')
