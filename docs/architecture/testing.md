@@ -47,6 +47,8 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
   - Attached DOM elements (`document.querySelectorAll('*')`) must be strictly flat across matches ($\Delta = 0$).
   - Retained JS heap memory delta must remain $<1.0\text{MB}$.
 
+The Phase 1 leak fixture registers two local players in a new room per cycle, plays two rounds while the same socket owns them, then leaves. It reaps the empty fixture room on the server and waits for the normal lobby broadcast to prune the saved room record before measuring the next lobby baseline. This preserves the heap, attached/detached DOM, and event-listener thresholds without invoking unavailable ID-only reclaim. Phase 2 must add authenticated rejoin and handover coverage to this browser lifecycle test once those flows exist.
+
 ---
 
 ## 4. Headless Concurrency Stress Benchmark (`npm run benchmark` / `npm run benchmark:stress`)
