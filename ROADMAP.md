@@ -33,6 +33,8 @@ Complete this work before a larger influx of unfamiliar players. Keep account-fr
 
 ### Player ownership and reconnection
 
+Implementation plan: [Player ownership and reconnection](docs/plans/2026-09-25-player-ownership-and-reconnection.md).
+
 - [ ] Keep public player IDs separate from secret reconnection credentials. Never include credentials in lobby lists, shared game information, or logs.
 - [ ] Grant connection ownership only after successful player registration or authenticated reconnection; reject arbitrary `playerIds` claims.
 - [ ] Check ownership for every direction-change path, including JSON and binary messages. Align binary player identifiers with the actual server identity representation.
