@@ -20,18 +20,18 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 1 independently tested and reviewed; candidate CI pending.
+- Current phase: Phase 1 CI repair; candidate `8cc2ef9a55b99c854ff7305a8f5ddba7b75a7ed5` failed client-leak rejoin fixture, no advancement.
 
 ## Evidence by phase
 
-| Phase | Candidate | Local checks | CI      | Independent review | Status       |
-| ----- | --------- | ------------ | ------- | ------------------ | ------------ |
-| 1     | Pending   | Pending      | Pending | Pending            | Implementing |
-| 2–5   | None      | Not run      | Not run | Not started        | Pending      |
+| Phase | Candidate                                  | Local checks                                              | CI                                                                                                            | Independent review                               | Status    |
+| ----- | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------- |
+| 1     | `8cc2ef9a55b99c854ff7305a8f5ddba7b75a7ed5` | Non-browser checks pass; browser prerequisite unavailable | Push `36277138691` and PR `36277141072`: 14 pass, 1 failure, client-leak rejoin fixture; browser smoke passed | Astra clear before CI; repair requires re-review | CI repair |
+| 2–5   | None                                       | Not run                                                   | Not run                                                                                                       | Not started                                      | Pending   |
 
 ## Blockers and next action
 
-Implement Phase 1 only, then independent testing/review, candidate publication and CI. Use existing PR #4. Approval does not require routine human phase stops.
+Repair Phase 1 legacy client-leak rejoin fixture, then independent testing/re-review and exact-candidate CI. All leak assertions must remain intact. Use existing PR #4. Approval does not require routine human phase stops.
 
 ## Task execution records
 
@@ -91,3 +91,15 @@ Pending real task evidence. Task usage and lead orchestration overhead are unmea
 - P1-T-F2 ended 2026-09-27T00:40:40+02:00: normal-flow topology regression and required 390×844 browser-smoke geometry/navigation assertions added. Scoped checks pass; local browser execution remains unavailable. Full local suite remains 14 reported passes / 1 prerequisite failure, with client-leak skipped.
 
 - P1-R-F2 completed 2026-09-27T00:41:01+02:00: no blocking findings remain; both P2 feedback findings resolved. Independently reran client-registration and diff checks. Browser geometry remains exact-candidate CI gate.
+
+### P1-CI1 — Deterministic browser fixture failure
+
+- Candidate `8cc2ef9a55b99c854ff7305a8f5ddba7b75a7ed5`; push `36277138691` and PR `36277141072` failed. Job `108501978867` logs read; diagnostics artifact `10917078480` retrieved.
+- Required portrait/game browser smoke passed. Client-leak timed out at cycle 2 clicking disabled join after leave: insecure legacy reconnect is intentionally removed in Phase 1, authenticated reconnect is Phase 2.
+- Sol/high implementer assigned test fixture adaptation preserving create/register/play/leave lifecycles and all heap/DOM/listener thresholds. No direct client cleanup or early Phase 2 implementation.
+- Attempt 1 repair in progress; no unchanged CI retry. Independent testing/re-review required.
+- Usage/precise task timing unavailable; observed start before 2026-09-27T00:45:09+02:00. This is a missed phase-dependent test assumption, not environment-only failure.
+
+- P1-CI1 implementation handoff: three fresh-room cycles, two acknowledged players/two rounds each, server-side room teardown with ordinary client pruning; all four leak thresholds unchanged.
+- P1-CI1 independent Sol/high tester ended 2026-09-27T00:47:02+02:00: no weakening or masked client cleanup; scoped lint/format/diff checks pass, browser unavailable locally.
+- P1-CI1 Astra/high review observed 2026-09-27T00:47:25–00:47:37+02:00: no blocking findings; exact follow-up CI required.

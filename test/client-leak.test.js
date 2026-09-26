@@ -33,6 +33,7 @@ if (fs.existsSync(testDataDir)) {
 
 const { app } = await import('../app.js')
 const { setupWebSocketServer } = await import('../server/wsHandler.js')
+const { gameServer } = await import('../server/GameServer.js')
 
 const server = http.createServer(app)
 setupWebSocketServer(server)
@@ -117,52 +118,50 @@ try {
   let steadyBaseline = null
 
   for (let cycle = 1; cycle <= TOTAL_CYCLES; cycle++) {
-    if (cycle === 1) {
-      // Step A: Create game from Lobby in first cycle
-      await page.fill('#input-create-game', 'ClientLeak_Room')
-      await page.click('#btn-create-game')
+    // Phase 1 cannot reclaim players after leaving a room. Create a fresh
+    // match each cycle, with two rounds while this socket still owns them.
+    await page.fill('#input-create-game', `ClientLeak_Room_${cycle}`)
+    await page.click('#btn-create-game')
+    await page.waitForSelector(
+      '#playersconfig:not([style*="display: none"]):not([style*="display:none"])',
+    )
+    const roomKey = await page.locator('#gameId').textContent()
+    for (const [name, keys] of [
+      ['Alice', '66_78'],
+      ['Bob', '89_88'],
+    ]) {
+      await page.fill('#input-add-player', name)
+      await page.selectOption('#select-keycodes', keys)
+      await page.click('#btn-add-player')
+      await page
+        .locator('#body-playerstable')
+        .getByText(name, { exact: true })
+        .waitFor()
+    }
 
-      // Step B: Wait for Config screen and add 2 local players
+    for (let round = 1; round <= 2; round++) {
+      if (round === 1) {
+        await page.waitForSelector('#btn-init-game:not([disabled])')
+        await page.click('#btn-init-game')
+      } else {
+        await page.waitForSelector('#btn-start-game:not([disabled])')
+        await page.click('#btn-start-game')
+      }
+
+      // Simulate both locally registered players steering during each round.
       await page.waitForSelector(
-        '#playersconfig:not([style*="display: none"]):not([style*="display:none"])',
+        '#arena:not([style*="display: none"]):not([style*="display:none"])',
       )
-      await page.fill('#input-add-player', 'Alice')
-      await page.selectOption('#select-keycodes', '66_78')
-      await page.click('#btn-add-player')
-
-      await page.fill('#input-add-player', 'Bob')
-      await page.selectOption('#select-keycodes', '89_88')
-      await page.click('#btn-add-player')
-
-      // Step C: Start the match
-      await page.waitForSelector('#btn-init-game:not([disabled])')
-      await page.click('#btn-init-game')
-    } else {
-      // Subsequent cycles: Join existing match from Lobby table
-      await page.waitForSelector('#body-gamelisttable button')
-      await page.click('#body-gamelisttable button')
-
-      // Start next round
-      await page.waitForSelector('#btn-start-game:not([disabled])')
-      await page.click('#btn-start-game')
+      for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('b')
+        await page.keyboard.press('y')
+        await page.waitForTimeout(50)
+      }
+      await page.waitForSelector(
+        '#scores:not([style*="display: none"]):not([style*="display:none"])',
+        { timeout: 15000 },
+      )
     }
-
-    // Step D: Simulate active driving and collision
-    await page.waitForSelector(
-      '#arena:not([style*="display: none"]):not([style*="display:none"])',
-    )
-    // Steer Alice (b/n) and Bob (y/x)
-    for (let i = 0; i < 5; i++) {
-      await page.keyboard.press('b')
-      await page.keyboard.press('y')
-      await page.waitForTimeout(50)
-    }
-
-    // Step E: Wait for match finish / scores screen
-    await page.waitForSelector(
-      '#scores:not([style*="display: none"]):not([style*="display:none"])',
-      { timeout: 15000 },
-    )
 
     // Step F: Click Lobby button to return to Lobby
     await page.waitForSelector('#btn-header-lobby')
@@ -172,6 +171,28 @@ try {
     await page.waitForSelector(
       '#lobby:not([style*="display: none"]):not([style*="display:none"])',
     )
+
+    // Simulate the normal idle room reap after all owners leave. Its lobby
+    // broadcast removes the obsolete saved room record through client code.
+    const room = gameServer.getGame(roomKey)
+    assert.ok(room, 'Fixture room must exist before teardown')
+    const releaseDeadline = Date.now() + 3000
+    while (room.clients.length > 0 && Date.now() < releaseDeadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+    assert.equal(room.clients.length, 0, 'Leaving must release room membership')
+    room.destroy()
+    await page.waitForFunction(
+      (key) =>
+        !document
+          .querySelector('#body-gamelisttable')
+          ?.textContent?.includes(key),
+      roomKey,
+    )
+    await page.waitForFunction(async (key) => {
+      const { state } = await import('/javascripts/state.js')
+      return state.connectedGames[key] === undefined
+    }, roomKey)
 
     // Step H: Measure client metrics after GC
     const current = await getClientMetrics()
