@@ -9,11 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Private, correlated player registration acknowledgements with per-player credentials and socket-local binary input handles. Multiple local players can steer using their canonical string IDs after confirmation.
+
+### Changed
+
+- Binary movement now validates the current owning socket and room. JSON movement and bare player-ID reconnection claims receive actionable errors; old clients must reload. Public game information uses explicit fields only.
+- Restored players start disconnected. Until authenticated reconnect and durable credentials are completed in later phases, a lost connection or server restart requires a new registration when eligible or a new room.
+
 ---
 
 ## [1.4.0] - 2026-09-06
 
 ### Added
+
 - **Developer Git Hooks, Linting & Formatting Automation:**
   - Added version-controlled Git hooks in `.githooks/` and setup script in [scripts/setup-git-hooks.sh](scripts/setup-git-hooks.sh) (executable via `npm run setup:hooks`).
   - Added `pre-commit` hook to automatically enforce ESLint rules and Prettier formatting on staged files before commit creation.
@@ -54,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added approved `allowScripts` in `package.json` for WebSocket native acceleration modules (`bufferutil`, `utf-8-validate`).
   - Implemented fast incremental deployments in `scripts/deploy.sh` reusing cached `node_modules` and zero-sudo unprivileged file operations.
 - **Landing / Welcome View & Ultimate Tron II Homage:**
-  - Initial welcome view (`#welcome` in `#main`) presenting the rich backstory of Oliver Stiller's 1989 Commodore 64 party classic *Ultimate Tron II*, highlighting 6 players on 1 keyboard and modern pure-web technology.
+  - Initial welcome view (`#welcome` in `#main`) presenting the rich backstory of Oliver Stiller's 1989 Commodore 64 party classic _Ultimate Tron II_, highlighting 6 players on 1 keyboard and modern pure-web technology.
   - Dedicated `#footer-welcome` with responsive `Enter Lobby →` Call-to-Action button aligned with the existing desktop and mobile landscape 4-column layout grid.
   - Header Info icon (`#btn-info`) in `#controls` allowing players to return to the Welcome view from the lobby at any time.
 - **Legal Notice (Impressum) & Privacy (Datenschutz) Modals:**
@@ -69,11 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `test/welcome-view.test.js`: Verified Express route rendering of `Bitcycles`, `#welcome`, `#footer-welcome`, modals, and `WelcomeView` lifecycle (backdrop click, escape key, and screen transitions).
 
 ### Changed
+
 - Rebranded project and template title to **Bitcycles** (`bitcycles.net`).
 - Default initial client screen set to `'welcome'` with seamless transition into `'lobby'`.
 - Made `public/javascripts/state.js` isomorphic with safe global checks for `sessionStorage`.
 
 ### Fixed
+
 - **Round 1 Arena Border Visibility & Transition Lifecycle:**
   - Resolved missing arena border in Round 1 and scoreboard flicker by synchronizing `resetGrid()` with a 50ms paint tick on `GAME_RESET`.
   - Immediately dismissed scoreboard overlays (`setMatchState('start')`) and cleared stale round bitmaps (`Renderer.clear()`) on `GAME_FINISH` and `GAME_RESET` to eliminate visual flicker and trail artifacts between rounds.
@@ -87,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-08-25
 
 ### Added
+
 - **Automated Memory Leak Profiling Test Suites:**
   - `test/leak.test.js`: Multi-cycle forced garbage collection stress testing on the server (`node --expose-gc`), creating and destroying 500 game sessions with 2,000 players over 10 consecutive cycles, confirming zero heap memory creep ($\Delta < 0.25\text{MB}$).
   - `test/client-leak.test.js`: Headless browser test suite via Playwright querying Chrome DevTools Protocol (CDP) performance metrics across repeated match lifecycles to verify bounded browser heap ($\Delta < 0.1\text{MB}$) and strictly flat DOM element retention ($+0$).
@@ -97,10 +110,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added MIT License and nostalgic C64 homage documentation in `README.md`.
 
 ### Changed
+
 - Converted form input listeners in `lobbyView.js` and `configView.js` from `onkeyup` to standard `oninput` for reliable typing, copy-pasting, and browser automation support.
 - Pass `--expose-gc` flag automatically to child test runner processes in `test/runAll.js`.
 
 ### Fixed
+
 - Fixed double-click / scoreboard flash issue when clicking "Lobby" during active or finished rounds by clearing socket room associations before broadcasting and guarding client match listeners.
 
 ---
@@ -108,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-08-24
 
 ### Added
+
 - **Server Concurrency & Capacity Limits:**
   - Configurable `MAX_ACTIVE_GAMES` (default 50) and `MAX_CLIENTS_PER_ROOM` (default 32) guardrails.
   - Graceful capacity feedback in the lobby creation form when the server reaches maximum active matches.
@@ -126,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-08-22
 
 ### Added
+
 - **Disconnected Client Lifecycle Management:**
   - Mid-round disconnect handling: light-cycle explodes into particle sparks and freezes its trail on the grid.
   - Subsequent round starts keep disconnected players at starting coordinates without growing trail lines.
@@ -138,6 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-08-18
 
 ### Added
+
 - **Real-Time WebSocket Multiplayer Engine:**
   - Complete zero-dependency ES Modules architecture.
   - 40 FPS target-timestamp server physics loop absorbing OS timer jitter.
@@ -153,12 +171,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Before adopting formal semantic versioning with the release of **v1.0.0**, the project evolved through several foundational development phases:
 
-* **December 2023 (Project Genesis & WebSocket Prototype):**  
-  * Transitioned from an initial client-only prototype into a Node.js server-authoritative multiplayer engine.
-  * Replaced full-grid frame broadcasts with delta cell transmissions, implemented particle explosions on collision, and introduced the initial multi-game lobby and 6-player score calculations.
-* **January 2024 (Game Flow & Session Handling):**  
-  * Built multi-client player registration, state-driven lobby/config/game screen transitions, 5-minute inactivity room reaper, and automatic ping/reconnect monitoring.
-* **July – August 2025 (Theming & UI Modernization):**  
-  * Introduced dynamic light/dark/auto theme engine reading live CSS custom properties, multi-player palette color classes, settings persistence in `localStorage`, and responsive touch/desktop grid layouts.
-* **August 2026 (Architecture Modernization $\rightarrow$ v1.0.0):**  
-  * Refactored the entire codebase into modular isomorphic ES Modules (`shared/`, `server/`, `public/`), introduced the reactive state store, and unified networking under a single WebSocket protocol — establishing the **v1.0.0** baseline release.
+- **December 2023 (Project Genesis & WebSocket Prototype):**
+  - Transitioned from an initial client-only prototype into a Node.js server-authoritative multiplayer engine.
+  - Replaced full-grid frame broadcasts with delta cell transmissions, implemented particle explosions on collision, and introduced the initial multi-game lobby and 6-player score calculations.
+- **January 2024 (Game Flow & Session Handling):**
+  - Built multi-client player registration, state-driven lobby/config/game screen transitions, 5-minute inactivity room reaper, and automatic ping/reconnect monitoring.
+- **July – August 2025 (Theming & UI Modernization):**
+  - Introduced dynamic light/dark/auto theme engine reading live CSS custom properties, multi-player palette color classes, settings persistence in `localStorage`, and responsive touch/desktop grid layouts.
+- **August 2026 (Architecture Modernization $\rightarrow$ v1.0.0):**
+  - Refactored the entire codebase into modular isomorphic ES Modules (`shared/`, `server/`, `public/`), introduced the reactive state store, and unified networking under a single WebSocket protocol — establishing the **v1.0.0** baseline release.

@@ -87,13 +87,11 @@ export class Arena {
       this.finish()
     }
 
-    const positions = {}
+    const positions = Object.create(null)
 
     if (this.players?.length && this.players.length > 1) {
       const positionIndices = AVAILABLE_POSITIONS[this.players.length - 2]
-      const randomPositions = fisherYatesShuffle([
-        ...positionIndices,
-      ])
+      const randomPositions = fisherYatesShuffle([...positionIndices])
 
       for (let i = 0; i < this.players.length; i++) {
         const player = this.players[i]
@@ -316,7 +314,12 @@ export class Arena {
   }
 
   finish() {
-    const stats = { kills: {}, deadOnDeath: {}, escaped: [], winner: null }
+    const stats = {
+      kills: Object.create(null),
+      deadOnDeath: Object.create(null),
+      escaped: [],
+      winner: null,
+    }
     for (let i = 0; i < this.players.length; i++) {
       const player = this.players[i]
       stats.deadOnDeath[player.id] = player.deadPlayers

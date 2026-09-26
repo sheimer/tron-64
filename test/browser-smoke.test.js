@@ -33,6 +33,42 @@ async function bounded(operation, milliseconds) {
   }
 }
 
+async function assertFeedbackClearOfNavigation(page, screen) {
+  await page.evaluate(() => window.scrollTo(0, 0))
+  const geometry = await page.evaluate(() => {
+    const rect = (selector) => {
+      const bounds = document.querySelector(selector).getBoundingClientRect()
+      return {
+        top: bounds.top,
+        bottom: bounds.bottom,
+        left: bounds.left,
+        right: bounds.right,
+      }
+    }
+    return {
+      feedback: rect('#connection-feedback'),
+      header: rect('#head'),
+      navigation: rect('#controls'),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    }
+  })
+  const { feedback, header, navigation, viewportWidth, viewportHeight } =
+    geometry
+  assert.ok(
+    feedback.bottom <= Math.min(header.top, navigation.top) + 1,
+    `${screen}: feedback must reserve space above the header and navigation: ${JSON.stringify(geometry)}`,
+  )
+  assert.ok(
+    feedback.left >= -1 && feedback.right <= viewportWidth + 1,
+    `${screen}: feedback must fit the portrait viewport: ${JSON.stringify(geometry)}`,
+  )
+  assert.ok(
+    feedback.top >= -1 && feedback.bottom <= viewportHeight + 1,
+    `${screen}: feedback guidance must appear in the portrait viewport: ${JSON.stringify(geometry)}`,
+  )
+}
+
 async function smokeTest() {
   // Import and launch errors are failures: this suite must never silently skip.
   const { chromium } = await import('playwright')
@@ -80,6 +116,30 @@ async function smokeTest() {
   const response = await page.goto(`http://127.0.0.1:${port}/`)
   assert.equal(response.status(), 200)
   await page.locator('#welcome').waitFor({ state: 'visible' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.evaluate(async () => {
+    const { network } = await import('/javascripts/network.js')
+    const { MSG_TYPE } = await import('/shared/protocol.js')
+    network.emit(
+      MSG_TYPE.ERROR,
+      'Game protocol changed. Reload this page to continue.',
+      { code: 'PROTOCOL_MISMATCH' },
+    )
+  })
+  await page.locator('#connection-feedback').waitFor({ state: 'visible' })
+  assert.match(
+    await page.locator('#connection-feedback').textContent(),
+    /reload/i,
+  )
+  await assertFeedbackClearOfNavigation(page, 'welcome portrait')
+  await page.locator('#btn-header-enter-lobby').click()
+  await page.locator('#lobby').waitFor({ state: 'visible' })
+  await assertFeedbackClearOfNavigation(page, 'lobby portrait')
+  await page.locator('#btn-info').click()
+  await page.locator('#welcome').waitFor({ state: 'visible' })
+  await page.reload()
+  await page.locator('#welcome').waitFor({ state: 'visible' })
+  await page.setViewportSize({ width: 1280, height: 900 })
   await page.locator('#btn-header-enter-lobby').click()
   await page.locator('#lobby').waitFor({ state: 'visible' })
   await page.waitForFunction(async () => {

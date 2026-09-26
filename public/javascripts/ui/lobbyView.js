@@ -112,11 +112,7 @@ export class LobbyView {
         this.onSelectGame(item.key, item.name)
       }
 
-      const isReconnectable =
-        state.connectedGames[item.key] &&
-        Object.keys(state.connectedGames[item.key].localPlayers || {}).length > 0
-
-      joinButton.disabled = !item.acceptingPlayers && !isReconnectable
+      joinButton.disabled = !item.acceptingPlayers
 
       tdAction.appendChild(joinButton)
       tr.appendChild(tdAction)

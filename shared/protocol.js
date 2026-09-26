@@ -12,9 +12,9 @@ export const MSG_TYPE = {
 
   // Match configuration & lifecycle
   ADD_PLAYER: 'ADD_PLAYER',
+  PLAYER_REGISTERED: 'PLAYER_REGISTERED',
   SET_INTERVAL: 'SET_INTERVAL',
   START_GAME: 'START_GAME',
-  CHANGE_DIR: 'CHANGE_DIR',
 
   // Real-time gameplay events
   GAME_INFO: 'GAME_INFO',
@@ -25,6 +25,10 @@ export const MSG_TYPE = {
   GAME_FINISH: 'GAME_FINISH',
   ERROR: 'ERROR',
 }
+
+// All client messages carry this version. Binary input is enabled only after
+// a versioned room join, preventing old clients from treating handles as IDs.
+export const PROTOCOL_VERSION = 2
 
 export const BINARY_OPCODE = {
   DRAW: 0x01,

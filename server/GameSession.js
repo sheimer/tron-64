@@ -2,6 +2,7 @@ import WebSocket from 'ws'
 
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
+import { PlayerOwnership } from './PlayerOwnership.js'
 import {
   GRID_SIZE,
   MAX_PLAYERS,
@@ -39,6 +40,13 @@ export class GameSession {
       players: [],
       messages: [],
     }
+    this.ownership = new PlayerOwnership(key)
+    // Snapshots before durable verifiers never confer ownership on restoration.
+    if (Array.isArray(players)) {
+      this.stats.players.forEach((p) => {
+        p.connected = false
+      })
+    }
 
     this.arena = new Arena({
       size,
@@ -46,7 +54,7 @@ export class GameSession {
 
     if (Array.isArray(players) && players.length > 0) {
       players.forEach((p) => {
-        this.arena.addPlayer(new Player({ ...p }))
+        this.arena.addPlayer(new Player({ ...p, connected: false }))
       })
       this.acceptingPlayers = this.stats.players.length < MAX_PLAYERS
       this.arena.init()
@@ -72,6 +80,7 @@ export class GameSession {
     this.arena = null
     this.onChange = null
     this.clients = []
+    this.ownership.clear()
 
     if (typeof this.onDestroy === 'function') {
       this.onDestroy()
@@ -132,6 +141,45 @@ export class GameSession {
   }
 
   addPlayer(player) {
+    const validControl = (value) =>
+      (Number.isInteger(value) && value >= 0 && value <= 255) ||
+      value === 'btn-left' ||
+      value === 'btn-right'
+    if (
+      typeof player?.id !== 'string' ||
+      !player.id.trim() ||
+      player.id.length > 16 ||
+      player.id !== player.id.trim()
+    ) {
+      return { ok: false, code: 'INVALID_PLAYER_ID' }
+    }
+    if (
+      this.arena.players.some((p) => p.id === player.id) ||
+      this.stats.players.some((p) => p.id === player.id)
+    ) {
+      return { ok: false, code: 'DUPLICATE_PLAYER_ID' }
+    }
+    if (
+      !validControl(player.left) ||
+      !validControl(player.right) ||
+      player.left === player.right
+    ) {
+      return { ok: false, code: 'INVALID_CONTROLS' }
+    }
+    if (
+      this.arena.players.length >= MAX_PLAYERS ||
+      this.stats.players.length >= MAX_PLAYERS
+    ) {
+      return { ok: false, code: 'PLAYER_LIMIT' }
+    }
+    if (
+      !this.acceptingPlayers ||
+      this.running ||
+      this.gameStarted ||
+      this.stats.gamecount > 0
+    ) {
+      return { ok: false, code: 'REGISTRATION_CLOSED' }
+    }
     this.arena.addPlayer(new Player({ ...player }))
 
     this.stats.players.push({
@@ -152,6 +200,7 @@ export class GameSession {
         this.onChange()
       }
     }
+    return { ok: true }
   }
 
   addStats(stats) {
@@ -159,7 +208,7 @@ export class GameSession {
     const playersById = this.stats.players.reduce((players, player) => {
       players[player.id] = player
       return players
-    }, {})
+    }, Object.create(null))
 
     this.stats.gamecount++
     roundsPlayedCounter.inc()
