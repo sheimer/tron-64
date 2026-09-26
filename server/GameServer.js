@@ -44,7 +44,10 @@ class GameServer {
         })
         this.games.push(session)
       } catch (err) {
-        console.error(`[GameServer] Error restoring session ${record.key}:`, err)
+        console.error(
+          `[GameServer] Error restoring session ${record.key}:`,
+          err,
+        )
       }
     })
 
@@ -118,13 +121,37 @@ class GameServer {
     return {
       key: game.key,
       name: game.name,
-      players: game.arena.players.map((player) => player),
+      players: game.arena.players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        color: player.color,
+        left: player.left,
+        right: player.right,
+        connected: player.connected,
+      })),
       started:
         Boolean(game.gameStarted) ||
         game.stats.gamecount > 0 ||
         !game.acceptingPlayers,
       running: game.running,
-      scores: game.stats,
+      scores: {
+        gamecount: game.stats.gamecount,
+        players: game.stats.players.map((player) => ({
+          id: player.id,
+          name: player.name,
+          kills: player.kills,
+          killed: player.killed,
+          escaped: player.escaped,
+          lastScore: player.lastScore,
+          total: player.total,
+          connected: player.connected,
+        })),
+        messages: game.stats.messages.map((message) => ({
+          text: message.text,
+          playerPre: message.playerPre,
+          playerPost: message.playerPost,
+        })),
+      },
       interval: game.interval,
     }
   }

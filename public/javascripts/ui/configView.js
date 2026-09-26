@@ -2,8 +2,7 @@ import { settings } from '../settings.js'
 import { PLAYER_COLOR_KEYS } from '/shared/constants.js'
 
 const canHover =
-  typeof window !== 'undefined' &&
-  window.matchMedia('(hover: hover)').matches
+  typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
 const keycodes = {
   '66_78': { left: 66, right: 78 }, // b/n
@@ -45,6 +44,10 @@ export class ConfigView {
     this.bodyPlayersTable = document.getElementById('body-playerstable')
 
     this.formAddPlayer = document.getElementById('form-add-player')
+    this.registrationFeedback = document.createElement('div')
+    this.registrationFeedback.setAttribute('role', 'status')
+    this.registrationFeedback.className = 'fg-rose-muted'
+    this.formAddPlayer?.appendChild(this.registrationFeedback)
     this.inputPlayerName = document.getElementById('input-add-player')
     this.selectKeycodes = document.getElementById('select-keycodes')
     this.msgNoKeycodes = document.getElementById('msg-no-keycodes')
@@ -195,6 +198,10 @@ export class ConfigView {
       }
       if (this.selectKeycodes) this.selectKeycodes.disabled = !canHover
     }
+  }
+
+  showFeedback(message) {
+    this.registrationFeedback.textContent = message
   }
 
   show(currentGame) {

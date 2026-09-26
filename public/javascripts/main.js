@@ -10,11 +10,7 @@ import { LobbyView } from './ui/lobbyView.js'
 import { ConfigView } from './ui/configView.js'
 import { GameView } from './ui/gameView.js'
 import { MSG_TYPE } from '/shared/protocol.js'
-import {
-  PLAYER_COLOR_KEYS,
-  GRID_SIZE,
-  BLOCK_SIZE,
-} from '/shared/constants.js'
+import { PLAYER_COLOR_KEYS, GRID_SIZE, BLOCK_SIZE } from '/shared/constants.js'
 
 const buildColorConfig = () => {
   const colors = getThemeColors()
@@ -39,6 +35,9 @@ class AppCoordinator {
   constructor() {
     this.currentGameKey = null
     this.localPlayersConfig = new Map() // playerId -> { left, right }
+    this.pendingRegistrations = new Map()
+    this.recoveryNotice = false
+    this.connectionFeedback = document.getElementById('connection-feedback')
     this.unsubscribers = []
     this.keyboardBound = false
 
@@ -63,20 +62,47 @@ class AppCoordinator {
           .map((num) => num.toString(16).padStart(2, '0'))
           .join('')
 
-        this.localPlayersConfig.set(id, { left, right })
-        state.addLocalPlayer(id, { left, right })
-
         const colors = buildColorConfig()
         const playerColor =
           colors.playercolors[state.players.length]?.name || 'fg'
 
-        network.addPlayer({
+        const player = {
           id,
           name,
           color: playerColor,
           left,
           right,
-        })
+        }
+        const requestId = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+          .map((num) => num.toString(16).padStart(2, '0'))
+          .join('')
+        const pending = {
+          player,
+          key: this.currentGameKey,
+          generation: network.generation,
+          attempts: 0,
+          timer: null,
+        }
+        this.pendingRegistrations.set(requestId, pending)
+        const retry = () => {
+          if (
+            this.pendingRegistrations.get(requestId) !== pending ||
+            pending.generation !== network.generation ||
+            pending.key !== this.currentGameKey
+          )
+            return
+          if (pending.attempts >= 3) {
+            this.pendingRegistrations.delete(requestId)
+            this.configView.showFeedback(
+              'Registration acknowledgement was lost. Try a new player in this room if available, or create a new room.',
+            )
+            return
+          }
+          pending.attempts++
+          network.addPlayer(player, requestId)
+          pending.timer = setTimeout(retry, 2000)
+        }
+        retry()
       },
       onStartGame: () => {
         network.startGame()
@@ -249,25 +275,96 @@ class AppCoordinator {
     network.on('open', () => {
       if (this.currentGameKey) {
         this.joinGame(this.currentGameKey)
+        if (this.recoveryNotice) {
+          this.showConnectionFeedback(
+            'Connection restored. Attempting to rejoin as a spectator; saved players cannot be reclaimed yet.',
+          )
+        }
       }
     })
 
     network.on('close', () => {
+      if (this.currentGameKey) this.recoveryNotice = true
+      this.clearPendingRegistrations()
+      this.localPlayersConfig.clear()
+      state.clearOwnership()
       if (this.currentGameKey) {
+        this.showConnectionFeedback(
+          'Connection lost. Reconnecting as a spectator; saved players cannot be reclaimed yet. Register a new player in an eligible room or create a new room.',
+        )
         this.setScreen('game')
         this.setMatchState('scoresWaiting')
       }
     })
 
+    network.on(MSG_TYPE.PLAYER_REGISTERED, (binding, msg) => {
+      const pending = this.pendingRegistrations.get(msg.requestId)
+      if (
+        !pending ||
+        pending.generation !== network.generation ||
+        pending.key !== this.currentGameKey ||
+        pending.key !== binding?.key ||
+        pending.player.id !== binding.id ||
+        typeof binding.reconnectToken !== 'string' ||
+        !network.bindPlayer(binding.id, binding.inputHandle)
+      )
+        return
+      clearTimeout(pending.timer)
+      this.pendingRegistrations.delete(msg.requestId)
+      this.localPlayersConfig.set(binding.id, {
+        left: pending.player.left,
+        right: pending.player.right,
+      })
+      state.addLocalPlayer(
+        binding.id,
+        { left: pending.player.left, right: pending.player.right },
+        binding.reconnectToken,
+      )
+      this.configView.showFeedback(`${pending.player.name} registered.`)
+      this.recoveryNotice = false
+      this.showConnectionFeedback('')
+      // GAME_INFO can arrive before the private acknowledgement.
+      state.set(
+        'players',
+        state.players.map((p) =>
+          p.id === binding.id ? { ...p, isLocal: true } : p,
+        ),
+      )
+      this.configView.updatePlayersTable(state.players)
+      this.settingsView.setSpectatorMode(false)
+    })
+
+    network.on(MSG_TYPE.ERROR, (message, msg) => {
+      const pending = this.pendingRegistrations.get(msg?.requestId)
+      if (pending) {
+        clearTimeout(pending.timer)
+        this.pendingRegistrations.delete(msg.requestId)
+      }
+      if (this.currentGameKey) this.configView.showFeedback(message)
+      if (
+        msg?.code === 'PROTOCOL_MISMATCH' ||
+        (this.currentGameKey && state.screen === 'game')
+      ) {
+        this.showConnectionFeedback(message)
+      }
+    })
+
     network.on(MSG_TYPE.GAME_INFO, (info) => {
-      if (!info || !this.currentGameKey) return
+      if (!info || !this.currentGameKey || info.key !== this.currentGameKey)
+        return
+      if (this.recoveryNotice) {
+        this.showConnectionFeedback(
+          'Connected as a spectator. Saved players cannot be reclaimed yet. Register a new player in an eligible room or create a new room.',
+        )
+      }
       const players = (info.players || []).map((p) => {
         const isLocal = state.isLocalPlayer(p.id)
         if (isLocal) {
           const savedCfg = state.getLocalPlayerConfig(p.id)
-          const left = savedCfg?.left ?? p.left
-          const right = savedCfg?.right ?? p.right
-          this.localPlayersConfig.set(p.id, { left, right })
+          this.localPlayersConfig.set(p.id, {
+            left: savedCfg?.left ?? p.left,
+            right: savedCfg?.right ?? p.right,
+          })
         }
         return {
           ...p,
@@ -278,7 +375,9 @@ class AppCoordinator {
       this.configView.updatePlayersTable(players)
 
       const hasLocalPlayers = players.some((p) => p.isLocal)
-      this.settingsView.setSpectatorMode(!hasLocalPlayers && Boolean(this.currentGameKey))
+      this.settingsView.setSpectatorMode(
+        !hasLocalPlayers && Boolean(this.currentGameKey),
+      )
 
       if (info.interval) {
         const targetFps = Math.round(1000 / info.interval)
@@ -346,8 +445,28 @@ class AppCoordinator {
   }
 
   joinGame(gameKey) {
+    this.clearPendingRegistrations()
+    this.localPlayersConfig.clear()
+    state.clearOwnership()
     this.currentGameKey = gameKey
-    network.joinGame(gameKey, state.getLocalPlayerIds(gameKey))
+    network.joinGame(gameKey)
+    if (state.getLocalPlayerIds(gameKey).length) {
+      this.configView.showFeedback(
+        'Previous player credentials cannot be restored in this version. Register a new player if room space is available, or create a new room.',
+      )
+    }
+  }
+
+  clearPendingRegistrations() {
+    for (const pending of this.pendingRegistrations.values())
+      clearTimeout(pending.timer)
+    this.pendingRegistrations.clear()
+  }
+
+  showConnectionFeedback(message) {
+    if (!this.connectionFeedback) return
+    this.connectionFeedback.textContent = message
+    this.connectionFeedback.style.display = message ? '' : 'none'
   }
 
   leaveCurrentGame() {
@@ -355,7 +474,11 @@ class AppCoordinator {
       network.leaveGame()
     }
     this.currentGameKey = null
+    this.recoveryNotice = false
+    this.showConnectionFeedback('')
+    this.clearPendingRegistrations()
     this.localPlayersConfig.clear()
+    state.clearOwnership()
     this.settingsView.setSpectatorMode(false)
     state.set('players', [])
     state.set('scores', { gamecount: 0, players: [], messages: [] })

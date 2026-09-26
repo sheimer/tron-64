@@ -8,10 +8,21 @@ class State {
       key: null,
       name: null,
     }
-    this.connectedGames =
-      typeof sessionStorage !== 'undefined'
-        ? JSON.parse(sessionStorage.getItem('connectedGames')) ?? {}
-        : {}
+    try {
+      this.connectedGames =
+        typeof sessionStorage !== 'undefined'
+          ? (JSON.parse(sessionStorage.getItem('connectedGames')) ?? {})
+          : {}
+    } catch {
+      this.connectedGames = {}
+    }
+    if (
+      !this.connectedGames ||
+      typeof this.connectedGames !== 'object' ||
+      Array.isArray(this.connectedGames)
+    )
+      this.connectedGames = {}
+    this.ownedPlayerIds = new Set()
 
     this.gamesList = []
     this.matchState = 'initializing'
@@ -63,16 +74,34 @@ class State {
   }
 
   addConnectedGame(key) {
-    if (!this.connectedGames[key]) {
-      this.connectedGames[key] = { localPlayers: {} }
+    if (
+      !this.connectedGames[key] ||
+      typeof this.connectedGames[key] !== 'object' ||
+      !this.connectedGames[key].localPlayers ||
+      typeof this.connectedGames[key].localPlayers !== 'object' ||
+      Array.isArray(this.connectedGames[key].localPlayers)
+    ) {
+      this.connectedGames[key] = { localPlayers: Object.create(null) }
       this.saveConnectedGames()
+    } else if (
+      Object.getPrototypeOf(this.connectedGames[key].localPlayers) !== null
+    ) {
+      this.connectedGames[key].localPlayers = Object.assign(
+        Object.create(null),
+        this.connectedGames[key].localPlayers,
+      )
     }
   }
 
-  addLocalPlayer(playerId, config = null) {
+  addLocalPlayer(playerId, config, reconnectToken) {
     const key = this.currentGame.key
-    if (key && this.connectedGames[key]) {
-      this.connectedGames[key].localPlayers[playerId] = config || true
+    if (key && this.connectedGames[key] && typeof reconnectToken === 'string') {
+      this.connectedGames[key].localPlayers[playerId] = {
+        version: 2,
+        config,
+        reconnectToken,
+      }
+      this.ownedPlayerIds.add(playerId)
       this.saveConnectedGames()
       this.emit('localPlayers', this.connectedGames[key].localPlayers)
     }
@@ -81,8 +110,8 @@ class State {
   getLocalPlayerConfig(playerId) {
     const key = this.currentGame.key
     const entry = this.connectedGames[key]?.localPlayers?.[playerId]
-    if (typeof entry === 'object' && entry !== null) {
-      return entry
+    if (entry?.version === 2 && typeof entry.reconnectToken === 'string') {
+      return entry.config
     }
     return null
   }
@@ -93,8 +122,11 @@ class State {
   }
 
   isLocalPlayer(playerId) {
-    const key = this.currentGame.key
-    return !!(key && this.connectedGames[key]?.localPlayers?.[playerId])
+    return this.ownedPlayerIds.has(playerId)
+  }
+
+  clearOwnership() {
+    this.ownedPlayerIds.clear()
   }
 
   removeConnectedGames(keys) {
@@ -106,10 +138,14 @@ class State {
 
   saveConnectedGames() {
     if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(
-        'connectedGames',
-        JSON.stringify(this.connectedGames),
-      )
+      try {
+        sessionStorage.setItem(
+          'connectedGames',
+          JSON.stringify(this.connectedGames),
+        )
+      } catch {
+        // Storage is optional; acknowledgement still owns this live socket.
+      }
     }
   }
 }
