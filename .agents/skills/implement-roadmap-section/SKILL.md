@@ -44,6 +44,8 @@ Before implementation agents start:
 
 ## Execute one phase at a time
 
+Record lightweight task evidence in the progress document using the tracking rules in [agent roles and model selection](references/agents.md#execution-tracking). Start a record when delegating; complete it on handoff and include follow-up attempts. Persist it with ordinary phase checkpoints and on interruption, without extra agents or duplicate runs solely for measurement. Missing telemetry never blocks implementation.
+
 1. **Implement:** Give the implementation agent the approved phase, relevant source paths, acceptance criteria, and explicit file ownership. Include documentation, regression tests, and required formatting. Keep dependent phases sequential; parallelize only independent work with disjoint write ownership.
 2. **Test:** Have a separate agent inspect acceptance coverage, challenge fixtures and rejection paths, and run relevant checks or analyze CI evidence when local execution is unavailable. Add meaningful missing regressions. Do not reduce assertions or silently skip tests to obtain green CI.
 3. **Review:** Give an independent reviewer the approved contract and final diff, not just the implementer's summary. Require severity, location, impact, and actionable findings. Review authorization, race conditions, compatibility, persistence, and cleanup when relevant. Resolve blocking findings and re-review affected changes.
@@ -60,4 +62,4 @@ On resume, compare the progress record against the live remote branch, diff, pla
 
 At the end, audit the roadmap acceptance matrix, update only completed roadmap items and applicable release notes, and run the final required checks. Open or update a PR with scope, behavior, commit/run evidence, review outcomes, limitations, and migration notes. Mark ready only when required checks for the final head (and applicable PR checks) pass. Leave merging to the user.
 
-Report the PR, completed scope, tests, and remaining limitations. Do not claim that merely writing the skill proves a full real-world roadmap execution; distinguish scenario evaluation from a live pilot.
+Report the PR, completed scope, tests, and remaining limitations. Include a brief model-efficiency review grounded in the task records: where reasoning or rework mattered, candidates for a later cheaper-model trial, and what remains unmeasured. Do not claim that merely writing the skill proves a full real-world roadmap execution; distinguish scenario evaluation from a live pilot.
