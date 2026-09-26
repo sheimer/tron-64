@@ -103,3 +103,15 @@ Pending real task evidence. Task usage and lead orchestration overhead are unmea
 - P1-CI1 implementation handoff: three fresh-room cycles, two acknowledged players/two rounds each, server-side room teardown with ordinary client pruning; all four leak thresholds unchanged.
 - P1-CI1 independent Sol/high tester ended 2026-09-27T00:47:02+02:00: no weakening or masked client cleanup; scoped lint/format/diff checks pass, browser unavailable locally.
 - P1-CI1 Astra/high review observed 2026-09-27T00:47:25–00:47:37+02:00: no blocking findings; exact follow-up CI required.
+
+### P1-CI2 — Browser smoke reset/countdown timing
+
+- Follow-up candidate `8770ea4164140701d977ee18f3eb855492c3c349`: push `36277475096` succeeded; PR `36277478172`, job `108502900660`, failed smoke interior-paint assertion. Leak test passed with heap +0.087 MB, attached elements +0, internal nodes +4, listeners +0; thresholds unchanged.
+- Logs and artifact `10917623499` retrieved; failure screenshot shows blank arena border. Source sequence: reset emits initial player delta, 50 ms client reset clears grid, running notification precedes one-second simulation startup. One-shot canvas sampling can race setup despite draw-received flag.
+- Sol/high implementer assigned bounded wait for the same interior-pixel assertion; no skip, missing-render acceptance, or unchanged retry. Separate issue from resolved leak fixture; first repair for this timing issue.
+- Independent tester/reviewer and exact-candidate CI pending. Token/precise task telemetry unavailable.
+
+- P1-CI2 implementer ended 2026-09-27T00:52:32+02:00: trace confirms sample approximately 15 ms after running condition, before one-second physics startup; replaced one-shot sample with ten-second maximum wait for identical interior-paint condition.
+- P1-CI2 independent Sol/high tester ended 2026-09-27T00:53:16+02:00: same RGB/crop condition and exception assertion retained, no missing-render acceptance; lint/format/diff pass; local browser prerequisite still unavailable.
+
+- P1-CI2 Astra/high review observed 2026-09-27T00:53:38–00:53:47+02:00: no blocking findings; source confirms timing and assertions retained; follow-up CI required.
