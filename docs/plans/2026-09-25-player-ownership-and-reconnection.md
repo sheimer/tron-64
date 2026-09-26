@@ -11,6 +11,8 @@ Implement all six items in the [roadmap section](../../ROADMAP.md#player-ownersh
 
 This plan includes the registration validation and private acknowledgement necessary to establish ownership safely. It does not complete the separate registration/round-authority section: host selection, host-only start/reset/speed changes, minimum eligible roster, and countdown cleanup remain there. Likewise, broader membership deduplication, capacity accounting, idle reaping, scoring, and traffic bounds remain separate work. Ownership-aware leave/switch/close cleanup is required here.
 
+The scope also includes removing client-side JSON arena-delta compatibility in Phase 3. Keep the existing binary drawing wire format and rendering behavior; this is a protocol cleanup alongside binary-only movement.
+
 Creating this plan does not mark roadmap features complete or change the release version.
 
 ## Current implementation and gaps
@@ -74,7 +76,15 @@ Movement uses binary frames exclusively. Use a server-assigned, connection-local
 - After 256 allocations, never wrap or fall back to JSON. Preflight handle capacity before registration or ownership transfer; insufficient capacity returns a stable INPUT_HANDLE_EXHAUSTED error without partial mutation and preserves existing valid bindings. Explain that a fresh connection is required. From Phase 2, provide an explicit reconnect action that authenticates saved credentials on the new socket before enabling input; do not silently disconnect or enter an automatic reclaim loop. During Phase 1, explain that recovery requires a new connection and new registration (or a new room), since authenticated reconnection has not landed yet.
 - Invalidate mappings immediately when ownership is lost. Reconnection on a new socket receives new mappings.
 - Negotiate/require the updated protocol before accepting these frames so stale clients cannot interpret a public ID byte as a handle.
-- Preserve binary drawing deltas unchanged. Phase 1 must deliver working authorized binary movement end to end; do not ship an intermediate JSON-only movement implementation.
+- Preserve the binary drawing wire format unchanged. Phase 1 must deliver working authorized binary movement end to end; do not ship an intermediate JSON-only movement implementation.
+
+### Binary-only arena-delta reception
+
+- The server already sends drawing deltas exclusively as binary frames. Remove the remaining client JSON GAME_DRAW reception path, including the legacy action envelope; these messages must never reach the renderer or change its grid/canvas.
+- Keep GAME_DRAW as an internal client event if useful: receiving a binary DRAW frame may still emit that event. An internal event name does not authorize a JSON wire message.
+- Remove the renderer's legacy Array<[x, y, cellValue]> delta input and its documentation; update any fixtures/callers to the binary DataView contract. Preserve full-state initialization/resynchronization, local full redraws, and JSON control messages.
+- Validate drawing frame structure before emitting or applying it: require the DRAW opcode and complete five-byte cell records after the header; malformed/truncated frames must not partially paint or throw an uncaught error.
+- Add regressions proving valid binary deltas still render, JSON GAME_DRAW envelopes cannot mutate rendering, and reset, theme/resize redraw, and spectator/reconnect state synchronization remain functional.
 
 ### Handover and cleanup
 
@@ -141,10 +151,13 @@ On a room switch, validate target admission first, then release only currently o
 - [ ] Verify every client movement source uses acknowledged binary handles and no JSON movement sender or accepting handler remains.
 - [ ] Test hexadecimal and numeric-looking string IDs, all local players, unknown handles, stale handles after transfer/switch, handle exhaustion, malformed frames, and legacy clients.
 - [ ] Capture client frames to prove all valid steering is binary, including after reload, handover, and handle-exhaustion recovery. Assert JSON movement always fails without mutation while JSON control messages and binary drawing deltas retain their behavior.
+- [ ] Remove JSON GAME_DRAW reception and the renderer's array-delta compatibility. Retain the internal binary-decoded GAME_DRAW event and existing binary wire format.
+- [ ] Test rejected JSON drawing through type/action envelopes, malformed/truncated binary drawing frames without partial painting, and valid binary rendering. Preserve full-state synchronization and reset/theme/resize/spectator/reconnect behavior.
+- [ ] Update the rendering and protocol guides to distinguish binary-only drawing deltas from JSON control/full-state messages.
 - [ ] Correct the protocol guide's ID representation and its input-queue description to match actual Player.changeDir/dirStack behavior.
 - [ ] Update Unreleased notes and run phase checks.
 
-**Exit:** Binary-only movement retains correct canonical identity and authorization across all lifecycle transitions, with no numeric ID coercion, stale-handle reuse, or JSON fallback.
+**Exit:** Binary-only movement retains correct canonical identity and authorization across all lifecycle transitions, with no numeric ID coercion, stale-handle reuse, or JSON fallback. Arena deltas are accepted only as valid binary frames; JSON drawing and renderer array-delta compatibility are removed without changing full-state synchronization or local redraw behavior.
 
 ### Phase 4 — Durable credentials and restart recovery
 
@@ -178,6 +191,8 @@ On a room switch, validate target admission first, then release only currently o
 | Multiple local players                                       | One socket registers/reconnects multiple players; independent credentials and bindings work; partial transfer preserves the rest.                                                                                               | 1, 2, 3, 5 |
 | Safe reconnection handover                                   | Replacement retains control after old/unrelated socket input, leave, switch, and close; no false disconnect or extra explosion.                                                                                                 | 2, 5       |
 | Credential lifetime and restart                              | Saved verifiers authenticate after restart; all restored players begin disconnected; legacy data never enables takeover.                                                                                                        | 4, 5       |
+
+**Additional protocol-cleanup acceptance:** Valid binary arena deltas render correctly; JSON GAME_DRAW messages and malformed binary deltas leave rendering unchanged. Full-state synchronization, reset, and local redraws retain their behavior (Phases 3 and 5).
 
 ## Validation and review gate for every implementation phase
 
