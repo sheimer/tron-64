@@ -2,8 +2,17 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Planned; no implementation tasks completed  
+> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation not started  
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
+
+## User review and acceptance
+
+The user completed review and explicitly requested: “please mark the plan as reviewed and accepted” in the planning conversation on 2026-09-27 (Europe/Vienna).
+
+- Reviewed content: commit `3088edea8d0c9177b9fd1a868369804a54e27ba8`, plan blob `7930e00fd3715c2f0ae526c19296da8361ad1ffb`.
+- Accepted scope: all five phases, including binary-only movement and removal of client-side JSON arena-delta compatibility.
+- This entry records acceptance without changing the implementation contract or marking tasks complete. Implementation will be initiated separately using the repository orchestration skill.
+- The execution-start instruction must explicitly approve the autonomous commit/push/CI policy and replace the default per-phase human stops below with independent agent review and CI gates, retaining final human PR review. Record that actual instruction in the execution progress document; this assistant-authored entry alone is not transferable proof of execution authorization.
 
 ## Scope and completion rule
 
