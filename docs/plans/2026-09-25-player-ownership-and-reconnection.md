@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phase 1 verified
+> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–2 verified
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -143,14 +143,14 @@ On a room switch, validate target admission first, then release only currently o
 
 ### Phase 2 — Authenticated reconnection and atomic handover
 
-- [ ] Implement per-player reconnect verification and JOIN_RESULT responses, with bounded/validated claim lists and mixed-success behavior.
-- [ ] Restore saved credentials and bindings only for accepted IDs; display rejected/missing credentials without silently registering replacements.
-- [ ] Implement handover, ownership-revoked notifications, and idempotent release for leave, switch, and close. Preserve other players still owned by either socket.
-- [ ] Suspend bindings on transport loss and reject late responses from superseded sockets/rooms. A transferred-away client must not automatically reclaim in a loop.
-- [ ] Add explicit fresh-connection recovery for INPUT_HANDLE_EXHAUSTED using saved credentials. Test capacity preflight on reconnect batches, preservation of existing owners on failure, and input enabled only after new handles are acknowledged.
-- [ ] Test A-to-B handover followed by A steering/leaving/closing, unrelated C closing, two valid concurrent claimants, repeated joins, partial transfer of shared-keyboard players, and room switching with reused public IDs.
-- [ ] Test disconnected mid-round rejoin versus live handover: no resurrection, duplicate explosion, or false disconnected scoreboard state.
-- [ ] Update lifecycle/protocol documentation and Unreleased notes; run phase checks.
+- [x] Implement per-player reconnect verification and JOIN_RESULT responses, with bounded/validated claim lists and mixed-success behavior.
+- [x] Restore saved credentials and bindings only for accepted IDs; display rejected/missing credentials without silently registering replacements.
+- [x] Implement handover, ownership-revoked notifications, and idempotent release for leave, switch, and close. Preserve other players still owned by either socket.
+- [x] Suspend bindings on transport loss and reject late responses from superseded sockets/rooms. A transferred-away client must not automatically reclaim in a loop.
+- [x] Add explicit fresh-connection recovery for INPUT_HANDLE_EXHAUSTED using saved credentials. Test capacity preflight on reconnect batches, preservation of existing owners on failure, and input enabled only after new handles are acknowledged.
+- [x] Test A-to-B handover followed by A steering/leaving/closing, unrelated C closing, two valid concurrent claimants, repeated joins, partial transfer of shared-keyboard players, and room switching with reused public IDs.
+- [x] Test disconnected mid-round rejoin versus live handover: no resurrection, duplicate explosion, or false disconnected scoreboard state.
+- [x] Update lifecycle/protocol documentation and Unreleased notes; run phase checks.
 
 **Exit:** Only valid credentials restore individual ownership, and a superseded socket cannot revoke the replacement's players.
 

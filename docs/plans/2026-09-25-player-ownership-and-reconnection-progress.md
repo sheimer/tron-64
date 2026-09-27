@@ -20,18 +20,18 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 2 implemented, independently tested/reviewed; exact-candidate CI pending. Latest verified checkpoint `405e5dda5025831c9f8cec202600d40f409def6a`.
+- Current phase: Phase 2 verified on `fdea6fd2183f3745b641c52a28f27f2e916c114d`; Phase 3 next after administrative checkpoint CI.
 
 ## Evidence by phase
 
 | Phase | Candidate                                  | Local checks                                                             | CI                                                                                                  | Independent review                                                               | Status   |
 | ----- | ------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
 | 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser checks, lint and formatting pass; local Chromium unavailable | Push `36277783947` and PR `36277787537`: 15 pass, 0 failed; Chromium smoke and client leak executed | Astra clear; two feedback corrections and two reviewed CI fixture/timing repairs | Verified |
-| 2–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
+| 3–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
 
 ## Blockers and next action
 
-Phase 2 code, independent regressions and review are complete. Publish the reviewed candidate and verify exact push/PR CI, including Chromium smoke/handover and authenticated rejoin leak coverage. Mark Phase 2 verified only after those checks pass, then proceed to Phase 3. Use existing PR #4; final human review/merge remains with the user.
+Phase 2 verified. Verify this administrative checkpoint CI, then proceed to Phase 3 binary-only protocol edge cases and drawing compatibility removal. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -153,3 +153,10 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - P2-I ended 2026-09-27T07:00:12Z. P2-R final recheck: no functional blocking findings; tester added full-room admission rejection coverage. Lead to apply scoped formatting only before candidate publication. Precise compute/token telemetry unavailable; elapsed times include local/tool waits and overlap.
 
 - P2-R completed 2026-09-27T07:00:41Z: no blocking findings. P2-T final coverage update ended 2026-09-27T07:00:47Z; real ROOM_FULL preflight preservation added and full local suite rerun with the same 17 reported passes / one unavailable-browser failure (plus leak skip). Final scoped formatting, ESLint and diff checks pass. Exact-candidate CI pending.
+
+## Phase 2 verified checkpoint
+
+- Candidate `fdea6fd2183f3745b641c52a28f27f2e916c114d`: push run `36301883464` and PR run `36301885822` both succeeded. PR job `108570909469` logs confirm 18 passed, zero failed, real Chromium smoke/handover and authenticated rejoin leak tests executed.
+- Leak thresholds preserved: attached elements flat, listeners +0, internal nodes +4, heap growth approximately 105 KB over three cycles. These are measured test results, not a blanket zero-leak guarantee.
+- Independent Sol/high implementation/testing and Astra/high review completed; no unresolved blockers. Lead recovered and published via non-forced connector ref update; local tree matches published candidate.
+- Next: verify this administrative checkpoint CI, then Phase 3. PR #4 remains draft; no merge/deployment. Phases 3–5 pending.
