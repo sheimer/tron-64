@@ -20,18 +20,18 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 2 verified on `fdea6fd2183f3745b641c52a28f27f2e916c114d`; Phase 3 next after administrative checkpoint CI.
+- Current phase: Phase 3 verified on `4d7edde9ae5ec2bae95e0d3053961e2d01981970`; Phase 4 next after administrative checkpoint CI.
 
 ## Evidence by phase
 
 | Phase | Candidate                                  | Local checks                                                             | CI                                                                                                  | Independent review                                                               | Status   |
 | ----- | ------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
 | 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser checks, lint and formatting pass; local Chromium unavailable | Push `36277783947` and PR `36277787537`: 15 pass, 0 failed; Chromium smoke and client leak executed | Astra clear; two feedback corrections and two reviewed CI fixture/timing repairs | Verified |
-| 3–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
+| 4–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
 
 ## Blockers and next action
 
-Phase 2 verified. Verify this administrative checkpoint CI, then proceed to Phase 3 binary-only protocol edge cases and drawing compatibility removal. Use existing PR #4; final human review/merge remains with the user.
+Phase 3 verified. Verify this administrative checkpoint CI, then proceed to Phase 4 durable credential verifiers and restart recovery. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -176,3 +176,9 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - P3-R final 2026-09-27T07:15:09Z: no blocking findings. Reconnect browser frame expectations now use acknowledged player mappings and numeric-string fixture is `12345678`. Independent source/tests/lint/diff verification passed; exact Chromium CI pending.
 
 - P3-T follow-up ended 2026-09-27T07:15:19Z: acknowledged-handle assertions preserve exact bytes and old-client suppression. Focused suites/lint/format/diff pass; full local 18 reported passes / one unavailable-browser failure with leak skip. No added follow-up tester edits. Candidate publication next.
+
+## Phase 3 verified checkpoint
+
+- Candidate `4d7edde9ae5ec2bae95e0d3053961e2d01981970`: push `36302600598` and PR `36302602782` succeeded. Job `108572957767` confirms all 19 suites passed, including real browser smoke/reload/handover and client leak.
+- P3-I final end 2026-09-27T07:16:40Z. Independent testing/review clear after acknowledged-handle assertion correction. No unresolved findings.
+- Phase 3 checkbox update records verified drawing and movement behavior. Phases 4–5 remain pending; credential persistence not implemented yet. Next action: verify checkpoint CI then Phase 4.

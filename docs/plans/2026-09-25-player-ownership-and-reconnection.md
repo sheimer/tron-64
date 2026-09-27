@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–2 verified
+> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–3 verified
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -156,15 +156,15 @@ On a room switch, validate target admission first, then release only currently o
 
 ### Phase 3 — Binary-only movement edge cases and regression coverage
 
-- [ ] Audit the Phase 1 handle mapping and Phase 2 handover/recovery paths together, including protocol negotiation, private mappings, and authoritative ownership validation.
-- [ ] Verify every client movement source uses acknowledged binary handles and no JSON movement sender or accepting handler remains.
-- [ ] Test hexadecimal and numeric-looking string IDs, all local players, unknown handles, stale handles after transfer/switch, handle exhaustion, malformed frames, and legacy clients.
-- [ ] Capture client frames to prove all valid steering is binary, including after reload, handover, and handle-exhaustion recovery. Assert JSON movement always fails without mutation while JSON control messages and binary drawing deltas retain their behavior.
-- [ ] Remove JSON GAME_DRAW reception and the renderer's array-delta compatibility. Retain the internal binary-decoded GAME_DRAW event and existing binary wire format.
-- [ ] Test rejected JSON drawing through type/action envelopes, malformed/truncated binary drawing frames without partial painting, and valid binary rendering. Preserve full-state synchronization and reset/theme/resize/spectator/reconnect behavior.
-- [ ] Update the rendering and protocol guides to distinguish binary-only drawing deltas from JSON control/full-state messages.
-- [ ] Correct the protocol guide's ID representation and its input-queue description to match actual Player.changeDir/dirStack behavior.
-- [ ] Update Unreleased notes and run phase checks.
+- [x] Audit the Phase 1 handle mapping and Phase 2 handover/recovery paths together, including protocol negotiation, private mappings, and authoritative ownership validation.
+- [x] Verify every client movement source uses acknowledged binary handles and no JSON movement sender or accepting handler remains.
+- [x] Test hexadecimal and numeric-looking string IDs, all local players, unknown handles, stale handles after transfer/switch, handle exhaustion, malformed frames, and legacy clients.
+- [x] Capture client frames to prove all valid steering is binary, including after reload, handover, and handle-exhaustion recovery. Assert JSON movement always fails without mutation while JSON control messages and binary drawing deltas retain their behavior.
+- [x] Remove JSON GAME_DRAW reception and the renderer's array-delta compatibility. Retain the internal binary-decoded GAME_DRAW event and existing binary wire format.
+- [x] Test rejected JSON drawing through type/action envelopes, malformed/truncated binary drawing frames without partial painting, and valid binary rendering. Preserve full-state synchronization and reset/theme/resize/spectator/reconnect behavior.
+- [x] Update the rendering and protocol guides to distinguish binary-only drawing deltas from JSON control/full-state messages.
+- [x] Correct the protocol guide's ID representation and its input-queue description to match actual Player.changeDir/dirStack behavior.
+- [x] Update Unreleased notes and run phase checks.
 
 **Exit:** Binary-only movement retains correct canonical identity and authorization across all lifecycle transitions, with no numeric ID coercion, stale-handle reuse, or JSON fallback. Arena deltas are accepted only as valid binary frames; JSON drawing and renderer array-delta compatibility are removed without changing full-state synchronization or local redraw behavior.
 
