@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–4 verified
+> **Status:** Reviewed and accepted by the user on 2026-09-27; all five phases implemented and verified; final PR review remains with the user
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -181,16 +181,18 @@ On a room switch, validate target admission first, then release only currently o
 
 ### Phase 5 — Integrated acceptance and roadmap closure
 
-- [ ] Add real local WebSocket regressions covering registration through reconnect, movement, handover, leave, and restart; use a temporary DATA_DIR and deterministic teardown.
-- [ ] Add a required Playwright ownership-flow test with two independent browser contexts plus a spectator. Cover two local players, reload/session restoration, rejection feedback, and absence of stale bindings.
-- [ ] Inspect all outbound message types and captured logs for the test credentials/verifiers; only the intended private registration response may contain the raw secret.
-- [ ] Verify stale cached clients get an actionable reload error; document coordinated client/server deployment and snapshot backup/rollback.
-- [ ] Audit the six-item matrix below and update roadmap/history only for verified completed items. Cross-reference the shared registration acknowledgement work without marking unrelated host/round-authority work done.
-- [ ] Update testing/lifecycle/protocol guides and Unreleased notes; run the full validation gate.
+- [x] Add real local WebSocket regressions covering registration through reconnect, movement, handover, leave, and restart; use a temporary DATA_DIR and deterministic teardown.
+- [x] Add a required Playwright ownership-flow test with two independent browser contexts plus a spectator. Cover two local players, reload/session restoration, rejection feedback, and absence of stale bindings.
+- [x] Inspect all outbound message types and captured logs for the test credentials/verifiers; only the intended private registration response may contain the raw secret.
+- [x] Verify stale cached clients get an actionable reload error; document coordinated client/server deployment and snapshot backup/rollback.
+- [x] Audit the six-item matrix below and update roadmap/history only for verified completed items. Cross-reference the shared registration acknowledgement work without marking unrelated host/round-authority work done.
+- [x] Update testing/lifecycle/protocol guides and Unreleased notes; run the full validation gate.
 
 **Exit:** Every acceptance row passes, and remaining Milestone 1 sections are still clearly identified as open.
 
 ## Acceptance matrix
+
+All rows are verified by the suites and exact-candidate CI recorded in the [final acceptance evidence](2026-09-25-player-ownership-and-reconnection-progress.md#final-acceptance-evidence).
 
 | Roadmap item                                                 | Required proof                                                                                                                                                                                                                  | Phases     |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
