@@ -20,18 +20,18 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 4 implemented, independently tested/reviewed, awaiting exact-candidate CI; last verified checkpoint `7983d46db8385361a26a5834a65017ed5d10cef1`.
+- Current phase: Phase 4 verified on `46eac4be115236184e85ed0168444ecd19122826`; Phase 5 next after checkpoint CI.
 
 ## Evidence by phase
 
 | Phase | Candidate                                  | Local checks                                                             | CI                                                                                                  | Independent review                                                               | Status   |
 | ----- | ------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
 | 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser checks, lint and formatting pass; local Chromium unavailable | Push `36277783947` and PR `36277787537`: 15 pass, 0 failed; Chromium smoke and client leak executed | Astra clear; two feedback corrections and two reviewed CI fixture/timing repairs | Verified |
-| 4–5   | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
+| 5     | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
 
 ## Blockers and next action
 
-Phase 4 final review clear; publish reviewed candidate and verify exact push/PR CI before marking complete or starting Phase 5. Use existing PR #4; final human review/merge remains with the user.
+Phase 4 verified. Verify this administrative checkpoint CI, then complete Phase 5 integrated acceptance and roadmap audit, final PR #4 handoff. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -207,3 +207,9 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - P4-R-F2 start 2026-09-27T10:47:36.844744+00:00: fresh accepted `gpt-6-astra` / high reviewer `/root/p4_review_resume` assesses entire final Phase4 diff read-only.
 
 - P4-R-F2 ended 2026-09-27T10:48:50Z: no blocking findings. Independently passed credential/persistence/ownership/reconnection suites, scoped ESLint/Prettier/diff. Null-record blocker resolved. Atomic rename/no-fsync limitation documented. Exact candidate CI pending.
+
+## Phase 4 verified checkpoint
+
+- Candidate `46eac4be115236184e85ed0168444ecd19122826`: push `36313810396` and PR `36313813198` succeeded; job `108604622645` logs confirm 20 passed, zero failed, including real Chromium smoke and client leak.
+- Original null-room startup blocker resolved and independently reviewed. Phase 4 complete: durable verifiers, registration rollback, disconnected restore, safe legacy/malformed/future snapshots, restart proof. Atomic rename without fsync is documented.
+- Next: verify administrative checkpoint CI, then Phase 5 integrated acceptance. PR #4 remains draft until final acceptance/CI; no merge/deployment.
