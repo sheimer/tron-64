@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Client Screen & View Architecture
+## 1. Client Screens and Navigation
 
 The client application (`public/javascripts/main.js`, `public/javascripts/state.js`) coordinates four primary top-level screens:
 
@@ -35,7 +35,7 @@ The client application (`public/javascripts/main.js`, `public/javascripts/state.
 
 ---
 
-## 2. Match State Machine
+## 2. Match States
 
 Game sessions transition through the following states (`shared/constants.js`):
 
@@ -63,60 +63,124 @@ Game sessions transition through the following states (`shared/constants.js`):
 
 ---
 
-## 3. Disconnected Client Lifecycle & Trail Ghosting
+## 3. Player Registration and Ownership
 
-When a player's browser disconnects mid-match (tab closed, carrier drop):
+Public player IDs identify players; they do not authorize control. Each registered player has an independent secret credential, and the room tracks the socket that currently owns that player. One connection may own multiple local players.
 
-### Phase 1: Mid-Round Disconnect
+### Registration and acknowledgement
 
-1. The socket's `close` event fires on the server in `wsHandler.js`.
-2. Associated active players are marked dead and explode into particle sparks.
-3. **Trail Preservation:** The disconnected player's wall trail remains permanently on the grid for the remainder of the round as an obstacle.
-4. Remaining connected players continue racing undisturbed.
+1. The server validates the registration and writes the roster, scores, and private credential verifier together in an atomic snapshot.
+2. After the write succeeds, the server privately acknowledges the player's ID, token, and socket-local input handle.
+3. Only after a matching acknowledgement does the browser store a versioned room/player record in `sessionStorage`, commit the local controls, and enable input.
 
-### Phase 2: Subsequent Rounds with Offline Player
+A failed write rolls back the new roster entry, verifier, owner index, and score row without consuming a handle or broadcasting success. Pending requests confer no control; a bounded retry uses the same request ID on the same socket.
 
-1. On round start ($t=0$), the offline player is exploded instantly at their starting coordinates.
-2. **Zero Trail Start:** No wall trail is generated for the offline cycle, keeping the arena open.
-3. The scoreboard marks the player with a `[disconnected]` badge and positions all players dynamically according to score-sorted rankings.
+### Credential and input lifetime
 
-### Registration and authenticated recovery (ownership Phases 1–5)
+Credentials survive ordinary disconnects, room changes, and server restarts while the corresponding room/player exists. Losing the browser's saved credential loses its recovery authority. Public game information never grants ownership.
 
-1. Registration writes the roster, scores, and private credential verifier together in an atomic snapshot before privately acknowledging the player's ID, token, and input handle. A failed write rolls back the new roster, verifier, owner index, and score row without consuming a handle or broadcasting success. Only after the acknowledgement does the browser store a versioned room/player record in `sessionStorage` and mark that player locally controlled. Pending requests confer no control; a bounded retry uses the same request ID on the same socket.
-2. A real disconnect removes only players still owned by that socket, preserving the existing mid-round explosion and trail behavior. Returning to the lobby or switching rooms performs the same owner-checked release. The old input handles become invalid immediately and are never reused on that socket.
-3. A reconnect submits saved room/player credentials and restores controls only for IDs accepted in a private, current-socket `JOIN_RESULT`. Invalid/missing credentials stay unbound and show feedback; public game information never grants control. The browser stops automatic reclaim after an ownership-revoked notice, while explicitly selecting the room can authenticate again. A legacy ID-only claim fails closed.
-4. Valid handover removes only the transferred player's former handle and index, retains other local owners, and leaves a live player's cycle and score connected. Closing the former socket cannot disconnect the replacement. A real disconnect still explodes the active cycle and preserves its trail; reconnect marks it eligible for the next round without resurrecting it mid-round. Exhausted handles require the visible fresh-connection action and new private acknowledgement. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication. Failed admission or authentication restores the still-live original connection and bindings without retrying automatically; if that original socket closes meanwhile, ordinary real-disconnect handling applies.
-5. Version 1 snapshots contain a `games` array with each room's metadata, roster, scores, and a dedicated `private.verifiers` map of lowercase SHA-256 hex digests. Raw tokens, sockets, handles, and owner maps never enter the snapshot. `Storage` writes a temporary file and atomically renames it before acknowledging registration; it does not `fsync` the file or directory, so this protects ordinary process restarts and partial writes but does not guarantee a flush through sudden power loss. Cold restore keeps scores and rosters but marks all players disconnected, starts with no owners or handles, and discards in-progress physics. Matching room/player credentials can reconnect; malformed or missing verifiers fail closed for only those players.
-6. A missing snapshot starts with an empty room list. Legacy array snapshots load as disconnected historical rosters without inventing credentials, even if an unexpected private field appears. Those IDs cannot be reclaimed; create a new room to continue playing. Unknown future versions and malformed files or room-record shapes stay untouched and block new writes/room creation with a safe diagnostic until compatible software or a valid backup is restored. A malformed credential within an otherwise valid room fails closed only for its player.
-
-Before upgrading, stop the server and back up `data/games.json` (or `$DATA_DIR/games.json`) with the matching running client/server version. Upgrade the client assets and server together, and have players reload stale cached pages: protocol mismatch and legacy JSON movement errors explicitly ask them to reload. To roll back, stop the server, restore the corresponding old snapshot backup and its matching old client/server version, then restart. Any rooms, registrations, or score changes after that backup are lost. A newer snapshot must never be silently rewritten by older code.
+Input handles belong to a single socket. Losing ownership immediately invalidates the player's mapping; handles are never reused during that socket's lifetime. The [protocol guide](protocol.md) describes the wire messages and binary input validation.
 
 ---
 
-## 4. Leaving Game & Return to Lobby
+## 4. Disconnect, Reconnect, and Handover
 
-When a player clicks the "← Lobby" header button (`#btn-header-lobby`):
+### Mid-round disconnect
 
-1. Client sends `MSG_TYPE.LEAVE_GAME`.
-2. The server releases only IDs still owned by that socket, invalidates their handles, clears room membership, then broadcasts updated `GAME_INFO` to remaining players. This prevents the leaving socket from receiving room packets and being pulled back into the match screen.
-3. Client resets its local match state (`players`, `scores`, `positions`), transitions to screen `'lobby'`, and requests the latest `LOBBY_LIST`.
+When a browser's socket closes, for example after a tab closes or a carrier connection drops:
+
+1. The server's `close` handler in `wsHandler.js` releases only players still owned by that socket and invalidates their input handles.
+2. Those active players are marked dead and explode into particle sparks. Their wall trails remain as obstacles for the rest of the round.
+3. Remaining connected players continue racing undisturbed.
+
+The roster and credentials remain available for authenticated recovery. Closing a superseded socket cannot disconnect players that have transferred to a replacement socket.
+
+### Subsequent rounds with offline players
+
+At the start of a subsequent round, an offline player explodes at its starting position without creating a wall trail. The scoreboard shows a `[disconnected]` badge and keeps players in score-sorted order.
+
+### Authenticated reconnect
+
+A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback; a legacy ID-only claim fails closed.
+
+A player that disconnected mid-round becomes eligible for the next round after authentication. Reconnection does not resurrect its dead cycle in the current round.
+
+After an ownership-revoked notice, the browser stops automatically reclaiming the transferred player. Explicitly selecting the room may authenticate that player again.
+
+### Live ownership handover
+
+A valid claim can transfer a player while the previous socket is still connected. The server removes only that player's former handle and ownership index, assigns the replacement owner, and notifies both sides. Other players on either socket retain their ownership.
+
+Live handover leaves the transferred player's cycle alive and its score marked connected. Subsequent input, leave, or close from the former socket cannot affect that replacement-owned player.
+
+### Recovery after input-handle exhaustion
+
+Exhausted handles require the visible fresh-connection action and a new private acknowledgement before input resumes. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication.
+
+Failed admission or authentication restores the still-live original connection and bindings without automatically retrying. If the original socket closes during recovery, ordinary real-disconnect handling applies.
 
 ---
 
-## 5. Room Reaping & Inactivity Timeout
+## 5. Leaving and Switching Rooms
 
-- **`IDLE_ROOM_TIMEOUT_MS` (5 Minutes):** When all clients disconnect from a room, a 5-minute inactivity countdown begins.
-- **Non-Blocking Status Timer (`statusTimer.unref()`):** Periodic connection checks in `GameSession.js` execute via an unreferenced timer (`statusTimer.unref()`), ensuring background room status checks do not hold the Node.js event loop active or stall test runners and process termination.
-- If no client reconnects within 5 minutes, `game.destroy()` is called:
-  - Timers and physics tick loops are cleared.
-  - Grid buffers and player references are unlinked for GC.
-  - The room is removed from `gameServer.games` and snapshots on disk.
+### Return to lobby
+
+When a player clicks the “← Lobby” header button (`#btn-header-lobby`):
+
+1. The client sends `MSG_TYPE.LEAVE_GAME`.
+2. The server releases only IDs still owned by that socket, invalidates their handles, clears room membership, and broadcasts updated `GAME_INFO` to remaining room members. The leaving socket stops receiving room packets that could pull it back into the match screen.
+3. The client clears its local match state (`players`, `scores`, `positions`), switches to the lobby screen, and requests the latest `LOBBY_LIST`.
+
+Leaving releases current ownership, not the saved credential. Later re-entry requires authenticated reconnect.
+
+### Switch to another room
+
+The server validates target-room admission and required handle capacity before releasing ownership in the old room. Once admitted, it releases only players still owned by the switching socket, clears the old-room indexes and membership, and joins the target room. Old-room handles remain invalid and are not reused.
+
+A failed admission leaves existing server-side ownership intact. Release of a live player follows the same disconnect and trail behavior described above.
 
 ---
 
-## 6. Round Reset & Explosion Lifecycle Hygiene
+## 6. Persistence and Restart Recovery
 
-To guarantee zero visual or logical particle ghosting across consecutive match rounds:
+### Snapshot contents and write guarantees
+
+Version 1 snapshots contain a `games` array with each room's metadata, roster, scores, and a dedicated `private.verifiers` map of lowercase SHA-256 hex digests. Raw tokens, sockets, handles, and active owner maps never enter the snapshot.
+
+`Storage` writes a temporary file and atomically renames it before acknowledging registration. It does not `fsync` the file or directory: this supports ordinary process restart recovery and avoids partially replacing the snapshot, but does not guarantee a flush through sudden power loss.
+
+### Cold restore
+
+Cold restore preserves rosters and scores, marks every player disconnected, and starts with no owners or input handles. In-progress physics is discarded. Matching room/player credentials can restore ownership through authenticated reconnect.
+
+### Missing, legacy, and malformed data
+
+| Snapshot condition                                                         | Behavior                                                                                                                                                                                |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missing file                                                               | Start with an empty room list.                                                                                                                                                          |
+| Legacy array format                                                        | Load disconnected historical rosters and scores without credentials, even if an unexpected private field appears. Those IDs cannot be reclaimed; create a new room to continue playing. |
+| Missing or malformed verifier in an otherwise valid room                   | Fail closed for that player; other valid credentials remain usable.                                                                                                                     |
+| Unknown future version, malformed file, or malformed room-record structure | Preserve the original file, block new writes and room creation, and emit a safe diagnostic until compatible software or a valid backup is restored.                                     |
+
+---
+
+## 7. Room Inactivity and Destruction
+
+`GameSession.checkConnectionStatus()` periodically prunes closed socket references. When no clients remain in the room, it records the start of inactivity. A later check destroys the room once inactivity exceeds `IDLE_ROOM_TIMEOUT_MS` (five minutes); reconnecting clears that inactivity timestamp.
+
+The periodic `statusTimer` uses `unref()`, so it does not keep the Node.js process alive by itself. When `game.destroy()` runs:
+
+- Timers and physics tick loops are cleared.
+- Grid buffers, player references, and room ownership/credential state are released.
+- The room is removed from `gameServer.games` and snapshots on disk.
+
+Broader room-membership, capacity, and idle-reaping work remains tracked in the [roadmap](../../ROADMAP.md#accurate-room-membership-and-cleanup).
+
+---
+
+## 8. Round Reset and Explosion Cleanup
+
+Round resets clear simulation and rendering state to prevent particle ghosting across consecutive matches:
 
 - **Server State Flushing (`Arena.reset()` & `Arena.init()`):**
   - `Arena.init()` unconditionally flushes `this.explosions = []` and completely rebuilds `this.fields` (border cells set to `CELL_TYPE.BORDER`, all interior cells set to `CELL_TYPE.EMPTY`).
@@ -128,4 +192,29 @@ To guarantee zero visual or logical particle ghosting across consecutive match r
   - On `GAME_RESET`, the client immediately clears the canvas (`Renderer.clear()`) and transitions to `'start'` match state.
   - A 50ms paint synchronization tick ensures container DOM reflow completes before `Renderer.resetGrid()` resets the local `Int8Array` buffer to pristine border/empty state, sends `ARENA_READY`, and repaints cleanly.
 - **Persistence Isolation:**
-  - `Storage.js` serializes only room metadata and match score statistics. Grid buffers, active explosion objects, and particle arrays are never written to disk, ensuring clean cold reboot initialization.
+  - Grid buffers, active explosion objects, and particle arrays are not persisted. See [Persistence and Restart Recovery](#6-persistence-and-restart-recovery) for the saved roster, score, and credential data and the cold-restore behavior.
+
+---
+
+## 9. Upgrade and Rollback
+
+### Upgrade
+
+1. Stop the server and back up `data/games.json` (or `$DATA_DIR/games.json`), retaining the matching running client/server version.
+2. Upgrade the client assets and server together.
+3. Restart the server and have players reload stale cached pages. Protocol mismatch and legacy JSON movement errors explicitly request a reload.
+
+### Rollback
+
+1. Stop the server.
+2. Restore the old snapshot backup and its matching old client/server version.
+3. Restart the server.
+
+Rooms, registrations, and score changes made after the backup are lost. A newer snapshot must never be silently rewritten by older code.
+
+## Related Documents
+
+- [Networking and protocol](protocol.md): wire formats, credentials, acknowledgements, and binary input.
+- [Rendering](rendering.md): drawing deltas, grid buffers, and local redraws.
+- [Testing](testing.md): lifecycle regression and browser coverage.
+- [Player ownership and reconnection implementation plan](../plans/2026-09-25-player-ownership-and-reconnection.md): implementation history and acceptance criteria.
