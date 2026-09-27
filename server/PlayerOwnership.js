@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 
 // Room-scoped authority. Socket indexes and handles are only accelerators;
 // every connection-originated operation checks owners again.
@@ -19,6 +19,38 @@ export class PlayerOwnership {
 
   owns(id, socket) {
     return this.owners.get(id) === socket && socket.gameKey === this.roomKey
+  }
+
+  verify(id, token) {
+    if (
+      typeof id !== 'string' ||
+      typeof token !== 'string' ||
+      !/^[A-Za-z0-9_-]{43}$/.test(token)
+    )
+      return false
+    const bytes = Buffer.from(token, 'base64url')
+    if (bytes.length !== 32 || bytes.toString('base64url') !== token)
+      return false
+    const expected = this.verifiers.get(id)
+    const actual = createHash('sha256').update(token).digest()
+    return Boolean(
+      expected &&
+      expected.length === actual.length &&
+      timingSafeEqual(expected, actual),
+    )
+  }
+
+  transfer(id, socket) {
+    const previous = this.owners.get(id)
+    if (previous && previous !== socket) {
+      previous.playerIds.delete(id)
+      const handle = previous.handlesById.get(id)
+      previous.handlesById.delete(id)
+      if (handle !== undefined) previous.idsByHandle.delete(handle)
+    }
+    this.owners.set(id, socket)
+    socket.playerIds.add(id)
+    return previous
   }
 
   release(id, socket) {

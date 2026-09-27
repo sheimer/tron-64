@@ -80,12 +80,13 @@ When a player's browser disconnects mid-match (tab closed, carrier drop):
 2. **Zero Trail Start:** No wall trail is generated for the offline cycle, keeping the arena open.
 3. The scoreboard marks the player with a `[disconnected]` badge and positions all players dynamically according to score-sorted rankings.
 
-### Interim registration and recovery (ownership Phase 1)
+### Registration and authenticated recovery (ownership Phases 1–2)
 
 1. A successful registration privately acknowledges the player's ID, token, and input handle. Only then does the browser store a versioned room/player record in `sessionStorage` and mark that player locally controlled. Pending requests confer no control; a bounded retry uses the same request ID on the same socket.
 2. A real disconnect removes only players still owned by that socket, preserving the existing mid-round explosion and trail behavior. Returning to the lobby or switching rooms performs the same owner-checked release. The old input handles become invalid immediately and are never reused on that socket.
-3. Authenticated reconnection is not available until Phase 2. Reload or transport reconnection may join a room as a spectator, but saved IDs and tokens do not restore ownership yet. The UI explains that a player must register anew when eligible or create a new room. A legacy ID-only claim fails closed.
-4. Snapshots in this phase do not persist credential verifiers. Restored roster and scores begin disconnected with no owners; tokens issued before restart cannot reclaim those identities. Phase 4 adds versioned credential persistence and restart recovery.
+3. A reconnect submits saved room/player credentials and restores controls only for IDs accepted in a private, current-socket `JOIN_RESULT`. Invalid/missing credentials stay unbound and show feedback; public game information never grants control. The browser stops automatic reclaim after an ownership-revoked notice, while explicitly selecting the room can authenticate again. A legacy ID-only claim fails closed.
+4. Valid handover removes only the transferred player's former handle and index, retains other local owners, and leaves a live player's cycle and score connected. Closing the former socket cannot disconnect the replacement. A real disconnect still explodes the active cycle and preserves its trail; reconnect marks it eligible for the next round without resurrecting it mid-round. Exhausted handles require the visible fresh-connection action and new private acknowledgement. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication. Failed admission or authentication restores the still-live original connection and bindings without retrying automatically; if that original socket closes meanwhile, ordinary real-disconnect handling applies.
+5. Snapshots in this phase do not persist credential verifiers. Restored roster and scores begin disconnected with no owners; tokens issued before restart cannot reclaim those identities. Phase 4 adds versioned credential persistence and restart recovery.
 
 ---
 
