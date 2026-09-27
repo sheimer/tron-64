@@ -30,7 +30,7 @@ jobs:
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
       - name: Check CI test code
-        run: npx eslint test/browser-smoke.test.js test/client-leak.test.js test/runAll.js
+        run: npx eslint test/browser-smoke.test.js test/ownership-flow.test.js test/client-leak.test.js test/runAll.js
       - name: Run all suites including required browser smoke test
         shell: bash
         run: |

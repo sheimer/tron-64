@@ -13,25 +13,30 @@
 
 - Branch: `feat/player-ownership-and-reconnection`; PR #4, draft, base `main` at `8ed8fa9bbcffac28100b94ef9c2cdbf67b493121`, already an ancestor; no unmerged dependency.
 - Clean isolated checkout created; pre-existing local checkouts and edits preserved.
-- Last verified baseline: `0d7506a357f0617fc67821061bc79a57a1b997bb`.
+- Initial verified baseline: `0d7506a357f0617fc67821061bc79a57a1b997bb`.
 - Baseline Tests PR run `36275318721`, job `108496827711`: 12 passed, 0 failed, including required Chromium smoke and client-leak suites.
 - Failed-job log access verified using historical run `36122959508`, job `108032512262`.
 - Node 24.19.0; locked dependencies installed with `npm ci --ignore-scripts` after offline cache miss. Local Chromium installation failed with an invalid/truncated downloaded archive; no system browser found. GitHub Actions supplies mandatory browser coverage if unavailable locally.
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 4 verified on `46eac4be115236184e85ed0168444ecd19122826`; Phase 5 next after checkpoint CI.
+- Current phase: Phase 5 integrated acceptance in progress; verified checkpoint `ce142c6a4832d0d954596f5e17f8f8084baf4adb`.
 
 ## Evidence by phase
 
-| Phase | Candidate                                  | Local checks                                                             | CI                                                                                                  | Independent review                                                               | Status   |
-| ----- | ------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------- |
-| 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser checks, lint and formatting pass; local Chromium unavailable | Push `36277783947` and PR `36277787537`: 15 pass, 0 failed; Chromium smoke and client leak executed | Astra clear; two feedback corrections and two reviewed CI fixture/timing repairs | Verified |
-| 5     | None                                       | Not run                                                                  | Not run                                                                                             | Not started                                                                      | Pending  |
+| Phase | Candidate                                  | Local checks                                        | CI                                              | Independent review                                                                | Status      |
+| ----- | ------------------------------------------ | --------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------- | ----------- |
+| 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser, lint/format pass; Chromium unavailable | Push `36277783947`, PR `36277787537`: 15 passed | Astra clear after feedback and CI-fixture corrections                             | Verified    |
+| 2     | `fdea6fd2183f3745b641c52a28f27f2e916c114d` | Non-browser, lint/format pass; Chromium unavailable | Push `36301883464`, PR `36301885822`: 18 passed | Independent Sol testing/Astra review; failed-recovery and close-order corrections | Verified    |
+| 3     | `4d7edde9ae5ec2bae95e0d3053961e2d01981970` | Non-browser, lint/format pass; Chromium unavailable | Push `36302600598`, PR `36302602782`: 19 passed | Independent Sol testing/Astra review; handle-order fixture corrected              | Verified    |
+| 4     | `46eac4be115236184e85ed0168444ecd19122826` | Non-browser, lint/format pass; Chromium unavailable | Push `36313810396`, PR `36313813198`: 20 passed | Independent Sol testing/Astra review; malformed-room startup corrected            | Verified    |
+| 5     | None                                       | In progress                                         | Pending                                         | Pending                                                                           | In progress |
+
+All listed CI runs executed required browser suites; local missing-browser failures and optional leak skips are not reported as full local passes. Administrative checkpoint runs are recorded below.
 
 ## Blockers and next action
 
-Phase 4 verified. Verify this administrative checkpoint CI, then complete Phase 5 integrated acceptance and roadmap audit, final PR #4 handoff. Use existing PR #4; final human review/merge remains with the user.
+Complete Phase 5 integrated acceptance, independent review and exact-candidate CI; then close only verified roadmap items and prepare PR #4 for final human review. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -213,3 +218,15 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - Candidate `46eac4be115236184e85ed0168444ecd19122826`: push `36313810396` and PR `36313813198` succeeded; job `108604622645` logs confirm 20 passed, zero failed, including real Chromium smoke and client leak.
 - Original null-room startup blocker resolved and independently reviewed. Phase 4 complete: durable verifiers, registration rollback, disconnected restore, safe legacy/malformed/future snapshots, restart proof. Atomic rename without fsync is documented.
 - Next: verify administrative checkpoint CI, then Phase 5 integrated acceptance. PR #4 remains draft until final acceptance/CI; no merge/deployment.
+
+## Phase 5 execution
+
+- Phase 4 administrative checkpoint `ce142c6a4832d0d954596f5e17f8f8084baf4adb`: push `36313961009` and PR `36313964464` succeeded; required test/browser job `108605037329` passed.
+- P5-I/P5-T start 2026-09-27T10:56:05.678918+00:00: existing Sol/high implementer `/root/p4_finish` and separate tester `/root/p4_test_resume`. Implementer owns required independent-browser-context ownership suite/docs; tester owns real-socket acceptance/privacy evidence. Lead retains ROADMAP/plan/progress closure pending CI. Usage unavailable.
+
+- P5-I required `test/ownership-flow.test.js` implemented with three separate browser contexts (two owner contexts plus spectator), reload, rejection and partial transfer. CI lint/docs updated. Local browser execution remains unavailable.
+- P5-T `test/ownership-acceptance.test.js` focused pass: child-process real sockets, integrated cold restart/handover/movement, exact observed 11-text-type set plus binary DRAW, private registration-only raw tokens and no outbound/log verifier leakage. Scoped lint/format/diff pass.
+- P5-R start 2026-09-27T11:00:22.022577+00:00: reused Astra/high reviewer `/root/p4_review_resume`, final acceptance tests/docs/CI diff read-only. Roadmap closure retained by lead pending browser CI. Usage telemetry unavailable.
+
+- P5-I ended 2026-09-27T11:00:13Z and P5-T ended 2026-09-27T11:00:38Z. Full local22 suites:20 reported passes/two required missing-Chromium failures, client-leak skipped. Focused acceptance/lint/format/diff pass.
+- P5-R ended 2026-09-27T11:00:58Z: no blocking findings; independently passed socket acceptance/static checks, verified independent browser contexts and fatal missing-browser gate. Residual test risk: some socket assertions use35ms waits rather than protocol barriers, to watch if CI exposes timing failures. Final browser CI pending.
