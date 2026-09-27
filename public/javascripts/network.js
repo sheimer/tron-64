@@ -103,9 +103,9 @@ class NetworkClient {
         return
       }
       if (typeof event.data !== 'string') {
-        if (event.data instanceof ArrayBuffer) {
+        if (this.protocolReady && event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
-          if (view.byteLength > 0) {
+          if (view.byteLength > 1 && (view.byteLength - 1) % 5 === 0) {
             const opcode = view.getUint8(0)
             if (opcode === BINARY_OPCODE.DRAW) {
               this.emit(MSG_TYPE.GAME_DRAW, view)
@@ -149,6 +149,14 @@ class NetworkClient {
           )
           return
         }
+
+        // Drawing deltas are binary-only. A legacy JSON type or action
+        // cannot reach the renderer, even inside another control envelope.
+        if (
+          msg.type === MSG_TYPE.GAME_DRAW ||
+          msg.action === MSG_TYPE.GAME_DRAW
+        )
+          return
 
         if (type === MSG_TYPE.PONG || type === 'pong') {
           const latency = Date.now() - (msg.t || 0)

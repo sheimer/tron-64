@@ -164,18 +164,34 @@ async function smokeTest() {
       .waitFor()
   }
   assert.equal(await page.locator('#body-playerstable tr').count(), 2)
+  const roomKey = await page.locator('#gameId').textContent()
+  await page.reload()
+  await page.locator('#btn-header-enter-lobby').click()
+  await page
+    .locator('#body-gamelisttable tr')
+    .filter({ hasText: roomKey })
+    .getByRole('button', { name: 'join' })
+    .click()
+  await page.waitForFunction(async () => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return state.ownedPlayerIds.size === 2 && network.inputHandles.size === 2
+  })
   await page.evaluate(async () => {
     const { network } = await import('/javascripts/network.js')
     const { MSG_TYPE } = await import('/shared/protocol.js')
+    window.smokeMovementFrames = []
+    const send = network.socket.send.bind(network.socket)
+    network.socket.send = (frame) => {
+      if (frame instanceof Uint8Array)
+        window.smokeMovementFrames.push(Array.from(frame))
+      return send(frame)
+    }
     window.smokePlayerDrawReceived = false
     const unsubscribe = network.on(MSG_TYPE.GAME_DRAW, (changes) => {
       let hasPlayerCell = false
-      if (changes instanceof DataView) {
-        for (let offset = 1; offset + 5 <= changes.byteLength; offset += 5) {
-          if (changes.getInt8(offset + 4) >= 0) hasPlayerCell = true
-        }
-      } else {
-        hasPlayerCell = changes.some((cell) => cell[2] >= 0)
+      for (let offset = 1; offset + 5 <= changes.byteLength; offset += 5) {
+        if (changes.getInt8(offset + 4) >= 0) hasPlayerCell = true
       }
       if (hasPlayerCell) {
         window.smokePlayerDrawReceived = true
@@ -228,9 +244,28 @@ async function smokeTest() {
     true,
     'Gameplay must paint player trails inside the arena border',
   )
+  const restoredHandles = await page.evaluate(async () => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return [66, 89].map((left) => {
+      const id = [...network.inputHandles.keys()].find(
+        (candidate) => state.getLocalPlayerConfig(candidate)?.left === left,
+      )
+      return network.inputHandles.get(id)
+    })
+  })
+  assert.ok(restoredHandles.every((handle) => Number.isInteger(handle)))
+  assert.notEqual(restoredHandles[0], restoredHandles[1])
+  await page.keyboard.press('b')
+  await page.keyboard.press('y')
+  await page.waitForFunction(() => window.smokeMovementFrames.length >= 2)
+  assert.deepEqual(
+    (await page.evaluate(() => window.smokeMovementFrames)).slice(-2),
+    restoredHandles.map((handle) => [2, handle, 0]),
+    'Both restored keyboard players must steer with binary socket handles',
+  )
   // A second tab authenticates one of the two saved players. The original
   // tab keeps its other binding, and the transfer cannot mark Alice offline.
-  const roomKey = await page.locator('#gameId').textContent()
   const saved = await page.evaluate((key) => {
     const records = JSON.parse(sessionStorage.getItem('connectedGames'))
     const players = records[key].localPlayers
@@ -257,6 +292,19 @@ async function smokeTest() {
     const { network } = await import('/javascripts/network.js')
     return state.isLocalPlayer(id) && network.inputHandles.has(id)
   }, saved.first)
+  const transferredFrame = await secondTab.evaluate(async (id) => {
+    const { network } = await import('/javascripts/network.js')
+    const frames = []
+    const handle = network.inputHandles.get(id)
+    const send = network.socket.send.bind(network.socket)
+    network.socket.send = (frame) => {
+      if (frame instanceof Uint8Array) frames.push(Array.from(frame))
+      return send(frame)
+    }
+    network.changeDir({ id, dir: 'right' })
+    return { frames, handle }
+  }, saved.first)
+  assert.deepEqual(transferredFrame.frames, [[2, transferredFrame.handle, 1]])
   await page.waitForFunction(async (id) => {
     const { state } = await import('/javascripts/state.js')
     const { network } = await import('/javascripts/network.js')
@@ -266,6 +314,20 @@ async function smokeTest() {
       state.ownedPlayerIds.size === 1
     )
   }, saved.first)
+  const staleFrameCount = await page.evaluate(async (id) => {
+    const { network } = await import('/javascripts/network.js')
+    const before = window.smokeMovementFrames.length
+    return [
+      network.changeDir({ id, dir: 'left' }),
+      before,
+      window.smokeMovementFrames.length,
+    ]
+  }, saved.first)
+  assert.deepEqual(staleFrameCount, [
+    false,
+    staleFrameCount[1],
+    staleFrameCount[1],
+  ])
   await page.waitForFunction(async (id) => {
     const { state } = await import('/javascripts/state.js')
     return state.players.find((player) => player.id === id)?.connected === true
