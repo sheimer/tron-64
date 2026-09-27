@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authenticated per-player reconnection restores saved local controls on a new connection. Valid claims can transfer individual players between live sockets without interrupting the others; rejected credentials are reported separately.
 - A visible fresh-connection action recovers from exhausted input handles by authenticating saved credentials on a new socket.
 - Private, correlated player registration acknowledgements with per-player credentials and socket-local binary input handles. Multiple local players can steer using their canonical string IDs after confirmation.
+- Required independent-browser and real-socket ownership acceptance tests cover spectator rejection, two local players, reload, partial handover, old-owner cleanup, restart, and private credential boundaries.
 
 ### Changed
 
@@ -22,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arena drawing deltas are accepted only as complete binary frames. Legacy JSON drawing messages and array-delta rendering no longer update the canvas; full-state synchronization and local redraws remain available.
 - Movement remains binary-only across reload, authenticated handover, and fresh-connection recovery, with acknowledged socket-local handles for every local player.
 - Binary movement now validates the current owning socket and room. JSON movement and bare player-ID reconnection claims receive actionable errors; old clients must reload. Public game information uses explicit fields only.
-- Restored players start disconnected. Credentials are not yet durable across server restart; a restart still requires new registration when eligible or a new room.
+- Client and server protocol upgrades must be coordinated. Stale cached pages receive reload guidance; restore a matching snapshot backup and client/server version when rolling back, losing changes made after the backup.
 
 ---
 
