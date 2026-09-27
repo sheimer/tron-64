@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-25  
 > **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–3 verified
+> **Status:** Reviewed and accepted by the user on 2026-09-27; implementation in progress; Phases 1–4 verified
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -170,12 +170,12 @@ On a room switch, validate target admission first, then release only currently o
 
 ### Phase 4 — Durable credentials and restart recovery
 
-- [ ] Implement the versioned snapshot, verifier serialization, explicit write results, and registration rollback on persistence failure.
-- [ ] Restore disconnected players with no owners or handles, retaining only valid verifiers and saved scores.
-- [ ] Implement/document legacy, malformed-record, unknown-version, missing-file, and rollback behavior.
-- [ ] Test a cold restart with matching credentials, wrong credentials, absent credentials, legacy snapshots, malformed verifiers, and failed writes. Assert raw secrets never appear in snapshots.
-- [ ] Test room destruction removes verifier state and a stale credential cannot authenticate into another room or newly created player.
-- [ ] Extend persistence/disconnect tests and update lifecycle/protocol documentation and Unreleased notes; run phase checks.
+- [x] Implement the versioned snapshot, verifier serialization, explicit write results, and registration rollback on persistence failure.
+- [x] Restore disconnected players with no owners or handles, retaining only valid verifiers and saved scores.
+- [x] Implement/document legacy, malformed-record, unknown-version, missing-file, and rollback behavior.
+- [x] Test a cold restart with matching credentials, wrong credentials, absent credentials, legacy snapshots, malformed verifiers, and failed writes. Assert raw secrets never appear in snapshots.
+- [x] Test room destruction removes verifier state and a stale credential cannot authenticate into another room or newly created player.
+- [x] Extend persistence/disconnect tests and update lifecycle/protocol documentation and Unreleased notes; run phase checks.
 
 **Exit:** Restart preserves authenticated recovery without restoring phantom connected players or accepting ID-only claims.
 
