@@ -20,7 +20,7 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 3 verified on `4d7edde9ae5ec2bae95e0d3053961e2d01981970`; Phase 4 next after administrative checkpoint CI.
+- Current phase: Phase 4 implemented, independently tested/reviewed, awaiting exact-candidate CI; last verified checkpoint `7983d46db8385361a26a5834a65017ed5d10cef1`.
 
 ## Evidence by phase
 
@@ -31,7 +31,7 @@
 
 ## Blockers and next action
 
-Phase 3 verified. Verify this administrative checkpoint CI, then proceed to Phase 4 durable credential verifiers and restart recovery. Use existing PR #4; final human review/merge remains with the user.
+Phase 4 final review clear; publish reviewed candidate and verify exact push/PR CI before marking complete or starting Phase 5. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -182,3 +182,28 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - Candidate `4d7edde9ae5ec2bae95e0d3053961e2d01981970`: push `36302600598` and PR `36302602782` succeeded. Job `108572957767` confirms all 19 suites passed, including real browser smoke/reload/handover and client leak.
 - P3-I final end 2026-09-27T07:16:40Z. Independent testing/review clear after acknowledged-handle assertion correction. No unresolved findings.
 - Phase 3 checkbox update records verified drawing and movement behavior. Phases 4–5 remain pending; credential persistence not implemented yet. Next action: verify checkpoint CI then Phase 4.
+
+## Phase 4 execution
+
+- Phase 3 administrative checkpoint `7983d46db8385361a26a5834a65017ed5d10cef1`: push `36302747066` and PR `36302749947` succeeded, required job `108573380305` including browser test step passed.
+- P4-I/P4-T start 2026-09-27T07:22:06.996663+00:00: existing Sol/high implementation and separate test agents reused. Implementer owns runtime/docs/implementation tests; tester owns disjoint credential-persistence regressions. Lead owns plan/progress. Scope: versioned private verifiers, durable registration, fail-closed migrations/restart. No usage telemetry.
+
+- P4-I interim correction: strip all private data from legacy array snapshots; catch serialization errors inside explicit Storage failure result so registration rollback always executes. Lead identified these, tester added fabricated-legacy-verifier and serialization-failure regressions.
+- P4-I handoff 2026-09-27T07:27:48.519555+00:00: runtime/docs complete, scoped checks pass; full local 19 reported passes / one missing-browser failure with client-leak skip.
+- P4-T disjoint `test/credential-persistence.test.js`: real child-process cold restarts, mixed credential claims, future-version preservation, failed-write/serialization rollback and credential privacy. Focused checks pass; final full check pending.
+- P4-R start 2026-09-27T07:27:48.519582+00:00: existing Astra/high reviewer, read-only final contract/diff. Usage telemetry unavailable.
+
+- P4-T initial final 2026-09-27T07:27:57Z: focused restart/persistence suites, scoped lint/format/diff pass; full local 19 reported passes / one missing-browser failure with client-leak skip.
+- P4-R found P2 startup failure for valid JSON snapshot containing a null room record (`record.key` outside try). P4-I-F1 assigned safe overall-record validation/preservation, keeping credential-level rejection per player. Independent child-process regression and re-review required before publication.
+
+## Usage-limit recovery — 2026-09-27
+
+- User reported token reset and explicitly asked to continue. Live branch remains `7983d46db8385361a26a5834a65017ed5d10cef1`; Phase 4 uncommitted work survived. Previous agents no longer accessible.
+- Prior implementation agent errored on usage limit during malformed-room correction; partial Storage validation and independent null-room regression exist but were not final-verified. No Phase 4 commit published.
+- P4-I-F2/P4-T-F2 resume 2026-09-27T10:45:35.918808+00:00: fresh `gpt-6-sol` / high agents `/root/p4_finish` and `/root/p4_test_resume` accepted; runtime/docs and test-only ownership remain disjoint. Fresh independent review required. Usage telemetry unavailable; interruption not compute time.
+
+- P4-I-F2 ended 2026-09-27T10:47:12Z: overall record validation includes non-null message entries, docs accurate; runtime writes ceased.
+- P4-T-F2 ended 2026-09-27T10:47:06Z: five malformed-room cold-start cases pass (null room, missing key, null roster member, missing stats, null message), preserve bytes/read-only/deny create/secret-free diagnostics. Existing restart/credential/rollback tests retained. Focused/lint/format/diff pass; full local19 reported passes/one missing-Chromium failure, leak skipped.
+- P4-R-F2 start 2026-09-27T10:47:36.844744+00:00: fresh accepted `gpt-6-astra` / high reviewer `/root/p4_review_resume` assesses entire final Phase4 diff read-only.
+
+- P4-R-F2 ended 2026-09-27T10:48:50Z: no blocking findings. Independently passed credential/persistence/ownership/reconnection suites, scoped ESLint/Prettier/diff. Null-record blocker resolved. Atomic rename/no-fsync limitation documented. Exact candidate CI pending.

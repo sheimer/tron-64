@@ -5,7 +5,7 @@ import { storage } from './Storage.js'
 import { setGameServer } from './metrics.js'
 import { MAX_ACTIVE_GAMES } from '../shared/constants.js'
 
-class GameServer {
+export class GameServer {
   constructor() {
     this.games = []
     this.changeHandler = null
@@ -19,8 +19,8 @@ class GameServer {
     }
 
     saved.forEach((record) => {
-      if (!record.key) return
       try {
+        if (!record || typeof record.key !== 'string' || !record.key) return
         const session = new GameSession({
           key: record.key,
           name: record.name,
@@ -28,6 +28,7 @@ class GameServer {
           isPublic: record.isPublic,
           stats: record.stats,
           players: record.players,
+          private: record.private,
           createdAt: record.createdAt,
           onChange: () => {
             this.saveToStorage()
@@ -43,11 +44,9 @@ class GameServer {
           },
         })
         this.games.push(session)
-      } catch (err) {
-        console.error(
-          `[GameServer] Error restoring session ${record.key}:`,
-          err,
-        )
+      } catch {
+        // Snapshot content is untrusted and can include private records.
+        console.error('[GameServer] Could not restore a session record.')
       }
     })
 
@@ -57,11 +56,11 @@ class GameServer {
   }
 
   saveToStorage() {
-    storage.saveGames(this.games)
+    return storage.saveGames(this.games)
   }
 
   createGame({ name, size, interval, isPublic }) {
-    if (this.games.length >= MAX_ACTIVE_GAMES) {
+    if (storage.readOnly || this.games.length >= MAX_ACTIVE_GAMES) {
       return null
     }
     const key = randomBytes(4).toString('hex')
@@ -87,7 +86,12 @@ class GameServer {
       }),
     )
 
-    this.saveToStorage()
+    if (!this.saveToStorage()) {
+      const game = this.games.pop()
+      game.onDestroy = null
+      game.destroy()
+      return null
+    }
     return key
   }
 

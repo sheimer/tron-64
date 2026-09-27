@@ -1,6 +1,7 @@
 import WebSocket, { WebSocketServer } from 'ws'
 import { createHash } from 'node:crypto'
 import { gameServer } from './GameServer.js'
+import { storage } from './Storage.js'
 import {
   MSG_TYPE,
   BINARY_OPCODE,
@@ -234,11 +235,20 @@ export const setupWebSocketServer = (server) => {
               isPublic,
             })
             if (!key) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`,
-                }),
+              const blocked = storage.readOnly
+              const full = gameServer.games.length >= MAX_ACTIVE_GAMES
+              sendError(
+                ws,
+                blocked
+                  ? 'SNAPSHOT_UNSUPPORTED'
+                  : full
+                    ? 'SERVER_CAPACITY'
+                    : 'PERSISTENCE_FAILED',
+                blocked
+                  ? 'The saved games format is unsupported. Back up the snapshot and use a compatible server version before creating rooms.'
+                  : full
+                    ? `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`
+                    : 'Room creation could not be saved. Try again later.',
               )
               return
             }
@@ -517,7 +527,10 @@ export const setupWebSocketServer = (server) => {
               const color = sanitizeString(payload.color, 16) || 'fg'
               const left = payload.left
               const right = payload.right
-              const result = game.addPlayer({ id, name, color, left, right })
+              const result = game.addPlayer(
+                { id, name, color, left, right },
+                { deferChange: true },
+              )
               if (!result.ok) {
                 sendError(
                   ws,
@@ -528,6 +541,16 @@ export const setupWebSocketServer = (server) => {
                 return
               }
               const reconnectToken = game.ownership.register(id, ws)
+              if (!gameServer.saveToStorage()) {
+                game.rollbackPlayerRegistration(id, ws)
+                sendError(
+                  ws,
+                  'PERSISTENCE_FAILED',
+                  'Player registration could not be saved. No player was registered; try again later.',
+                  requestId,
+                )
+                return
+              }
               const inputHandle = ws.nextInputHandle++
               ws.idsByHandle.set(inputHandle, id)
               ws.handlesById.set(id, inputHandle)
@@ -548,6 +571,7 @@ export const setupWebSocketServer = (server) => {
                 )
               }
               ws.send(JSON.stringify(response))
+              gameServer.changeHandler?.()
               broadcastToRoom(ws.gameKey, {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(ws.gameKey),

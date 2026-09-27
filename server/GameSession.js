@@ -19,6 +19,7 @@ export class GameSession {
     isPublic,
     stats,
     players,
+    private: privateData,
     createdAt,
     onChange,
     onDestroy,
@@ -41,11 +42,16 @@ export class GameSession {
       messages: [],
     }
     this.ownership = new PlayerOwnership(key)
-    // Snapshots before durable verifiers never confer ownership on restoration.
+    // Restored ownership always starts empty; only matching persisted
+    // verifiers allow a new socket to reclaim an existing player.
     if (Array.isArray(players)) {
       this.stats.players.forEach((p) => {
         p.connected = false
       })
+      this.ownership.restore(
+        privateData?.verifiers,
+        new Set(players.map((player) => player.id)),
+      )
     }
 
     this.arena = new Arena({
@@ -140,7 +146,7 @@ export class GameSession {
     }
   }
 
-  addPlayer(player) {
+  addPlayer(player, { deferChange = false } = {}) {
     const validControl = (value) =>
       (Number.isInteger(value) && value >= 0 && value <= 255) ||
       value === 'btn-left' ||
@@ -196,11 +202,18 @@ export class GameSession {
       if (this.stats.players.length >= MAX_PLAYERS) {
         this.acceptingPlayers = false
       }
-      if (typeof this.onChange === 'function') {
+      if (!deferChange && typeof this.onChange === 'function') {
         this.onChange()
       }
     }
     return { ok: true }
+  }
+
+  rollbackPlayerRegistration(id, socket) {
+    this.ownership.remove(id, socket)
+    this.arena.players = this.arena.players.filter((player) => player.id !== id)
+    this.stats.players = this.stats.players.filter((player) => player.id !== id)
+    this.acceptingPlayers = true
   }
 
   addStats(stats) {
