@@ -17,6 +17,31 @@ export class PlayerOwnership {
     return token
   }
 
+  restore(verifiers, playerIds) {
+    if (!verifiers || typeof verifiers !== 'object' || Array.isArray(verifiers))
+      return
+    for (const [id, digest] of Object.entries(verifiers)) {
+      if (
+        playerIds.has(id) &&
+        typeof digest === 'string' &&
+        /^[a-f0-9]{64}$/.test(digest)
+      )
+        this.verifiers.set(id, Buffer.from(digest, 'hex'))
+    }
+  }
+
+  serializeVerifiers() {
+    return Object.fromEntries(
+      [...this.verifiers].map(([id, digest]) => [id, digest.toString('hex')]),
+    )
+  }
+
+  remove(id, socket) {
+    if (!this.release(id, socket)) return false
+    this.verifiers.delete(id)
+    return true
+  }
+
   owns(id, socket) {
     return this.owners.get(id) === socket && socket.gameKey === this.roomKey
   }
