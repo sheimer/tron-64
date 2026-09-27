@@ -24,6 +24,7 @@ const sanitizeInterval = (interval) =>
   Math.max(10, Math.min(500, Math.round(Number(interval)) || 25))
 
 const retryLimit = 32
+const requestIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
 const sendError = (ws, code, message, requestId) => {
   ws.send(
     JSON.stringify({
@@ -254,24 +255,39 @@ export const setupWebSocketServer = (server) => {
           case MSG_TYPE.JOIN_GAME:
           case 'join': {
             const gameKey = sanitizeString(payload?.key || payload, 16)
+            if (payload?.playerIds !== undefined) {
+              sendError(
+                ws,
+                'AUTHENTICATION_REQUIRED',
+                'Player IDs cannot restore ownership. Reload and reconnect with saved credentials.',
+                msg.requestId,
+              )
+              return
+            }
+            const claims = payload?.reconnect ?? []
             if (
-              payload?.playerIds !== undefined ||
-              payload?.reconnect !== undefined
+              !Array.isArray(claims) ||
+              claims.length > 6 ||
+              (claims.length > 0 &&
+                (typeof msg.requestId !== 'string' ||
+                  !requestIdPattern.test(msg.requestId))) ||
+              new Set(claims.map((claim) => claim?.id)).size !== claims.length
             ) {
               sendError(
                 ws,
-                'RECONNECT_UNAVAILABLE',
-                'Saved players cannot be reclaimed yet. Register a new player in an eligible room or create a new room.',
+                'INVALID_RECONNECT',
+                'Invalid or duplicate reconnect entries (maximum six).',
+                msg.requestId,
               )
               return
             }
             const game = gameServer.getGame(gameKey)
             if (!game) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Game ${gameKey} not found`,
-                }),
+              sendError(
+                ws,
+                'GAME_NOT_FOUND',
+                `Game ${gameKey} not found`,
+                msg.requestId,
               )
               return
             }
@@ -283,11 +299,49 @@ export const setupWebSocketServer = (server) => {
               ws.gameKey !== gameKey &&
               openClients.length >= MAX_CLIENTS_PER_ROOM
             ) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Game room ${gameKey} is full (maximum ${MAX_CLIENTS_PER_ROOM} clients).`,
-                }),
+              sendError(
+                ws,
+                'ROOM_FULL',
+                `Game room ${gameKey} is full (maximum ${MAX_CLIENTS_PER_ROOM} clients).`,
+                msg.requestId,
+              )
+              return
+            }
+
+            // Check every claim independently, then preflight all new handles
+            // before changing room membership or a single owner.
+            const accepted = []
+            const rejected = []
+            for (const claim of claims) {
+              if (game.ownership.verify(claim?.id, claim?.reconnectToken))
+                accepted.push(claim.id)
+              else
+                rejected.push({
+                  id: typeof claim?.id === 'string' ? claim.id : null,
+                  code: 'INVALID_CREDENTIAL',
+                })
+            }
+            if (payload?.requireAll === true && rejected.length) {
+              sendError(
+                ws,
+                'RECONNECT_INCOMPLETE',
+                'Some saved credentials could not be authenticated. Existing owners are unchanged.',
+                msg.requestId,
+              )
+              return
+            }
+            const allocations = accepted.filter(
+              (id) =>
+                ws.gameKey !== gameKey ||
+                !game.ownership.owns(id, ws) ||
+                !ws.handlesById.has(id),
+            ).length
+            if (ws.nextInputHandle + allocations > 256) {
+              sendError(
+                ws,
+                'INPUT_HANDLE_EXHAUSTED',
+                'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
+                msg.requestId,
               )
               return
             }
@@ -306,39 +360,72 @@ export const setupWebSocketServer = (server) => {
                 })
               }
             }
-            if (ws.gameKey === gameKey) {
-              ws.send(
+            if (ws.gameKey !== gameKey) {
+              ws.gameKey = gameKey
+              ws.protocolReady = true
+              game.connect({
+                client: ws,
+                ondraw: (changes) => {
+                  const buf = encodeBinaryDraw(changes)
+                  if (buf) {
+                    broadcastToRoom(gameKey, buf)
+                  }
+                },
+                onfinish: (stats) => {
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_FINISH,
+                    payload: stats,
+                  })
+                },
+                onreset: (positions) => {
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_RESET,
+                    payload: positions,
+                  })
+                },
+              })
+            }
+
+            const revoked = new Map()
+            const bindings = accepted.map((id) => {
+              const previous = game.ownership.transfer(id, ws)
+              if (
+                previous &&
+                previous !== ws &&
+                previous.readyState === WebSocket.OPEN
+              ) {
+                if (!revoked.has(previous)) revoked.set(previous, [])
+                revoked.get(previous).push(id)
+              }
+              let inputHandle = ws.handlesById.get(id)
+              if (inputHandle === undefined) {
+                inputHandle = ws.nextInputHandle++
+                ws.handlesById.set(id, inputHandle)
+                ws.idsByHandle.set(inputHandle, id)
+              }
+              if (!previous) game.reconnectPlayer(id)
+              return { id, inputHandle }
+            })
+            for (const [previous, ids] of revoked) {
+              previous.send(
                 JSON.stringify({
-                  type: MSG_TYPE.GAME_INFO,
-                  payload: gameServer.getGameInfo(gameKey),
+                  type: MSG_TYPE.OWNERSHIP_REVOKED,
+                  payload: { key: gameKey, ids },
+                  protocolVersion: PROTOCOL_VERSION,
                 }),
               )
-              break
             }
-            ws.gameKey = gameKey
-            ws.protocolReady = true
 
-            game.connect({
-              client: ws,
-              ondraw: (changes) => {
-                const buf = encodeBinaryDraw(changes)
-                if (buf) {
-                  broadcastToRoom(gameKey, buf)
-                }
-              },
-              onfinish: (stats) => {
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_FINISH,
-                  payload: stats,
-                })
-              },
-              onreset: (positions) => {
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_RESET,
-                  payload: positions,
-                })
-              },
-            })
+            if (claims.length || msg.requestId) {
+              ws.send(
+                JSON.stringify({
+                  type: MSG_TYPE.JOIN_RESULT,
+                  requestId: msg.requestId,
+                  protocolVersion: PROTOCOL_VERSION,
+                  payload: { key: gameKey, accepted: bindings, rejected },
+                }),
+              )
+            }
 
             const gameInfo = gameServer.getGameInfo(gameKey)
             ws.send(
@@ -347,6 +434,11 @@ export const setupWebSocketServer = (server) => {
                 payload: gameInfo,
               }),
             )
+            if (bindings.length)
+              broadcastToRoom(gameKey, {
+                type: MSG_TYPE.GAME_INFO,
+                payload: gameServer.getGameInfo(gameKey),
+              })
 
             break
           }
@@ -378,7 +470,7 @@ export const setupWebSocketServer = (server) => {
               !ws.gameKey ||
               !ws.protocolReady ||
               typeof requestId !== 'string' ||
-              !/^[a-zA-Z0-9_-]{1,64}$/.test(requestId)
+              !requestIdPattern.test(requestId)
             ) {
               sendError(
                 ws,
@@ -415,7 +507,7 @@ export const setupWebSocketServer = (server) => {
                 sendError(
                   ws,
                   'INPUT_HANDLE_EXHAUSTED',
-                  'This connection has no input handles left. Open a fresh connection and register a new player or create a new room.',
+                  'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
                   requestId,
                 )
                 return
@@ -578,8 +670,10 @@ export const setupWebSocketServer = (server) => {
               }),
             )
         }
-      } catch (err) {
-        console.error('Error handling WebSocket message:', err)
+      } catch {
+        // A message can contain a submitted secret. Never log the raw parse
+        // exception or the inbound frame.
+        sendError(ws, 'INVALID_MESSAGE', 'Invalid message.')
       }
     })
 

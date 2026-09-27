@@ -127,7 +127,7 @@ try {
       ),
       'utf8',
     ),
-    /^ {2}#connection-feedback[^\n]*\n {2}#layout$/m,
+    /^ {2}#connection-feedback[^\n]*\n {2}button#btn-fresh-connection[^\n]*\n {2}#layout$/m,
   )
   network.emit(
     MSG_TYPE.ERROR,
@@ -231,15 +231,12 @@ try {
   assert.match(connectionFeedback.textContent, /connection lost/i)
   assert.notEqual(connectionFeedback.style.display, 'none')
   network.emit('open')
-  assert.match(
-    connectionFeedback.textContent,
-    /attempting to rejoin as a spectator/i,
-  )
+  assert.match(connectionFeedback.textContent, /authenticating saved players/i)
   assert.notEqual(connectionFeedback.style.display, 'none')
   network.emit(MSG_TYPE.GAME_INFO, { key: 'room-a', players: [] })
   assert.match(
     connectionFeedback.textContent,
-    /saved players cannot be reclaimed/i,
+    /waiting for saved player authentication/i,
   )
   assert.notEqual(connectionFeedback.style.display, 'none')
   app.leaveCurrentGame()

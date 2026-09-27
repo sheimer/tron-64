@@ -233,7 +233,8 @@ try {
   }
   send(spectator, MSG_TYPE.JOIN_GAME, { key, playerIds: [player.id] })
   assert.equal(
-    (await receive(spectator, (m) => m.code === 'RECONNECT_UNAVAILABLE')).type,
+    (await receive(spectator, (m) => m.code === 'AUTHENTICATION_REQUIRED'))
+      .type,
     MSG_TYPE.ERROR,
   )
   spectator.send(

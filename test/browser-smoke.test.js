@@ -228,6 +228,56 @@ async function smokeTest() {
     true,
     'Gameplay must paint player trails inside the arena border',
   )
+  // A second tab authenticates one of the two saved players. The original
+  // tab keeps its other binding, and the transfer cannot mark Alice offline.
+  const roomKey = await page.locator('#gameId').textContent()
+  const saved = await page.evaluate((key) => {
+    const records = JSON.parse(sessionStorage.getItem('connectedGames'))
+    const players = records[key].localPlayers
+    const first = Object.keys(players)[0]
+    records[key].localPlayers = { [first]: players[first] }
+    return { records, first }
+  }, roomKey)
+  const secondTab = await context.newPage()
+  await secondTab.addInitScript((records) => {
+    sessionStorage.setItem('connectedGames', JSON.stringify(records))
+  }, saved.records)
+  await secondTab.goto(page.url())
+  await secondTab.locator('#btn-header-enter-lobby').click()
+  // Public late-join buttons remain disabled during an active match; invoke
+  // the same authenticated coordinator action for this recovery fixture.
+  await secondTab.evaluate(async (key) => {
+    const { state } = await import('/javascripts/state.js')
+    const { app } = await import('/javascripts/main.js')
+    state.setCurrentGame(key, 'CI smoke room')
+    app.joinGame(key)
+  }, roomKey)
+  await secondTab.waitForFunction(async (id) => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return state.isLocalPlayer(id) && network.inputHandles.has(id)
+  }, saved.first)
+  await page.waitForFunction(async (id) => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return (
+      !state.isLocalPlayer(id) &&
+      !network.inputHandles.has(id) &&
+      state.ownedPlayerIds.size === 1
+    )
+  }, saved.first)
+  await page.waitForFunction(async (id) => {
+    const { state } = await import('/javascripts/state.js')
+    return state.players.find((player) => player.id === id)?.connected === true
+  }, saved.first)
+  await secondTab.close()
+  await page.waitForFunction(async (id) => {
+    const { state } = await import('/javascripts/state.js')
+    return (
+      state.players.find((player) => player.id === id)?.connected === false &&
+      state.ownedPlayerIds.size === 1
+    )
+  }, saved.first)
   assert.deepEqual(pageErrors, [], 'The game must not raise browser exceptions')
   console.log(
     'Browser smoke passed: welcome, lobby, room, two players, running arena.',

@@ -7,7 +7,7 @@
 - Source: user execution instruction in this conversation, 2026-09-27 (Europe/Vienna): “I reviewed and approve all five phases of the plan recorded at commit 0d7506a357f0617fc67821061bc79a57a1b997bb, including binary-only movement and removal of client-side JSON arena-delta compatibility.”
 - Execution authorization: “I authorize the skill’s autonomous implementation, independent testing and review, feature-branch commits/pushes, GitHub Actions verification, and creation/update of the final PR. This replaces the plan’s default per-phase human stops with independent agent review and passing CI. Leave the final PR review and merge to me.”
 - All five phases approved, sequential independent testing/review and exact-candidate CI gates. No merge, deployment, force-push, tags, permission changes, or unrelated work.
-- Material changes since approval: none; remote head equals approved revision.
+- Material scope changes since approval: none. Current execution state is recorded below; the branch has advanced beyond the approval revision.
 
 ## Live state
 
@@ -20,7 +20,7 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 1 verified; Phase 2 ready after checkpoint CI. Latest verified candidate `69831312545e0df9b1641cbb815862110289a57e`.
+- Current phase: Phase 2 implemented, independently tested/reviewed; exact-candidate CI pending. Latest verified checkpoint `405e5dda5025831c9f8cec202600d40f409def6a`.
 
 ## Evidence by phase
 
@@ -31,7 +31,7 @@
 
 ## Blockers and next action
 
-No unresolved Phase 1 findings. Verify this administrative checkpoint's CI, then implement Phase 2 authenticated reconnection and atomic handover. Preserve all leak thresholds and add authenticated rejoin/handover browser coverage. Replace raw JSON parse exception logging before accepting submitted credentials. Use existing PR #4; final human review/merge remains with the user.
+Phase 2 code, independent regressions and review are complete. Publish the reviewed candidate and verify exact push/PR CI, including Chromium smoke/handover and authenticated rejoin leak coverage. Mark Phase 2 verified only after those checks pass, then proceed to Phase 3. Use existing PR #4; final human review/merge remains with the user.
 
 ## Task execution records
 
@@ -115,3 +115,41 @@ Phase 1 secure registration, binary authorization/handle lifecycle, rejection in
 ## Model-efficiency review — Interim
 
 P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two visible-feedback issues; CI additionally exposed an obsolete reconnect fixture and reset/countdown timing. Independent review and real browser CI materially improved the result. Formatting/documentation and bounded test-fixture edits are untested candidates for a later lower-effort trial; no cheaper-model equivalence or savings claimed. Retain Sol/high implementation/testing and Astra/high review for remaining ownership/concurrency work. Task token usage, quota and lead orchestration overhead are unavailable; elapsed times include tool/CI waits and cannot be treated as compute or cost.
+
+## Recovery session — 2026-09-27
+
+- User explicitly requested continuation of the remaining approved phases from `405e5dd`, using PR #4, after manually stopping the previous session. Existing autonomous approval remains in force.
+- Fresh checkout; initial workspace contained no repository or accessible uncommitted work. Previous agents/workspace not assumed accessible.
+- Remote branch and PR head verified at `405e5dda5025831c9f8cec202600d40f409def6a`; push run `36277938583` and PR run `36277941071` succeeded. PR job `108504183503` logs confirm 15 suites passed, including browser smoke and client leak.
+- Node 24.19.0 and locked dependencies installed. Remote Actions browser route and job-log access verified; local Chromium installation failed with truncated archives and no system browser is available. Local browser coverage remains unavailable; exact-candidate Actions is required. Shell push dry run lacks authentication; connector commit/tree/non-forced update route is available.
+- Lead owns progress/checkpoint documents and commits/pushes. Check remote before each publication; reconcile unexpected advancement without overwriting concurrent work.
+
+### P2-I — Authenticated reconnect implementation
+
+- Start: 2026-09-27T06:44:24.030285+00:00; end/elapsed pending.
+- Requested/accepted model/effort: `gpt-6-sol` / high; task `/root/p2_implement`. Usage telemetry unavailable.
+- Scope: approved Phase 2 runtime, meaningful regressions, architecture and Unreleased updates; no Phase 3–5 work. Independent testing/review and exact-candidate CI pending.
+
+### P2-T — Independent testing
+
+- Start (read-only coverage preparation): 2026-09-27T06:48:14.772127+00:00; end/elapsed pending.
+- Requested/accepted `gpt-6-sol` / high, task `/root/p2_test`; usage unavailable.
+- Read-only while implementer writes; test-only ownership begins on explicit handoff. Scope: independent Phase 2 acceptance, rejection invariants, real-socket and client/browser regressions.
+
+- P2-I interim handoff: runtime/docs plus server and browser regressions implemented. Local full suite reported 16 passes / one missing-Chromium failure, including client-leak skip. Not full local coverage.
+- P2-T added disjoint `test/reconnection-ownership.test.js` and `test/client-reconnect.test.js`; focused runs and scoped lint/format pass. Final full assessment pending.
+- Lead spot-check follow-ups: typed reconnect request IDs; clear replacement-socket handles and protocol-gate movement; bounded fresh-connection lifecycle. Further correction pending: failed replacement admission must retain the original socket/owners rather than disconnect them.
+
+### P2-R — Independent review
+
+- Start (read-only initial diff): 2026-09-27T06:56:54.816534+00:00; end/elapsed pending.
+- Requested/accepted `gpt-6-astra` / high, task `/root/p2_review`; usage unavailable.
+- Scope: complete Phase 2 contract/diff, ownership, concurrency, client recovery, cleanup and credential privacy. Final diff recheck required after fresh-recovery correction and tester handoff.
+- P2-I-F1: preserve single active connection with all-or-nothing preflight for explicit fresh recovery only; ordinary reconnect remains mixed-success. Failed replacement restores original acknowledged bindings instead of disconnecting original owners. Tests/review pending.
+
+- P2-T final handoff: 2026-09-27T06:59:41Z. Focused server/client reconnect suites, scoped ESLint and Prettier pass. Full local suite: 17 reported passes / one required smoke failure (missing Chromium); client-leak included a local skip. Remote browser execution remains mandatory.
+- P2-I-F2 / P2-T-F1 / P2-R-F1: tester and reviewer reproduced old-socket close event clearing newly acknowledged bindings during fresh-recovery completion. Implementer detached the retired socket before closing it; strict regression now passes. No outstanding local non-browser failure.
+
+- P2-I ended 2026-09-27T07:00:12Z. P2-R final recheck: no functional blocking findings; tester added full-room admission rejection coverage. Lead to apply scoped formatting only before candidate publication. Precise compute/token telemetry unavailable; elapsed times include local/tool waits and overlap.
+
+- P2-R completed 2026-09-27T07:00:41Z: no blocking findings. P2-T final coverage update ended 2026-09-27T07:00:47Z; real ROOM_FULL preflight preservation added and full local suite rerun with the same 17 reported passes / one unavailable-browser failure (plus leak skip). Final scoped formatting, ESLint and diff checks pass. Exact-candidate CI pending.

@@ -116,6 +116,40 @@ class State {
     return null
   }
 
+  getReconnectEntries(gameKey = this.currentGame.key, explicit = false) {
+    const entries = this.connectedGames[gameKey]?.localPlayers
+    if (!entries || typeof entries !== 'object') return []
+    return Object.entries(entries)
+      .flatMap(([id, entry]) =>
+        entry?.version === 2 &&
+        typeof id === 'string' &&
+        id.length > 0 &&
+        /^[A-Za-z0-9_-]{43}$/.test(entry.reconnectToken) &&
+        (explicit || !entry.revoked)
+          ? [{ id, reconnectToken: entry.reconnectToken }]
+          : [],
+      )
+      .slice(0, 6)
+  }
+
+  acknowledgeReconnect(id, gameKey) {
+    const entry = this.connectedGames[gameKey]?.localPlayers?.[id]
+    if (!entry || entry.version !== 2) return null
+    entry.revoked = false
+    this.ownedPlayerIds.add(id)
+    this.saveConnectedGames()
+    return entry.config
+  }
+
+  revokeOwnership(ids, gameKey) {
+    for (const id of ids) {
+      this.ownedPlayerIds.delete(id)
+      const entry = this.connectedGames[gameKey]?.localPlayers?.[id]
+      if (entry?.version === 2) entry.revoked = true
+    }
+    this.saveConnectedGames()
+  }
+
   getLocalPlayerIds(gameKey = this.currentGame?.key) {
     if (!gameKey || !this.connectedGames[gameKey]) return []
     return Object.keys(this.connectedGames[gameKey].localPlayers || {})

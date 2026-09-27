@@ -118,8 +118,8 @@ try {
   let steadyBaseline = null
 
   for (let cycle = 1; cycle <= TOTAL_CYCLES; cycle++) {
-    // Phase 1 cannot reclaim players after leaving a room. Create a fresh
-    // match each cycle, with two rounds while this socket still owns them.
+    // Create a fresh match each cycle, then authenticate a rejoin and play
+    // two rounds while both local players remain on this socket.
     await page.fill('#input-create-game', `ClientLeak_Room_${cycle}`)
     await page.click('#btn-create-game')
     await page.waitForSelector(
@@ -138,6 +138,20 @@ try {
         .getByText(name, { exact: true })
         .waitFor()
     }
+
+    // Rejoin through the normal room listing and authenticate both saved
+    // local players before starting the rounds. Keep the leak thresholds.
+    await page.click('#btn-header-lobby')
+    await page
+      .locator('#body-gamelisttable tr')
+      .filter({ hasText: roomKey })
+      .getByRole('button', { name: 'join' })
+      .click()
+    await page.waitForFunction(async () => {
+      const { state } = await import('/javascripts/state.js')
+      const { network } = await import('/javascripts/network.js')
+      return state.ownedPlayerIds.size === 2 && network.inputHandles.size === 2
+    })
 
     for (let round = 1; round <= 2; round++) {
       if (round === 1) {
