@@ -160,3 +160,19 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 - Leak thresholds preserved: attached elements flat, listeners +0, internal nodes +4, heap growth approximately 105 KB over three cycles. These are measured test results, not a blanket zero-leak guarantee.
 - Independent Sol/high implementation/testing and Astra/high review completed; no unresolved blockers. Lead recovered and published via non-forced connector ref update; local tree matches published candidate.
 - Next: verify this administrative checkpoint CI, then Phase 3. PR #4 remains draft; no merge/deployment. Phases 3–5 pending.
+
+## Phase 3 execution
+
+- Phase 2 administrative checkpoint `49023a767b60b0421440d062cc509dc5bc6d9895`: push `36302061667` and PR `36302062769` succeeded; required test job `108571418721` passed including browser step.
+- P3-I start: 2026-09-27T07:07:59.937371+00:00. Existing Sol/high implementer `/root/p2_implement` reused for Phase 3 only. Scope: movement lifecycle audit and binary-only drawing delta reception/rendering, regression coverage, related docs. Lead owns plan/progress. Usage unavailable.
+
+- P3-T: existing Sol/high tester `/root/p2_test`, concurrent disjoint `test/binary-protocol.test.js` coverage; start shortly after P3-I (exact timestamp unavailable). Focused decoder/renderer/no-partial-paint and captured steering frames pass with scoped lint/format. Final full check pending.
+- P3-I handoff 2026-09-27T07:12:19.719927+00:00: binary-only network/renderer guards, browser reload/handover movement capture, numeric-string socket regression, guides/changelog. Full local run 18 reported passes / one missing-browser failure, client-leak skipped.
+- P3-R start 2026-09-27T07:12:19.719949+00:00: existing Astra/high reviewer `/root/p2_review`, final contract/source/test diff read-only. No task-level usage telemetry.
+
+- P3-T final initial check 2026-09-27T07:12:28Z: six affected suites, scoped lint/format pass; full local 18 reported passes / one missing-Chromium failure with client-leak skip. Documentation trailing whitespace corrected.
+- P3-R found a P2 browser-test reliability issue: numeric-looking public IDs can reorder saved object iteration and assigned reconnect handles. Hard-coded post-reload handle order would intermittently fail correct runtime. P3-I-F1 assigned expected-frame assertions from acknowledged ID/handle mapping; separate tester verification and reviewer recheck pending.
+
+- P3-R final 2026-09-27T07:15:09Z: no blocking findings. Reconnect browser frame expectations now use acknowledged player mappings and numeric-string fixture is `12345678`. Independent source/tests/lint/diff verification passed; exact Chromium CI pending.
+
+- P3-T follow-up ended 2026-09-27T07:15:19Z: acknowledged-handle assertions preserve exact bytes and old-client suppression. Focused suites/lint/format/diff pass; full local 18 reported passes / one unavailable-browser failure with leak skip. No added follow-up tester edits. Candidate publication next.

@@ -1,4 +1,5 @@
 import { CELL_TYPE } from '/shared/constants.js'
+import { BINARY_OPCODE } from '/shared/protocol.js'
 
 export class Renderer {
   constructor({
@@ -136,6 +137,14 @@ export class Renderer {
       return
     }
 
+    if (
+      value !== CELL_TYPE.EMPTY &&
+      value !== CELL_TYPE.BORDER &&
+      value !== CELL_TYPE.EXPLOSION &&
+      !(value >= 0 && value < this.playercolors.length)
+    )
+      return
+
     this.fields[x][y] = value
 
     const cx = x * this.blocksize
@@ -158,34 +167,43 @@ export class Renderer {
 
   /**
    * Delta painting: Only draws modified cells on the canvas.
-   * Supports both binary DataView (zero-copy) and Array<[x, y, cellValue]>.
-   * @param {DataView | Array<[number, number, number]>} changes
+   * Accepts only complete binary draw packets, including the opcode.
+   * Validate every record before painting so a malformed packet cannot
+   * apply an earlier cell while leaving the rest incomplete.
+   * @param {DataView} changes
    */
   draw(changes) {
-    if (!this.canvas || !changes) {
+    if (
+      !this.canvas ||
+      !(changes instanceof DataView) ||
+      changes.byteLength <= 1 ||
+      (changes.byteLength - 1) % 5 !== 0 ||
+      changes.getUint8(0) !== BINARY_OPCODE.DRAW
+    ) {
       return
     }
 
-    if (changes instanceof DataView) {
-      const len = changes.byteLength
-      // Opcode is byte 0; each cell is 5 bytes (Uint16 x, Uint16 y, Int8 value)
-      for (let offset = 1; offset + 5 <= len; offset += 5) {
-        this.drawCell(
-          changes.getUint16(offset),
-          changes.getUint16(offset + 2),
-          changes.getInt8(offset + 4),
-        )
-      }
-      return
+    const len = changes.byteLength
+    for (let offset = 1; offset < len; offset += 5) {
+      const x = changes.getUint16(offset)
+      const y = changes.getUint16(offset + 2)
+      const value = changes.getInt8(offset + 4)
+      if (
+        x >= this.size.x ||
+        y >= this.size.y ||
+        (value !== CELL_TYPE.EMPTY &&
+          value !== CELL_TYPE.BORDER &&
+          value !== CELL_TYPE.EXPLOSION &&
+          !(value >= 0 && value < this.playercolors.length))
+      )
+        return
     }
-
-    if (!changes.length) {
-      return
-    }
-
-    for (let i = 0; i < changes.length; i++) {
-      const [x, y, value] = changes[i]
-      this.drawCell(x, y, value)
+    for (let offset = 1; offset < len; offset += 5) {
+      this.drawCell(
+        changes.getUint16(offset),
+        changes.getUint16(offset + 2),
+        changes.getInt8(offset + 4),
+      )
     }
   }
 

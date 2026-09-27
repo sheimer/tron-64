@@ -265,12 +265,22 @@ try {
   for (let i = 2; i < 6; i++) {
     const response = await register(
       owner,
-      registration(`local-${i}`, i),
+      registration(i === 2 ? '12345678' : `local-${i}`, i),
       `local-${i}`,
     )
     assert.equal(response.type, MSG_TYPE.PLAYER_REGISTERED)
     assert.equal(response.payload.inputHandle, i)
   }
+  const numericLooking = game.arena.players.find((p) => p.id === '12345678')
+  assert.ok(numericLooking)
+  const numericMove = numericLooking.move
+  turn(owner, 2, 0)
+  await new Promise((r) => setTimeout(r, 30))
+  assert.notEqual(numericLooking.move, numericMove)
+  assert.equal(
+    game.arena.players.some((p) => p.id === 12345678),
+    false,
+  )
   assert.equal(
     (await register(owner, registration('seventh'), 'seventh')).code,
     'PLAYER_LIMIT',
