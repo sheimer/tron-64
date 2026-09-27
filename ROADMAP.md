@@ -6,13 +6,13 @@ This roadmap separates work required before wider community promotion from later
 
 ## Release sequence
 
-| Target version | Milestone | Focus | Outcome |
-| --- | --- | --- | --- |
-| **v1.5.0** | 1. Server correctness & hardening | Ownership, registration, room lifecycle, scoring, resource controls | Reliable multiplayer behavior |
-| **v1.6.0** | 2. Public launch preparation | CI, media notices, onboarding, mobile checks, operational playtest | **Ready for public launch** |
-| **v1.7.0** | 3. Showcase & palette extensibility | Scripted feature demos, recording pipeline, theme registry, C64 refinement | Richer presentation and easier theming |
-| **v1.8.0** | 4. Room features & matchmaking | Creation options, invitations, slot replacement, host continuity | More flexible multiplayer sessions |
-| **v2.0.0** | 5. Retro Arcade Edition | Synthesized audio, practice bot, advanced mobile layout | Expanded arcade experience |
+| Target version | Milestone                           | Focus                                                                      | Outcome                                |
+| -------------- | ----------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
+| **v1.5.0**     | 1. Server correctness & hardening   | Ownership, registration, room lifecycle, scoring, resource controls        | Reliable multiplayer behavior          |
+| **v1.6.0**     | 2. Public launch preparation        | CI, media notices, onboarding, mobile checks, operational playtest         | **Ready for public launch**            |
+| **v1.7.0**     | 3. Showcase & palette extensibility | Scripted feature demos, recording pipeline, theme registry, C64 refinement | Richer presentation and easier theming |
+| **v1.8.0**     | 4. Room features & matchmaking      | Creation options, invitations, slot replacement, host continuity           | More flexible multiplayer sessions     |
+| **v2.0.0**     | 5. Retro Arcade Edition             | Synthesized audio, practice bot, advanced mobile layout                    | Expanded arcade experience             |
 
 These are proposed release targets for the agreed scope, not fixed dates. Milestones may be delivered through smaller releases; document scope and version changes here as implementation progresses. For published versions, see [CHANGELOG.md](CHANGELOG.md).
 
@@ -31,22 +31,13 @@ For this hosted game, document compatibility where it affects self-hosters: clie
 
 Complete this work before a larger influx of unfamiliar players. Keep account-free local multiplayer and cross-device play.
 
-### Player ownership and reconnection
-
-Implementation plan: [Player ownership and reconnection](docs/plans/2026-09-25-player-ownership-and-reconnection.md).
-
-- [ ] Keep public player IDs separate from secret reconnection credentials. Never include credentials in lobby lists, shared game information, or logs.
-- [ ] Grant connection ownership only after successful player registration or authenticated reconnection; reject arbitrary `playerIds` claims.
-- [ ] Make movement binary-only with ownership checks and explicit handles mapped to actual player identities; reject legacy JSON movement. Remove client-side JSON arena-delta compatibility while preserving binary drawing and full-state synchronization.
-- [ ] Allow multiple local players on one connection, with authorization for each player individually.
-- [ ] Define reconnection handover so an old or unrelated socket cannot disconnect a player owned by the replacement connection.
-- [ ] Define credential lifetime and restart behavior alongside persisted room state; do not restore an ownerless player as connected automatically.
+Completed ownership and reconnection is recorded in [implemented milestones](#player-ownership-and-reconnection).
 
 ### Registration invariants and round authority
 
-- [ ] Enforce nonempty unique IDs, valid control data, registration state, and the six-player maximum inside domain methods as well as message handlers.
+Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority remains open below.
+
 - [ ] Validate the minimum eligible roster before a round starts and return understandable registration/start errors.
-- [ ] Acknowledge registration success before the client commits local ownership and key bindings.
 - [ ] Introduce server-verified room-host authority for round starts/resets and speed changes. A nonempty claimed player-ID set is insufficient.
 - [ ] Allow speed changes only between rounds; reject unauthorized or mid-round changes.
 - [ ] Define host disconnection/reconnection behavior so a room cannot be hijacked or left permanently unusable.
@@ -228,12 +219,23 @@ Plan: [Mobile landscape layout](docs/plans/2026-08-17-mobile-landscape-layout.md
 
 These features exist or were recorded as completed in the previous roadmap. They describe the foundation, not blanket verification of security, deployment, accessibility, or every supported device. Open work above takes precedence where it strengthens or corrects an existing feature.
 
+### Player ownership and reconnection
+
+Verified in all five phases: [implementation plan](docs/plans/2026-09-25-player-ownership-and-reconnection.md), [acceptance and CI evidence](docs/plans/2026-09-25-player-ownership-and-reconnection-progress.md), and [Unreleased notes](CHANGELOG.md#unreleased).
+
+- [x] Keep public player IDs separate from secret reconnection credentials. Never include credentials in lobby lists, shared game information, or logs.
+- [x] Grant connection ownership only after successful player registration or authenticated reconnection; reject arbitrary `playerIds` claims.
+- [x] Make movement binary-only with ownership checks and explicit handles mapped to actual player identities; reject legacy JSON movement. Remove client-side JSON arena-delta compatibility while preserving binary drawing and full-state synchronization.
+- [x] Allow multiple local players on one connection, with authorization for each player individually.
+- [x] Define reconnection handover so an old or unrelated socket cannot disconnect a player owned by the replacement connection.
+- [x] Define credential lifetime and restart behavior alongside persisted room state; do not restore an ownerless player as connected automatically.
+
 ### Networking and client lifecycle
 
 - Connection quality indicator with theme-adaptive latency feedback.
-- Session-storage restoration of local player IDs/key bindings; secure ownership handover remains in Milestone 1.
+- Versioned session-storage credentials and bindings, restored only after authenticated acknowledgement; per-player handover preserves other local owners.
 - Disconnected-player explosion/trail handling and subsequent-round reset behavior.
-- Binary drawing deltas and a movement-frame implementation; identity representation and authorization require verification.
+- Binary-only drawing deltas and acknowledged movement handles with canonical string identity and current-owner validation.
 - Speed synchronization, lobby loading/empty/reconnect feedback, and return-to-lobby navigation.
 
 Reference: [Lobby loading state](docs/plans/2026-08-21-lobby-loading-state.md).
@@ -242,9 +244,9 @@ Reference: [Lobby loading state](docs/plans/2026-08-21-lobby-loading-state.md).
 
 - Timestamp-based round scheduling with a lag recovery guard.
 - Configurable room-count limits and per-room client limits; accurate membership and broader traffic bounds remain open.
-- Atomic JSON snapshots for room metadata and score tallies. This is not restoration of in-progress physics state or proof of durability against every storage failure.
+- Versioned atomic JSON snapshots for room metadata, rosters, scores, and private credential verifiers. Restore starts disconnected. This does not restore in-progress physics or guarantee durability without file/directory fsync.
 - Server GC/lifecycle tests, browser memory-test tooling, and concurrency benchmark tooling. Publish measured results with environment and workload; distinguish skipped browser tests from executed verification.
-- Spectator UI restrictions and preliminary server checks; verified ownership and room-control authorization remain open.
+- Spectator UI restrictions and verified per-player ownership checks; host and round-control authorization remain open.
 
 ### Welcome screen and project identity
 

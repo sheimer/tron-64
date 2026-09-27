@@ -11,7 +11,7 @@
 
 ## Live state
 
-- Branch: `feat/player-ownership-and-reconnection`; PR #4, draft, base `main` at `8ed8fa9bbcffac28100b94ef9c2cdbf67b493121`, already an ancestor; no unmerged dependency.
+- Branch: `feat/player-ownership-and-reconnection`; PR #4, base `main` at `8ed8fa9bbcffac28100b94ef9c2cdbf67b493121`, already an ancestor; no unmerged dependency.
 - Clean isolated checkout created; pre-existing local checkouts and edits preserved.
 - Initial verified baseline: `0d7506a357f0617fc67821061bc79a57a1b997bb`.
 - Baseline Tests PR run `36275318721`, job `108496827711`: 12 passed, 0 failed, including required Chromium smoke and client-leak suites.
@@ -20,23 +20,23 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: Phase 5 integrated acceptance in progress; verified checkpoint `ce142c6a4832d0d954596f5e17f8f8084baf4adb`.
+- Current phase: all five phases verified; final implementation candidate `dbc7c59bdabfc0cb4b860271234e8988ef77a262`. Closure documentation and its exact-head CI precede PR readiness.
 
 ## Evidence by phase
 
-| Phase | Candidate                                  | Local checks                                        | CI                                              | Independent review                                                                | Status      |
-| ----- | ------------------------------------------ | --------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------- | ----------- |
-| 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser, lint/format pass; Chromium unavailable | Push `36277783947`, PR `36277787537`: 15 passed | Astra clear after feedback and CI-fixture corrections                             | Verified    |
-| 2     | `fdea6fd2183f3745b641c52a28f27f2e916c114d` | Non-browser, lint/format pass; Chromium unavailable | Push `36301883464`, PR `36301885822`: 18 passed | Independent Sol testing/Astra review; failed-recovery and close-order corrections | Verified    |
-| 3     | `4d7edde9ae5ec2bae95e0d3053961e2d01981970` | Non-browser, lint/format pass; Chromium unavailable | Push `36302600598`, PR `36302602782`: 19 passed | Independent Sol testing/Astra review; handle-order fixture corrected              | Verified    |
-| 4     | `46eac4be115236184e85ed0168444ecd19122826` | Non-browser, lint/format pass; Chromium unavailable | Push `36313810396`, PR `36313813198`: 20 passed | Independent Sol testing/Astra review; malformed-room startup corrected            | Verified    |
-| 5     | None                                       | In progress                                         | Pending                                         | Pending                                                                           | In progress |
+| Phase | Candidate                                  | Local checks                                        | CI                                              | Independent review                                                                | Status   |
+| ----- | ------------------------------------------ | --------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------- | -------- |
+| 1     | `69831312545e0df9b1641cbb815862110289a57e` | Non-browser, lint/format pass; Chromium unavailable | Push `36277783947`, PR `36277787537`: 15 passed | Astra clear after feedback and CI-fixture corrections                             | Verified |
+| 2     | `fdea6fd2183f3745b641c52a28f27f2e916c114d` | Non-browser, lint/format pass; Chromium unavailable | Push `36301883464`, PR `36301885822`: 18 passed | Independent Sol testing/Astra review; failed-recovery and close-order corrections | Verified |
+| 3     | `4d7edde9ae5ec2bae95e0d3053961e2d01981970` | Non-browser, lint/format pass; Chromium unavailable | Push `36302600598`, PR `36302602782`: 19 passed | Independent Sol testing/Astra review; handle-order fixture corrected              | Verified |
+| 4     | `46eac4be115236184e85ed0168444ecd19122826` | Non-browser, lint/format pass; Chromium unavailable | Push `36313810396`, PR `36313813198`: 20 passed | Independent Sol testing/Astra review; malformed-room startup corrected            | Verified |
+| 5     | `dbc7c59bdabfc0cb4b860271234e8988ef77a262` | Non-browser, lint/format pass; Chromium unavailable | Push `36314452821`, PR `36314455486`: 22 passed | Independent Sol tests/Astra review; full browser acceptance passed CI             | Verified |
 
 All listed CI runs executed required browser suites; local missing-browser failures and optional leak skips are not reported as full local passes. Administrative checkpoint runs are recorded below.
 
 ## Blockers and next action
 
-Complete Phase 5 integrated acceptance, independent review and exact-candidate CI; then close only verified roadmap items and prepare PR #4 for final human review. Use existing PR #4; final human review/merge remains with the user.
+No unresolved implementation or review findings. Closure documentation independently reviewed. Verify this final documentation head in push/PR CI, then update and mark existing PR #4 ready for the user; final-head/run evidence belongs in the PR to avoid a self-referential checkpoint. No merge or deployment authorized.
 
 ## Task execution records
 
@@ -113,11 +113,11 @@ Complete Phase 5 integrated acceptance, independent review and exact-candidate C
 
 - P1-CI2 Astra/high review observed 2026-09-27T00:53:38–00:53:47+02:00: no blocking findings; source confirms timing and assertions retained; follow-up CI required.
 
-## Final acceptance audit
+## Historical Phase 1 acceptance audit
 
 Phase 1 secure registration, binary authorization/handle lifecycle, rejection invariance, client acknowledgement gating, owner-safe cleanup, and disconnected restore verified. Reconnect, drawing cleanup, durable credentials, and integrated acceptance remain pending. No complete roadmap section marked finished yet.
 
-## Model-efficiency review — Interim
+## Historical Phase 1 model-efficiency review
 
 P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two visible-feedback issues; CI additionally exposed an obsolete reconnect fixture and reset/countdown timing. Independent review and real browser CI materially improved the result. Formatting/documentation and bounded test-fixture edits are untested candidates for a later lower-effort trial; no cheaper-model equivalence or savings claimed. Retain Sol/high implementation/testing and Astra/high review for remaining ownership/concurrency work. Task token usage, quota and lead orchestration overhead are unavailable; elapsed times include tool/CI waits and cannot be treated as compute or cost.
 
@@ -230,3 +230,37 @@ P1-I/P1-T required cross-file security and client lifecycle work. P1-R found two
 
 - P5-I ended 2026-09-27T11:00:13Z and P5-T ended 2026-09-27T11:00:38Z. Full local22 suites:20 reported passes/two required missing-Chromium failures, client-leak skipped. Focused acceptance/lint/format/diff pass.
 - P5-R ended 2026-09-27T11:00:58Z: no blocking findings; independently passed socket acceptance/static checks, verified independent browser contexts and fatal missing-browser gate. Residual test risk: some socket assertions use35ms waits rather than protocol barriers, to watch if CI exposes timing failures. Final browser CI pending.
+
+## Phase 5 verified checkpoint
+
+- Candidate `dbc7c59bdabfc0cb4b860271234e8988ef77a262`: push `36314452821` and PR `36314455486` succeeded. Job `108606401716` logs confirm 22 passed, zero failed, including real Chromium smoke, client leak, independent-context ownership flow, and integrated socket acceptance.
+- All five approved phases are verified. Only the six ownership roadmap items and completed shared registration prerequisites are moved to history; host/round authority, broader membership/capacity/reaping, scoring, resource bounds, and public launch remain open.
+- The final documentation commit requires its own exact-head CI before PR readiness. Final human review/merge remains with the user.
+
+## Final acceptance evidence
+
+| Contract                                                  | Verified evidence                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public IDs separate from credentials                      | [Socket acceptance](../../test/ownership-acceptance.test.js) observes all 11 outbound text types and binary DRAW, checks private registration-only raw secrets, rejects verifier leakage in every frame/log, and proves spectator IDs do not authorize input.                                                                               |
+| Registration or authenticated reconnect only              | [Player ownership](../../test/player-ownership.test.js), [client registration](../../test/client-registration.test.js), and [credential persistence](../../test/credential-persistence.test.js) cover rejected mutation, private ACK gating and persistence rollback.                                                                       |
+| Binary-only authorized movement with canonical identities | [Binary protocol](../../test/binary-protocol.test.js), [ownership](../../test/player-ownership.test.js), [reconnection](../../test/reconnection-ownership.test.js), and [browser smoke](../../test/browser-smoke.test.js) cover string IDs, every local binding, stale/malformed/JSON inputs, exhaustion and acknowledged recovery handles. |
+| Multiple local players                                    | [Required browser ownership flow](../../test/ownership-flow.test.js) and socket acceptance cover two local players, reload, independent context partial handover and retained control of the other player.                                                                                                                                  |
+| Safe handover and cleanup                                 | [Reconnection ownership](../../test/reconnection-ownership.test.js), socket acceptance, and required browser ownership flow cover old/unrelated steering, leave/close, last valid claim, live versus real disconnect, and no mid-round resurrection.                                                                                        |
+| Lifetime and restart                                      | Credential persistence and socket acceptance use real child-process cold restarts, wrong/absent/matching credentials, disconnected restoration, legacy/malformed/future snapshots and destroyed/recreated room rejection.                                                                                                                   |
+| Binary-only drawing and unchanged redraw paths            | Binary protocol checks type/action JSON rejection, malformed/truncated packets without partial painting and reset/theme/resize. Both required Chromium suites and the retained browser leak suite execute in passing CI.                                                                                                                    |
+
+## Final limitations and migration
+
+- Back up `games.json` and coordinate client/server upgrade; stale clients must reload. Rollback requires matching prior code/client and snapshot, with loss of changes after backup.
+- Raw credentials live in browser session storage; losing that record loses recovery authority. Legacy snapshots keep scores/rosters but cannot confer ownership; continue with a new room.
+- Persistence is an atomic snapshot rename without file/directory fsync. In-progress physics is not restored. Future/malformed overall snapshots are preserved read-only with safe diagnostics.
+- Local Chromium was unavailable. Exact-candidate CI supplied all required real-browser execution. The existing runner counts an optional local leak skip as a reported pass; local counts above explicitly disclose it.
+- No merge, deployment, release tag, permission change or unrelated roadmap closure performed.
+
+## Final model-efficiency review
+
+Sol/high implementation and separate Sol/high testing produced the phase changes and independent regression evidence; Astra/high review remained independent. Concrete review/rework value included P2 failed-fresh-connection preservation and old-socket close ordering, P3 numeric property-key/handle-order fixture correction, and P4 malformed-room startup handling. Real Chromium CI verified the user flows unavailable locally. P5's exhaustive message audit and separate browser contexts supplied integrated acceptance rather than relying only on unit tests.
+
+Bounded formatting/documentation updates and narrow test-fixture edits are candidates for a future lower-effort or cheaper-model trial, not demonstrated equivalents or savings. Ownership, persistence and race reasoning benefited from cross-file scrutiny and independent review. No task token/quota/cost telemetry was exposed; timestamps include tool/CI waits, overlap and the usage-limit interruption and are not compute time. Lead orchestration/integration overhead is unmeasured. This was a live execution, with all approved phases and exact-candidate CI verified; final PR review/merge is still human-owned.
+
+- Final closure review ended 2026-09-27T11:06:47Z, Astra/high: no blocking findings. One stale historical ownership sentence corrected; six ownership rows and shared registration prerequisites accurately closed, unrelated roadmap work open, relative links/anchors and formatting/diff verified. Final documentation-head CI pending.
