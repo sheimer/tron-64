@@ -101,6 +101,8 @@ At the start of a subsequent round, an offline player explodes at its starting p
 
 ### Authenticated reconnect
 
+The lobby labels its action “rejoin” when usable saved credentials exist, including credentials marked revoked for explicit reclaim. This action remains available when registration is closed; saved credentials only enable the attempt, and the server still authenticates every claim.
+
 A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback; a legacy ID-only claim fails closed.
 
 A player that disconnected mid-round becomes eligible for the next round after authentication. Reconnection does not resurrect its dead cycle in the current round.
