@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Private, correlated player registration acknowledgements with per-player credentials and socket-local binary input handles. Multiple local players can steer using their canonical string IDs after confirmation.
 - Required independent-browser and real-socket ownership acceptance tests cover spectator rejection, two local players, reload, partial handover, old-owner cleanup, restart, and private credential boundaries.
 
+### Fixed
+
+- Saved players can use the lobby’s “rejoin” button after registration closes, including after a reload or return to the lobby. Credentials are still authenticated by the server.
+
 ### Changed
 
 - Registration acknowledges ownership only after its roster and verifier are saved together. Storage failures leave no newly registered player or consumed input handle. Legacy snapshots remain historical and unclaimable; unsupported future snapshots are preserved read-only.

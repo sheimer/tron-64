@@ -279,14 +279,23 @@ async function smokeTest() {
   }, saved.records)
   await secondTab.goto(page.url())
   await secondTab.locator('#btn-header-enter-lobby').click()
-  // Public late-join buttons remain disabled during an active match; invoke
-  // the same authenticated coordinator action for this recovery fixture.
-  await secondTab.evaluate(async (key) => {
+  // Saved credentials must make the real lobby recovery action available,
+  // even after registration closes. Exercise it again after a page reload.
+  const rejoin = () =>
+    secondTab
+      .locator('#body-gamelisttable tr')
+      .filter({ hasText: roomKey })
+      .getByRole('button', { name: 'rejoin', exact: true })
+      .click()
+  await rejoin()
+  await secondTab.waitForFunction(async (id) => {
     const { state } = await import('/javascripts/state.js')
-    const { app } = await import('/javascripts/main.js')
-    state.setCurrentGame(key, 'CI smoke room')
-    app.joinGame(key)
-  }, roomKey)
+    const { network } = await import('/javascripts/network.js')
+    return state.isLocalPlayer(id) && network.inputHandles.has(id)
+  }, saved.first)
+  await secondTab.reload()
+  await secondTab.locator('#btn-header-enter-lobby').click()
+  await rejoin()
   await secondTab.waitForFunction(async (id) => {
     const { state } = await import('/javascripts/state.js')
     const { network } = await import('/javascripts/network.js')
