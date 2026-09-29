@@ -117,7 +117,7 @@ Live handover leaves the transferred player's cycle alive and its score marked c
 
 ### Recovery after input-handle exhaustion
 
-Exhausted handles require the visible fresh-connection action and a new private acknowledgement before input resumes. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication.
+Exhausted handles require the visible fresh-connection action and a new private acknowledgement before input resumes. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication. With no owned players and no saved credentials (for example, in a new room), it joins on the fresh socket as a spectator, then allows new registration after acknowledgement.
 
 Failed admission or authentication restores the still-live original connection and bindings without automatically retrying. If the original socket closes during recovery, ordinary real-disconnect handling applies.
 

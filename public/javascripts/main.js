@@ -45,7 +45,6 @@ class AppCoordinator {
       const entries = state.getReconnectEntries(this.currentGameKey, true)
       const ownedIds = new Set(state.ownedPlayerIds)
       if (
-        !entries.length ||
         [...ownedIds].some((id) => !entries.some((entry) => entry.id === id))
       ) {
         this.showConnectionFeedback(

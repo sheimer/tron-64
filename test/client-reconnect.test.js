@@ -421,6 +421,60 @@ try {
   assert.equal(network.changeDir({ id: 'second', dir: 'left' }), false)
   assert.equal(state.isLocalPlayer('second'), false)
 
+  // An exhausted socket can enter a new room with no saved players.
+  // Missing credentials still block recovery while any player is owned.
+  state.setCurrentGame('empty-room', 'Empty room')
+  app.joinGame('empty-room')
+  ack(seventh, seventh.joins().at(-1).requestId, 'empty-room', [])
+  state.ownedPlayerIds.add('unsaved-player')
+  freshButton.click()
+  assert.equal(FakeSocket.instances.length, 7)
+  assert.match(feedback.textContent, /Every controlled player needs/)
+  state.clearOwnership()
+  network.emit(MSG_TYPE.ERROR, 'Open a fresh connection.', {
+    code: 'INPUT_HANDLE_EXHAUSTED',
+  })
+  assert.notEqual(freshButton.style.display, 'none')
+  freshButton.click()
+  const eighth = FakeSocket.instances[7]
+  assert.ok(eighth, 'Recovery without owned players must open a new socket')
+  assert.equal(seventh.readyState, FakeSocket.OPEN)
+  eighth.readyState = FakeSocket.OPEN
+  eighth.dispatch('open')
+  eighth.receive(MSG_TYPE.LOBBY_LIST, [])
+  const emptyJoin = eighth.joins().at(-1)
+  assert.deepEqual(emptyJoin.payload.reconnect, [])
+  assert.equal(emptyJoin.payload.requireAll, true)
+  ack(eighth, emptyJoin.requestId, 'empty-room', [])
+  assert.equal(seventh.readyState, 3)
+  assert.equal(network.previousSocket, null)
+  assert.equal(state.ownedPlayerIds.size, 0)
+
+  // The acknowledged replacement can now register and steer a new player.
+  app.configView.onAddPlayer({ name: 'New player', left: 65, right: 68 })
+  const registrationRequest = JSON.parse(eighth.sent.at(-1))
+  assert.equal(registrationRequest.type, MSG_TYPE.ADD_PLAYER)
+  eighth.receive(
+    MSG_TYPE.PLAYER_REGISTERED,
+    {
+      key: 'empty-room',
+      id: registrationRequest.payload.id,
+      reconnectToken: 'A'.repeat(43),
+      inputHandle: 0,
+    },
+    { requestId: registrationRequest.requestId },
+  )
+  assert.equal(state.isLocalPlayer(registrationRequest.payload.id), true)
+  assert.equal(
+    network.changeDir({ id: registrationRequest.payload.id, dir: 'left' }),
+    true,
+  )
+  assert.deepEqual(Array.from(eighth.sent.at(-1)), [
+    BINARY_OPCODE.CHANGE_DIR,
+    0,
+    0,
+  ])
+
   network.stopPing()
   console.log(
     'Client reconnect: correlated ACK, revocation, and explicit fresh recovery passed',
