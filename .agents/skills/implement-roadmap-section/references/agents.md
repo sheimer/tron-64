@@ -27,3 +27,19 @@ Include in each assignment:
 Implementer reports changed behavior, files, tests actually run, and uncertainties. Tester reports coverage gaps, commands/results, skipped/unavailable checks, and failure evidence. Reviewer reports actionable findings or “no blocking findings,” with residual risks. Agent confidence is not a substitute for executed checks.
 
 The lead arbitrates disagreements against the approved contract, integrates fixes, and revalidates changed code. Do not let agents race to edit a shared file. Assign follow-up fixes to one writer, or use separate worktrees and inspect integration diffs.
+
+## Execution tracking
+
+Keep the current role/model defaults. Observe the approved run without adding agents, switching to cheaper models, or repeating tasks solely to compare cost. Model comparisons require a separately agreed trial.
+
+For each delegated task, record in the progress document:
+
+- Task ID, phase, role, bounded scope, and actual model/effort (or unavailable if not exposed); distinguish requested settings from confirmed settings.
+- Start/end timestamps with timezone and elapsed wall time when observed. Identify CI/tool waiting or session interruptions when known; do not present wall time as model compute time or sum overlapping tasks as total run duration.
+- Runtime-reported token/usage values, units, source, and accounting scope when available. Otherwise write unavailable, never zero or an invented estimate. Do not infer subscription quota consumption or monetary savings from API prices or elapsed time. Avoid double-counting cumulative/session usage as task usage.
+- Outcome with evidence links, retry/follow-up count, substantive corrections, and reviewer findings/resolutions. Tie follow-up records to the original task; separate environment failures from model mistakes.
+- A short observed difficulty note: explicit/mechanical steps, ambiguity, cross-file reasoning, security/concurrency decisions, or substantial rework. Record evidence, not private reasoning transcripts or unsupported self-ratings.
+
+Have agents report observable outcomes and uncertainties; let the lead reconcile timings, available telemetry, and review evidence. Keep records concise, preserve prior records on resume, and mark unknown fields honestly rather than reconstructing missing measurements. Include significant lead integration/rework as a separate record when attributable; disclose unmeasured orchestration overhead.
+
+At final handoff (or a partial handoff on interruption), summarize model efficiency in the progress document and PR/handoff. Identify bounded tasks that might suit a cheaper model or lower effort, citing task IDs and observed reasons. Label these as untested candidates, not proven equivalent quality or savings: success with Sol does not establish success with Luna. Include review/rework overhead and measurement limitations. Do not let this retrospective weaken independent testing/review or any CI/approval gate.

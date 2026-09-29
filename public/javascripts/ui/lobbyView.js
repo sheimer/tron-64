@@ -106,17 +106,16 @@ export class LobbyView {
       // Action / Join button
       const tdAction = document.createElement('td')
       const joinButton = document.createElement('button')
-      joinButton.appendChild(document.createTextNode(' join '))
+      const canRejoin = state.getReconnectEntries(item.key, true).length > 0
+      joinButton.appendChild(
+        document.createTextNode(canRejoin ? ' rejoin ' : ' join '),
+      )
 
       joinButton.onclick = () => {
         this.onSelectGame(item.key, item.name)
       }
 
-      const isReconnectable =
-        state.connectedGames[item.key] &&
-        Object.keys(state.connectedGames[item.key].localPlayers || {}).length > 0
-
-      joinButton.disabled = !item.acceptingPlayers && !isReconnectable
+      joinButton.disabled = !item.acceptingPlayers && !canRejoin
 
       tdAction.appendChild(joinButton)
       tr.appendChild(tdAction)

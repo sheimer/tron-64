@@ -1,7 +1,17 @@
 import WebSocket, { WebSocketServer } from 'ws'
+import { createHash } from 'node:crypto'
 import { gameServer } from './GameServer.js'
-import { MSG_TYPE, BINARY_OPCODE } from '../shared/protocol.js'
-import { GRID_SIZE, MAX_ACTIVE_GAMES, MAX_CLIENTS_PER_ROOM } from '../shared/constants.js'
+import { storage } from './Storage.js'
+import {
+  MSG_TYPE,
+  BINARY_OPCODE,
+  PROTOCOL_VERSION,
+} from '../shared/protocol.js'
+import {
+  GRID_SIZE,
+  MAX_ACTIVE_GAMES,
+  MAX_CLIENTS_PER_ROOM,
+} from '../shared/constants.js'
 import {
   wsClientsGauge,
   wsMessagesSentCounter,
@@ -14,7 +24,31 @@ const sanitizeString = (str, maxLength = 32) =>
 const sanitizeInterval = (interval) =>
   Math.max(10, Math.min(500, Math.round(Number(interval)) || 25))
 
-const sanitizeDir = (dir) => (dir === 'left' || dir === 'right' ? dir : null)
+const retryLimit = 32
+const requestIdPattern = /^[a-zA-Z0-9_-]{1,64}$/
+const sendError = (ws, code, message, requestId) => {
+  ws.send(
+    JSON.stringify({
+      type: MSG_TYPE.ERROR,
+      code,
+      requestId,
+      payload: message,
+      protocolVersion: PROTOCOL_VERSION,
+    }),
+  )
+}
+
+const releaseOwnedPlayers = (ws, game) => {
+  // The room map is authoritative even if the socket index is stale.
+  for (const [id, owner] of game?.ownership.owners ?? []) {
+    if (owner === ws && game.ownership.release(id, ws))
+      game.disconnectPlayer(id)
+  }
+  ws.playerIds.clear()
+  ws.handlesById.clear()
+  ws.idsByHandle.clear()
+  ws.registrationRetries.clear()
+}
 
 const encodeBinaryDraw = (changes) => {
   if (!changes || !changes.length) return null
@@ -54,10 +88,7 @@ export const setupWebSocketServer = (server) => {
         : JSON.stringify(message)
 
     wss.clients.forEach((client) => {
-      if (
-        client.readyState === WebSocket.OPEN &&
-        client.gameKey === gameKey
-      ) {
+      if (client.readyState === WebSocket.OPEN && client.gameKey === gameKey) {
         wsMessagesSentCounter.inc({ type: isBuffer ? 'binary' : 'text' })
         if (isBuffer) {
           client.send(data, { binary: true })
@@ -72,6 +103,7 @@ export const setupWebSocketServer = (server) => {
     const message = JSON.stringify({
       type: MSG_TYPE.LOBBY_LIST,
       payload: gameServer.getGameList(),
+      protocolVersion: PROTOCOL_VERSION,
     })
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -91,6 +123,11 @@ export const setupWebSocketServer = (server) => {
     wsClientsGauge.set(wss.clients.size)
     ws.gameKey = null
     ws.playerIds = new Set()
+    ws.handlesById = new Map()
+    ws.idsByHandle = new Map()
+    ws.nextInputHandle = 0
+    ws.registrationRetries = new Map()
+    ws.protocolReady = false
 
     // Send initial lobby list
     wsMessagesSentCounter.inc({ type: 'text' })
@@ -98,27 +135,33 @@ export const setupWebSocketServer = (server) => {
       JSON.stringify({
         type: MSG_TYPE.LOBBY_LIST,
         payload: gameServer.getGameList(),
+        protocolVersion: PROTOCOL_VERSION,
       }),
     )
 
-    ws.on('message', (raw) => {
+    ws.on('message', (raw, isBinary) => {
       wsMessagesReceivedCounter.inc({
-        type: Buffer.isBuffer(raw) ? 'binary' : 'text',
+        type: isBinary ? 'binary' : 'text',
       })
-      // Fast path for 3-byte binary CHANGE_DIR frames: [OPCODE, playerId, dirByte]
-      if (
-        Buffer.isBuffer(raw) &&
-        raw.length === 3 &&
-        raw[0] === BINARY_OPCODE.CHANGE_DIR
-      ) {
-        if (!ws.gameKey) return
+      // Input handle is connection-local; even a valid byte is not an ID.
+      if (isBinary) {
+        if (
+          !ws.protocolReady ||
+          !ws.gameKey ||
+          raw.length !== 3 ||
+          raw[0] !== BINARY_OPCODE.CHANGE_DIR ||
+          raw[2] > 1
+        )
+          return
         const game = gameServer.getGame(ws.gameKey)
-        if (game) {
-          const id = raw[1]
-          const dir = raw[2] === 0 ? 'left' : raw[2] === 1 ? 'right' : null
-          if (dir !== null) {
-            game.changeDir({ id, dir })
-          }
+        const id = ws.idsByHandle.get(raw[1])
+        if (
+          game &&
+          id !== undefined &&
+          game.ownership.owns(id, ws) &&
+          ws.handlesById.get(id) === raw[1]
+        ) {
+          game.changeDir({ id, dir: raw[2] === 0 ? 'left' : 'right' })
         }
         return
       }
@@ -127,6 +170,32 @@ export const setupWebSocketServer = (server) => {
         const msg = JSON.parse(raw.toString())
         const type = msg.type || msg.action
         const payload = msg.payload
+
+        if (msg.protocolVersion !== PROTOCOL_VERSION) {
+          sendError(
+            ws,
+            'PROTOCOL_MISMATCH',
+            'Your game version is out of date. Reload this page before joining.',
+            msg.requestId,
+          )
+          return
+        }
+        if (
+          type === 'CHANGE_DIR' ||
+          type === 'changeDir' ||
+          msg.type === 'CHANGE_DIR' ||
+          msg.type === 'changeDir' ||
+          msg.action === 'CHANGE_DIR' ||
+          msg.action === 'changeDir'
+        ) {
+          sendError(
+            ws,
+            'BINARY_INPUT_REQUIRED',
+            'Movement protocol changed. Reload this page to use binary input.',
+            msg.requestId,
+          )
+          return
+        }
 
         switch (type) {
           case MSG_TYPE.PING:
@@ -147,6 +216,7 @@ export const setupWebSocketServer = (server) => {
               JSON.stringify({
                 type: MSG_TYPE.LOBBY_LIST,
                 payload: gameServer.getGameList(),
+                protocolVersion: PROTOCOL_VERSION,
               }),
             )
             break
@@ -165,11 +235,20 @@ export const setupWebSocketServer = (server) => {
               isPublic,
             })
             if (!key) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`,
-                }),
+              const blocked = storage.readOnly
+              const full = gameServer.games.length >= MAX_ACTIVE_GAMES
+              sendError(
+                ws,
+                blocked
+                  ? 'SNAPSHOT_UNSUPPORTED'
+                  : full
+                    ? 'SERVER_CAPACITY'
+                    : 'PERSISTENCE_FAILED',
+                blocked
+                  ? 'The saved games format is unsupported. Back up the snapshot and use a compatible server version before creating rooms.'
+                  : full
+                    ? `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`
+                    : 'Room creation could not be saved. Try again later.',
               )
               return
             }
@@ -186,16 +265,39 @@ export const setupWebSocketServer = (server) => {
           case MSG_TYPE.JOIN_GAME:
           case 'join': {
             const gameKey = sanitizeString(payload?.key || payload, 16)
-            const playerIds = Array.isArray(payload?.playerIds)
-              ? payload.playerIds
-              : []
+            if (payload?.playerIds !== undefined) {
+              sendError(
+                ws,
+                'AUTHENTICATION_REQUIRED',
+                'Player IDs cannot restore ownership. Reload and reconnect with saved credentials.',
+                msg.requestId,
+              )
+              return
+            }
+            const claims = payload?.reconnect ?? []
+            if (
+              !Array.isArray(claims) ||
+              claims.length > 6 ||
+              (claims.length > 0 &&
+                (typeof msg.requestId !== 'string' ||
+                  !requestIdPattern.test(msg.requestId))) ||
+              new Set(claims.map((claim) => claim?.id)).size !== claims.length
+            ) {
+              sendError(
+                ws,
+                'INVALID_RECONNECT',
+                'Invalid or duplicate reconnect entries (maximum six).',
+                msg.requestId,
+              )
+              return
+            }
             const game = gameServer.getGame(gameKey)
             if (!game) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Game ${gameKey} not found`,
-                }),
+              sendError(
+                ws,
+                'GAME_NOT_FOUND',
+                `Game ${gameKey} not found`,
+                msg.requestId,
               )
               return
             }
@@ -203,48 +305,137 @@ export const setupWebSocketServer = (server) => {
             const openClients = game.clients.filter(
               (c) => c?.readyState === WebSocket.OPEN,
             )
-            if (openClients.length >= MAX_CLIENTS_PER_ROOM) {
-              ws.send(
-                JSON.stringify({
-                  type: MSG_TYPE.ERROR,
-                  payload: `Game room ${gameKey} is full (maximum ${MAX_CLIENTS_PER_ROOM} clients).`,
-                }),
+            if (
+              ws.gameKey !== gameKey &&
+              openClients.length >= MAX_CLIENTS_PER_ROOM
+            ) {
+              sendError(
+                ws,
+                'ROOM_FULL',
+                `Game room ${gameKey} is full (maximum ${MAX_CLIENTS_PER_ROOM} clients).`,
+                msg.requestId,
               )
               return
             }
 
-            ws.gameKey = gameKey
-            let reconnectedAny = false
-            playerIds.forEach((pid) => {
-              const cleanId = sanitizeString(pid, 16)
-              if (cleanId) {
-                ws.playerIds.add(cleanId)
-                game.reconnectPlayer(cleanId)
-                reconnectedAny = true
-              }
-            })
+            // Check every claim independently, then preflight all new handles
+            // before changing room membership or a single owner.
+            const accepted = []
+            const rejected = []
+            for (const claim of claims) {
+              if (game.ownership.verify(claim?.id, claim?.reconnectToken))
+                accepted.push(claim.id)
+              else
+                rejected.push({
+                  id: typeof claim?.id === 'string' ? claim.id : null,
+                  code: 'INVALID_CREDENTIAL',
+                })
+            }
+            if (payload?.requireAll === true && rejected.length) {
+              sendError(
+                ws,
+                'RECONNECT_INCOMPLETE',
+                'Some saved credentials could not be authenticated. Existing owners are unchanged.',
+                msg.requestId,
+              )
+              return
+            }
+            const allocations = accepted.filter(
+              (id) =>
+                ws.gameKey !== gameKey ||
+                !game.ownership.owns(id, ws) ||
+                !ws.handlesById.has(id),
+            ).length
+            if (ws.nextInputHandle + allocations > 256) {
+              sendError(
+                ws,
+                'INPUT_HANDLE_EXHAUSTED',
+                'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
+                msg.requestId,
+              )
+              return
+            }
 
-            game.connect({
-              client: ws,
-              ondraw: (changes) => {
-                const buf = encodeBinaryDraw(changes)
-                if (buf) {
-                  broadcastToRoom(gameKey, buf)
-                }
-              },
-              onfinish: (stats) => {
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_FINISH,
-                  payload: stats,
+            if (ws.gameKey && ws.gameKey !== gameKey) {
+              const oldKey = ws.gameKey
+              const oldGame = gameServer.getGame(oldKey)
+              releaseOwnedPlayers(ws, oldGame)
+              if (oldGame)
+                oldGame.clients = oldGame.clients.filter((c) => c !== ws)
+              ws.gameKey = null
+              if (oldGame) {
+                broadcastToRoom(oldKey, {
+                  type: MSG_TYPE.GAME_INFO,
+                  payload: gameServer.getGameInfo(oldKey),
                 })
-              },
-              onreset: (positions) => {
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_RESET,
-                  payload: positions,
-                })
-              },
+              }
+            }
+            if (ws.gameKey !== gameKey) {
+              ws.gameKey = gameKey
+              ws.protocolReady = true
+              game.connect({
+                client: ws,
+                ondraw: (changes) => {
+                  const buf = encodeBinaryDraw(changes)
+                  if (buf) {
+                    broadcastToRoom(gameKey, buf)
+                  }
+                },
+                onfinish: (stats) => {
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_FINISH,
+                    payload: stats,
+                  })
+                },
+                onreset: (positions) => {
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_RESET,
+                    payload: positions,
+                  })
+                },
+              })
+            }
+
+            const revoked = new Map()
+            const bindings = accepted.map((id) => {
+              const previous = game.ownership.transfer(id, ws)
+              if (
+                previous &&
+                previous !== ws &&
+                previous.readyState === WebSocket.OPEN
+              ) {
+                if (!revoked.has(previous)) revoked.set(previous, [])
+                revoked.get(previous).push(id)
+              }
+              let inputHandle = ws.handlesById.get(id)
+              if (inputHandle === undefined) {
+                inputHandle = ws.nextInputHandle++
+                ws.handlesById.set(id, inputHandle)
+                ws.idsByHandle.set(inputHandle, id)
+              }
+              if (!previous) game.reconnectPlayer(id)
+              return { id, inputHandle }
             })
+            for (const [previous, ids] of revoked) {
+              previous.send(
+                JSON.stringify({
+                  type: MSG_TYPE.OWNERSHIP_REVOKED,
+                  payload: { key: gameKey, ids },
+                  protocolVersion: PROTOCOL_VERSION,
+                }),
+              )
+            }
+
+            if (claims.length || msg.requestId) {
+              ws.send(
+                JSON.stringify({
+                  type: MSG_TYPE.JOIN_RESULT,
+                  requestId: msg.requestId,
+                  protocolVersion: PROTOCOL_VERSION,
+                  payload: { key: gameKey, accepted: bindings, rejected },
+                }),
+              )
+            }
 
             const gameInfo = gameServer.getGameInfo(gameKey)
             ws.send(
@@ -253,13 +444,12 @@ export const setupWebSocketServer = (server) => {
                 payload: gameInfo,
               }),
             )
-
-            if (reconnectedAny) {
+            if (bindings.length)
               broadcastToRoom(gameKey, {
                 type: MSG_TYPE.GAME_INFO,
-                payload: gameInfo,
+                payload: gameServer.getGameInfo(gameKey),
               })
-            }
+
             break
           }
 
@@ -268,13 +458,10 @@ export const setupWebSocketServer = (server) => {
             if (ws.gameKey) {
               const gameKey = ws.gameKey
               const game = gameServer.getGame(gameKey)
-              if (game && ws.playerIds.size > 0) {
-                ws.playerIds.forEach((pid) => {
-                  game.disconnectPlayer(pid)
-                })
-              }
+              releaseOwnedPlayers(ws, game)
+              if (game) game.clients = game.clients.filter((c) => c !== ws)
               ws.gameKey = null
-              ws.playerIds.clear()
+              ws.protocolReady = false
               if (game) {
                 broadcastToRoom(gameKey, {
                   type: MSG_TYPE.GAME_INFO,
@@ -288,28 +475,126 @@ export const setupWebSocketServer = (server) => {
 
           case MSG_TYPE.ADD_PLAYER:
           case 'addPlayer': {
-            if (!ws.gameKey) return
+            const requestId = msg.requestId
+            if (
+              !ws.gameKey ||
+              !ws.protocolReady ||
+              typeof requestId !== 'string' ||
+              !requestIdPattern.test(requestId)
+            ) {
+              sendError(
+                ws,
+                'INVALID_REGISTRATION',
+                'Join a room and send a valid registration requestId.',
+                requestId,
+              )
+              return
+            }
             const game = gameServer.getGame(ws.gameKey)
             if (game && payload) {
+              const fingerprint = createHash('sha256')
+                .update(JSON.stringify(payload))
+                .digest('hex')
+              const cached = ws.registrationRetries.get(requestId)
+              if (cached) {
+                if (
+                  cached.fingerprint === fingerprint &&
+                  cached.room === ws.gameKey &&
+                  game.ownership.owns(cached.response.payload.id, ws)
+                ) {
+                  ws.send(JSON.stringify(cached.response))
+                } else {
+                  sendError(
+                    ws,
+                    'REQUEST_ID_CONFLICT',
+                    'Use a new requestId for a different registration.',
+                    requestId,
+                  )
+                }
+                return
+              }
+              if (ws.nextInputHandle >= 256) {
+                sendError(
+                  ws,
+                  'INPUT_HANDLE_EXHAUSTED',
+                  'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
+                  requestId,
+                )
+                return
+              }
               const name = sanitizeString(payload.name, 24) || 'Player'
-              const id = sanitizeString(payload.id, 16)
+              const id = payload.id
               const color = sanitizeString(payload.color, 16) || 'fg'
               const left = payload.left
               const right = payload.right
-
-              ws.playerIds.add(id)
-              game.addPlayer({ id, name, color, left, right })
+              const result = game.addPlayer(
+                { id, name, color, left, right },
+                { deferChange: true },
+              )
+              if (!result.ok) {
+                sendError(
+                  ws,
+                  result.code,
+                  `Player registration failed: ${result.code}.`,
+                  requestId,
+                )
+                return
+              }
+              const reconnectToken = game.ownership.register(id, ws)
+              if (!gameServer.saveToStorage()) {
+                game.rollbackPlayerRegistration(id, ws)
+                sendError(
+                  ws,
+                  'PERSISTENCE_FAILED',
+                  'Player registration could not be saved. No player was registered; try again later.',
+                  requestId,
+                )
+                return
+              }
+              const inputHandle = ws.nextInputHandle++
+              ws.idsByHandle.set(inputHandle, id)
+              ws.handlesById.set(id, inputHandle)
+              const response = {
+                type: MSG_TYPE.PLAYER_REGISTERED,
+                requestId,
+                protocolVersion: PROTOCOL_VERSION,
+                payload: { key: ws.gameKey, id, reconnectToken, inputHandle },
+              }
+              ws.registrationRetries.set(requestId, {
+                fingerprint,
+                room: ws.gameKey,
+                response,
+              })
+              if (ws.registrationRetries.size > retryLimit) {
+                ws.registrationRetries.delete(
+                  ws.registrationRetries.keys().next().value,
+                )
+              }
+              ws.send(JSON.stringify(response))
+              gameServer.changeHandler?.()
               broadcastToRoom(ws.gameKey, {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(ws.gameKey),
               })
-            }
+            } else
+              sendError(
+                ws,
+                'INVALID_REGISTRATION',
+                'Invalid player registration.',
+                requestId,
+              )
             break
           }
 
           case MSG_TYPE.START_GAME:
           case 'start': {
-            if (!ws.gameKey || ws.playerIds.size === 0) return
+            if (
+              !ws.gameKey ||
+              ![...ws.playerIds].some((id) =>
+                gameServer.getGame(ws.gameKey)?.ownership.owns(id, ws),
+              )
+            )
+              return
             const gameKey = ws.gameKey
             const game = gameServer.getGame(gameKey)
             if (!game) return
@@ -383,7 +668,13 @@ export const setupWebSocketServer = (server) => {
 
           case MSG_TYPE.SET_INTERVAL:
           case 'setInterval': {
-            if (!ws.gameKey || ws.playerIds.size === 0) return
+            if (
+              !ws.gameKey ||
+              ![...ws.playerIds].some((id) =>
+                gameServer.getGame(ws.gameKey)?.ownership.owns(id, ws),
+              )
+            )
+              return
             const game = gameServer.getGame(ws.gameKey)
             if (game) {
               game.setInterval(sanitizeInterval(payload))
@@ -391,20 +682,6 @@ export const setupWebSocketServer = (server) => {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(ws.gameKey),
               })
-            }
-            break
-          }
-
-          case MSG_TYPE.CHANGE_DIR:
-          case 'changeDir': {
-            if (!ws.gameKey) return
-            const game = gameServer.getGame(ws.gameKey)
-            if (game && payload) {
-              const dir = sanitizeDir(payload.dir)
-              const id = sanitizeString(payload.id, 16)
-              if (dir && id) {
-                game.changeDir({ id, dir })
-              }
             }
             break
           }
@@ -417,8 +694,10 @@ export const setupWebSocketServer = (server) => {
               }),
             )
         }
-      } catch (err) {
-        console.error('Error handling WebSocket message:', err)
+      } catch {
+        // A message can contain a submitted secret. Never log the raw parse
+        // exception or the inbound frame.
+        sendError(ws, 'INVALID_MESSAGE', 'Invalid message.')
       }
     })
 
@@ -426,10 +705,9 @@ export const setupWebSocketServer = (server) => {
       wsClientsGauge.set(wss.clients.size)
       if (ws.gameKey) {
         const game = gameServer.getGame(ws.gameKey)
-        if (game && ws.playerIds.size > 0) {
-          ws.playerIds.forEach((pid) => {
-            game.disconnectPlayer(pid)
-          })
+        releaseOwnedPlayers(ws, game)
+        if (game) {
+          game.clients = game.clients.filter((c) => c !== ws)
           broadcastToRoom(ws.gameKey, {
             type: MSG_TYPE.GAME_INFO,
             payload: gameServer.getGameInfo(ws.gameKey),
@@ -437,6 +715,7 @@ export const setupWebSocketServer = (server) => {
         }
       }
       ws.gameKey = null
+      ws.protocolReady = false
       ws.playerIds.clear()
     })
   })
