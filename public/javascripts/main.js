@@ -536,6 +536,10 @@ class AppCoordinator {
         if (state.screen !== 'game') {
           this.setScreen('game')
           this.setMatchState(info.running ? 'scoresWaiting' : 'finished')
+        } else if (state.matchState === 'scoresWaiting') {
+          // Reconnect already puts us on the game screen. Resolve its waiting
+          // state from the snapshot without interrupting an active local round.
+          this.setMatchState(info.running ? 'scoresWaiting' : 'finished')
         }
       } else {
         if (state.screen !== 'config') {

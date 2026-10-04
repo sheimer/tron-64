@@ -349,6 +349,28 @@ async function smokeTest() {
       state.ownedPlayerIds.size === 1
     )
   }, saved.first)
+
+  // Disconnect on the finished scoreboard, then recover without a reload.
+  await page.waitForFunction(async () => {
+    const { state } = await import('/javascripts/state.js')
+    return state.matchState === 'finished'
+  })
+  await page.evaluate(async () => {
+    const { network } = await import('/javascripts/network.js')
+    network.socket.close()
+  })
+  await page.locator('#scores-waiting').waitFor({ state: 'visible' })
+  await page.waitForFunction(async () => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return network.isConnected() && state.ownedPlayerIds.size === 1
+  })
+  await page.locator('#scores-waiting').waitFor({ state: 'hidden' })
+  await page.waitForFunction(
+    () => !document.getElementById('btn-start-game').disabled,
+  )
+  await page.locator('#btn-start-game').click()
+  await page.locator('#arena').waitFor({ state: 'visible' })
   assert.deepEqual(pageErrors, [], 'The game must not raise browser exceptions')
   console.log(
     'Browser smoke passed: welcome, lobby, room, two players, running arena.',

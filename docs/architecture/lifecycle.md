@@ -107,6 +107,12 @@ A reconnect submits the saved room/player credentials. The browser restores cont
 
 A player that disconnected mid-round becomes eligible for the next round after authentication. Reconnection does not resurrect its dead cycle in the current round.
 
+The browser shows the scoreboard in `scoresWaiting` while disconnected. The
+rejoined room's `GAME_INFO` snapshot resolves that waiting state even when the
+game screen is already visible: ongoing rounds keep the waiting overlay, while
+finished rounds clear it and enable the next-round button for authenticated local
+players. Ordinary roster updates preserve active gameplay and the score reveal.
+
 After an ownership-revoked notice, the browser stops automatically reclaiming the transferred player. Explicitly selecting the room may authenticate that player again.
 
 ### Live ownership handover

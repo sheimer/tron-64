@@ -221,7 +221,10 @@ try {
   assert.equal(state.connectedGames['room-r'].localPlayers.first.revoked, true)
   // A new transport does not automatically reclaim an intentionally revoked player.
   network.maxReconnectAttempts = 0
+  app.setScreen('game')
+  app.setMatchState('finished')
   first.close()
+  assert.equal(state.matchState, 'scoresWaiting')
   network.connect()
   const second = FakeSocket.instances[1]
   second.readyState = FakeSocket.OPEN
@@ -248,6 +251,32 @@ try {
   const autoJoin = second.joins().at(-1)
   ack(second, autoJoin.requestId, 'room-r', [{ id: 'second', inputHandle: 0 }])
   assert.equal(network.changeDir({ id: 'second', dir: 'left' }), true)
+  const roomInfo = {
+    key: 'room-r',
+    started: true,
+    running: false,
+    players: [{ id: 'first' }, { id: 'second' }],
+  }
+  second.receive(MSG_TYPE.GAME_INFO, roomInfo)
+  assert.equal(state.screen, 'game')
+  assert.equal(state.matchState, 'finished')
+
+  // Recovery must keep waiting while a round is still in progress, then
+  // resolve the waiting state when the room snapshot says it has finished.
+  app.setMatchState('scoresWaiting')
+  second.receive(MSG_TYPE.GAME_INFO, { ...roomInfo, running: true })
+  assert.equal(state.matchState, 'scoresWaiting')
+  second.receive(MSG_TYPE.GAME_INFO, roomInfo)
+  assert.equal(state.matchState, 'finished')
+
+  // Ordinary roster broadcasts must not interrupt active gameplay or the
+  // score reveal between GAME_FINISH and the finished state.
+  for (const matchState of ['start', 'running', 'scores']) {
+    app.setMatchState(matchState)
+    second.receive(MSG_TYPE.GAME_INFO, roomInfo)
+    assert.equal(state.matchState, matchState)
+  }
+  app.setMatchState('finished')
 
   app.joinGame('room-r')
   const explicit = second.joins().at(-1)

@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reconnecting from the score screen clears the waiting overlay and restores the next-round start button after saved players authenticate, without requiring a page reload.
+
 - Fresh-connection recovery works in a new room with no saved players after input handles are exhausted; currently controlled players still require saved credentials.
 
 - Saved players can use the lobby’s “rejoin” button after registration closes, including after a reload or return to the lobby. Credentials are still authenticated by the server.
