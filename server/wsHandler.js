@@ -168,7 +168,7 @@ export const setupWebSocketServer = (server) => {
 
       try {
         const msg = JSON.parse(raw.toString())
-        const type = msg.type || msg.action
+        const type = msg.type
         const payload = msg.payload
 
         if (msg.protocolVersion !== PROTOCOL_VERSION) {
@@ -180,26 +180,8 @@ export const setupWebSocketServer = (server) => {
           )
           return
         }
-        if (
-          type === 'CHANGE_DIR' ||
-          type === 'changeDir' ||
-          msg.type === 'CHANGE_DIR' ||
-          msg.type === 'changeDir' ||
-          msg.action === 'CHANGE_DIR' ||
-          msg.action === 'changeDir'
-        ) {
-          sendError(
-            ws,
-            'BINARY_INPUT_REQUIRED',
-            'Movement protocol changed. Reload this page to use binary input.',
-            msg.requestId,
-          )
-          return
-        }
-
         switch (type) {
-          case MSG_TYPE.PING:
-          case 'ping': {
+          case MSG_TYPE.PING: {
             ws.send(
               JSON.stringify({
                 type: MSG_TYPE.PONG,
@@ -210,8 +192,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.LOBBY_LIST:
-          case 'list': {
+          case MSG_TYPE.LOBBY_LIST: {
             ws.send(
               JSON.stringify({
                 type: MSG_TYPE.LOBBY_LIST,
@@ -222,8 +203,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.CREATE_GAME:
-          case 'create': {
+          case MSG_TYPE.CREATE_GAME: {
             const name = sanitizeString(payload?.name, 32) || 'Tron Game'
             const interval = sanitizeInterval(payload?.interval)
             const isPublic = Boolean(payload?.isPublic ?? true)
@@ -262,18 +242,8 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.JOIN_GAME:
-          case 'join': {
-            const gameKey = sanitizeString(payload?.key || payload, 16)
-            if (payload?.playerIds !== undefined) {
-              sendError(
-                ws,
-                'AUTHENTICATION_REQUIRED',
-                'Player IDs cannot restore ownership. Reload and reconnect with saved credentials.',
-                msg.requestId,
-              )
-              return
-            }
+          case MSG_TYPE.JOIN_GAME: {
+            const gameKey = sanitizeString(payload?.key, 16)
             const claims = payload?.reconnect ?? []
             if (
               !Array.isArray(claims) ||
@@ -453,8 +423,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.LEAVE_GAME:
-          case 'leave': {
+          case MSG_TYPE.LEAVE_GAME: {
             if (ws.gameKey) {
               const gameKey = ws.gameKey
               const game = gameServer.getGame(gameKey)
@@ -473,8 +442,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.ADD_PLAYER:
-          case 'addPlayer': {
+          case MSG_TYPE.ADD_PLAYER: {
             const requestId = msg.requestId
             if (
               !ws.gameKey ||
@@ -586,8 +554,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.START_GAME:
-          case 'start': {
+          case MSG_TYPE.START_GAME: {
             if (
               !ws.gameKey ||
               ![...ws.playerIds].some((id) =>
@@ -653,8 +620,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.ARENA_READY:
-          case 'ARENA_READY': {
+          case MSG_TYPE.ARENA_READY: {
             if (!ws.gameKey) return
             const pending = pendingStarts.get(ws.gameKey)
             if (pending && !pending.countdownStarted) {
@@ -666,8 +632,7 @@ export const setupWebSocketServer = (server) => {
             break
           }
 
-          case MSG_TYPE.SET_INTERVAL:
-          case 'setInterval': {
+          case MSG_TYPE.SET_INTERVAL: {
             if (
               !ws.gameKey ||
               ![...ws.playerIds].some((id) =>
@@ -687,11 +652,11 @@ export const setupWebSocketServer = (server) => {
           }
 
           default:
-            ws.send(
-              JSON.stringify({
-                type: MSG_TYPE.ERROR,
-                payload: `Unknown message type: ${type}`,
-              }),
+            sendError(
+              ws,
+              'UNKNOWN_MESSAGE_TYPE',
+              `Unknown message type: ${type}`,
+              msg.requestId,
             )
         }
       } catch {

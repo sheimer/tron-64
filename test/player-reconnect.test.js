@@ -109,11 +109,11 @@ try {
   const p1 = room.arena.players.find((p) => p.id === 'first')
   const p2 = room.arena.players.find((p) => p.id === 'second')
   const oldMove = p1.move
-  send(b, MSG_TYPE.JOIN_GAME, { key, playerIds: ['first'] }, 'legacy')
-  assert.equal(
-    (await receive(b, (m) => m.requestId === 'legacy')).code,
-    'AUTHENTICATION_REQUIRED',
-  )
+  send(b, MSG_TYPE.JOIN_GAME, { key, playerIds: ['first'] }, 'id-only-join')
+  const idOnly = await receive(b, (m) => m.requestId === 'id-only-join')
+  assert.equal(idOnly.type, MSG_TYPE.JOIN_RESULT)
+  assert.deepEqual(idOnly.payload.accepted, [])
+  assert.equal(room.ownership.owners.get(first.id), ownerSocket)
   for (const [claims, code] of [
     [[claim(first), claim(first)], 'INVALID_RECONNECT'],
     [Array(7).fill(claim(first)), 'INVALID_RECONNECT'],

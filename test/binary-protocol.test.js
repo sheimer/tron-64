@@ -169,11 +169,11 @@ try {
     first.receiveText(message)
   }
   assert.equal(drawEvents, 0)
-  assert.equal(gameInfoEvents, 0)
+  assert.equal(gameInfoEvents, 1)
   assert.equal(renderer.fields[1][1], CELL_TYPE.EMPTY)
   assert.equal(paints.length, initialPaints)
   first.receiveText(versioned(MSG_TYPE.GAME_INFO, { key: 'room-r' }))
-  assert.equal(gameInfoEvents, 1, 'JSON control messages remain available')
+  assert.equal(gameInfoEvents, 2, 'JSON control messages remain available')
 
   const valid = drawFrame([
     [1, 1, 0],

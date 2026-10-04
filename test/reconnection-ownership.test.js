@@ -144,11 +144,11 @@ try {
     assert.equal(game.ownership.owners.get(second.id), ownerA)
     assert.equal(game.ownership.owners.size, 2)
   }
-  send(b, MSG_TYPE.JOIN_GAME, { key, playerIds: [first.id] }, nextRequest())
-  assert.equal(
-    (await receive(b, (m) => m.code === 'AUTHENTICATION_REQUIRED')).type,
-    MSG_TYPE.ERROR,
-  )
+  const idOnlyRequest = nextRequest()
+  send(b, MSG_TYPE.JOIN_GAME, { key, playerIds: [first.id] }, idOnlyRequest)
+  const idOnly = await receive(b, (m) => m.requestId === idOnlyRequest)
+  assert.equal(idOnly.type, MSG_TYPE.JOIN_RESULT)
+  assert.deepEqual(idOnly.payload.accepted, [])
   assert.equal(game.ownership.owners.get(first.id), ownerA)
 
   for (const reconnect of [

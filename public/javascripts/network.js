@@ -117,7 +117,7 @@ class NetworkClient {
 
       try {
         const msg = JSON.parse(event.data)
-        const type = msg.type || msg.action
+        const type = msg.type
 
         if (!this.protocolReady) {
           if (
@@ -150,15 +150,10 @@ class NetworkClient {
           return
         }
 
-        // Drawing deltas are binary-only. A legacy JSON type or action
-        // cannot reach the renderer, even inside another control envelope.
-        if (
-          msg.type === MSG_TYPE.GAME_DRAW ||
-          msg.action === MSG_TYPE.GAME_DRAW
-        )
-          return
+        // Drawing deltas are binary-only and cannot reach the renderer as JSON.
+        if (type === MSG_TYPE.GAME_DRAW) return
 
-        if (type === MSG_TYPE.PONG || type === 'pong') {
+        if (type === MSG_TYPE.PONG) {
           const latency = Date.now() - (msg.t || 0)
           if (this.pingElement) {
             this.pingElement.textContent = `${latency}ms ping`

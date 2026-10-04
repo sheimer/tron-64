@@ -103,7 +103,7 @@ At the start of a subsequent round, an offline player explodes at its starting p
 
 The lobby labels its action “rejoin” when usable saved credentials exist, including credentials marked revoked for explicit reclaim. This action remains available when registration is closed; saved credentials only enable the attempt, and the server still authenticates every claim.
 
-A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback; a legacy ID-only claim fails closed.
+A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback. A join without `reconnect` credentials admits a spectator and grants no player ownership.
 
 A player that disconnected mid-round becomes eligible for the next round after authentication. Reconnection does not resurrect its dead cycle in the current round.
 
@@ -210,7 +210,7 @@ Round resets clear simulation and rendering state to prevent particle ghosting a
 
 1. Stop the server and back up `data/games.json` (or `$DATA_DIR/games.json`), retaining the matching running client/server version.
 2. Upgrade the client assets and server together.
-3. Restart the server and have players reload stale cached pages. Protocol mismatch and legacy JSON movement errors explicitly request a reload.
+3. Restart the server and have players reload stale cached pages. Protocol mismatch errors explicitly request a reload.
 
 ### Rollback
 

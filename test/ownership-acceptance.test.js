@@ -232,11 +232,12 @@ async function acceptance() {
     assert.equal(privateRecord[second.id], verifiers[1])
     for (const secret of secrets) assert.equal(snapshot.includes(secret), false)
 
-    const denied = await send(spectator, MSG_TYPE.JOIN_GAME, {
+    const idOnly = await send(spectator, MSG_TYPE.JOIN_GAME, {
       key,
       playerIds: [first.id],
     })
-    assert.equal(denied.code, 'AUTHENTICATION_REQUIRED')
+    assert.equal(idOnly.type, MSG_TYPE.JOIN_RESULT)
+    assert.deepEqual(idOnly.payload.accepted, [])
     assert.equal((await rpc(running, 'inspect', key)).owners, 2)
     assert.equal(
       await movement(spectator, first.inputHandle, key, first.id),
@@ -304,8 +305,7 @@ async function acceptance() {
       id: first.id,
       dir: 'left',
     })
-    assert.equal(stale.code, 'BINARY_INPUT_REQUIRED')
-    assert.match(stale.payload, /reload/i)
+    assert.equal(stale.code, 'UNKNOWN_MESSAGE_TYPE')
     const mismatched = await send(spectator, MSG_TYPE.PING, null, {
       protocolVersion: PROTOCOL_VERSION - 1,
     })
