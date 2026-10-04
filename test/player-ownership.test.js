@@ -206,11 +206,31 @@ try {
   owner.send(
     Buffer.from([BINARY_OPCODE.CHANGE_DIR, first.payload.inputHandle, 0, 0]),
   )
+  for (const type of [
+    'ping',
+    'list',
+    'create',
+    'join',
+    'leave',
+    'addPlayer',
+    'start',
+    'setInterval',
+  ]) {
+    send(spectator, type, { key })
+    await receive(spectator, (m) => m.code === 'UNKNOWN_MESSAGE_TYPE')
+  }
+  spectator.send(
+    JSON.stringify({
+      action: MSG_TYPE.LEAVE_GAME,
+      protocolVersion: PROTOCOL_VERSION,
+    }),
+  )
+  await receive(spectator, (m) => m.code === 'UNKNOWN_MESSAGE_TYPE')
+  assert.equal(game.clients.length, 2)
   for (const type of ['CHANGE_DIR', 'changeDir']) {
     send(spectator, type, { id: player.id, dir: 'left' })
     assert.equal(
-      (await receive(spectator, (m) => m.code === 'BINARY_INPUT_REQUIRED'))
-        .type,
+      (await receive(spectator, (m) => m.code === 'UNKNOWN_MESSAGE_TYPE')).type,
       MSG_TYPE.ERROR,
     )
     spectator.send(
@@ -220,7 +240,7 @@ try {
         protocolVersion: PROTOCOL_VERSION,
       }),
     )
-    await receive(spectator, (m) => m.code === 'BINARY_INPUT_REQUIRED')
+    await receive(spectator, (m) => m.code === 'UNKNOWN_MESSAGE_TYPE')
     spectator.send(
       JSON.stringify({
         type: MSG_TYPE.PING,
@@ -229,14 +249,20 @@ try {
         protocolVersion: PROTOCOL_VERSION,
       }),
     )
-    await receive(spectator, (m) => m.code === 'BINARY_INPUT_REQUIRED')
+    await receive(spectator, (m) => m.type === MSG_TYPE.PONG)
   }
-  send(spectator, MSG_TYPE.JOIN_GAME, { key, playerIds: [player.id] })
-  assert.equal(
-    (await receive(spectator, (m) => m.code === 'AUTHENTICATION_REQUIRED'))
-      .type,
-    MSG_TYPE.ERROR,
+  send(
+    spectator,
+    MSG_TYPE.JOIN_GAME,
+    { key, playerIds: [player.id] },
+    {
+      requestId: 'id-only-join',
+    },
   )
+  const idOnly = await receive(spectator, (m) => m.requestId === 'id-only-join')
+  assert.equal(idOnly.type, MSG_TYPE.JOIN_RESULT)
+  assert.deepEqual(idOnly.payload.accepted, [])
+  assert.equal(game.ownership.owners.size, 2)
   spectator.send(
     JSON.stringify({
       type: 'CHANGE_DIR',

@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Registration acknowledges ownership only after its roster and verifier are saved together. Storage failures leave no newly registered player or consumed input handle. Legacy snapshots remain historical and unclaimable; unsupported future snapshots are preserved read-only.
 - Arena drawing deltas are accepted only as complete binary frames. Legacy JSON drawing messages and array-delta rendering no longer update the canvas; full-state synchronization and local redraws remain available.
 - Movement remains binary-only across reload, authenticated handover, and fresh-connection recovery, with acknowledged socket-local handles for every local player.
-- Binary movement now validates the current owning socket and room. JSON movement and bare player-ID reconnection claims receive actionable errors; old clients must reload. Public game information uses explicit fields only.
+- Binary movement now validates the current owning socket and room. JSON messages use current `type` constants; obsolete movement messages follow the unknown-message path, and only credential-bearing `reconnect` entries claim players. Protocol mismatches request a reload. Public game information uses explicit fields only.
 - Client and server protocol upgrades must be coordinated. Stale cached pages receive reload guidance; restore a matching snapshot backup and client/server version when rolling back, losing changes made after the backup.
 
 ---
