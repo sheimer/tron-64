@@ -44,10 +44,7 @@ export class ConfigView {
     this.bodyPlayersTable = document.getElementById('body-playerstable')
 
     this.formAddPlayer = document.getElementById('form-add-player')
-    this.registrationFeedback = document.createElement('div')
-    this.registrationFeedback.setAttribute('role', 'status')
-    this.registrationFeedback.className = 'fg-rose-muted'
-    this.formAddPlayer?.appendChild(this.registrationFeedback)
+    this.registrationFeedback = document.getElementById('registration-feedback')
     this.inputPlayerName = document.getElementById('input-add-player')
     this.selectKeycodes = document.getElementById('select-keycodes')
     this.msgNoKeycodes = document.getElementById('msg-no-keycodes')
@@ -201,7 +198,8 @@ export class ConfigView {
   }
 
   showFeedback(message) {
-    this.registrationFeedback.textContent = message
+    if (this.registrationFeedback)
+      this.registrationFeedback.textContent = message
   }
 
   show(currentGame) {

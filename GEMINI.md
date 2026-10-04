@@ -57,5 +57,5 @@ Consult the relevant guide when the task touches its subsystem; unrelated guides
 
 - **Networking & WebSockets:** [`docs/architecture/protocol.md`](docs/architecture/protocol.md) — Connection model, frame formats, and latency handling.
 - **Lifecycles & Rooms:** [`docs/architecture/lifecycle.md`](docs/architecture/lifecycle.md) — Screen routing, match and room state, session restoration, and cleanup.
-- **Canvas & Rendering:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Rendering, themes, layout, and UI lifecycle.
+- **Canvas, Rendering & UI Markup:** [`docs/architecture/rendering.md`](docs/architecture/rendering.md) — Rendering, themes, layout, UI lifecycle, and when to use Pug templates or JavaScript DOM construction. Read [UI markup guidance](docs/architecture/rendering.md#5-ui-markup-pug-templates-and-javascript) when adding or moving HTML elements.
 - **Testing & Benchmarks:** [`docs/architecture/testing.md`](docs/architecture/testing.md) — Test execution, browser verification, benchmarks, and palette gallery generation.

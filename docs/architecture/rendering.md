@@ -1,6 +1,6 @@
 # Canvas Rendering & Theming Architecture
 
-> **Audience:** Reference for AI agents and maintainers working on canvas rendering, DPR scaling, responsive UI, or CSS color palettes.
+> **Audience:** Reference for AI agents and maintainers working on canvas rendering, DPR scaling, responsive UI, CSS color palettes, or Pug and JavaScript DOM construction.
 
 ---
 
@@ -90,3 +90,39 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 
 - **Legal Dialogs:** Impressum (§ 5 DDG) and Privacy (GDPR/DSGVO) render as centered modal overlays with backdrop click and `Escape` key dismissal.
 - **Email Protection:** Uses obfuscated data attributes (`<span class="mail-link" data-user="..." data-domain="..."></span>`) hydrated into `mailto:` links on client load to thwart automated scrapers.
+
+---
+
+## 5. UI Markup: Pug Templates and JavaScript
+
+Define permanent UI structure in Pug. Create elements in JavaScript when their
+number or structure depends on runtime data, or when they deliberately require
+client-side construction. Changing text, visibility, classes, or enabled state
+alone does not justify creating the element in JavaScript.
+
+The templates own stable containers, forms, controls, and feedback regions. View
+controllers retrieve those elements by ID and update their content or state.
+For example, `#registration-feedback` in [index.pug](../../views/index.pug) is
+always the same status region below the add-player controls;
+[ConfigView](../../public/javascripts/ui/configView.js) only updates its text.
+Keep its `role='status'` in the template, just as `#connection-feedback` and
+`#lobby-error` declare their structure there.
+
+JavaScript creates the changing children of those stable containers:
+
+- [LobbyView](../../public/javascripts/ui/lobbyView.js) builds room rows and their
+  join buttons from the current room list. Its loading, empty, and connection
+  status rows replace that same table content according to runtime state.
+- [ConfigView](../../public/javascripts/ui/configView.js) and
+  [GameView](../../public/javascripts/ui/gameView.js) build player and scoreboard
+  rows from the current roster and scores.
+- GameView builds round messages with optional colored player-name spans because
+  both the message count and their internal structure depend on round results.
+- [WelcomeView](../../public/javascripts/ui/welcomeView.js) deliberately assembles
+  email links in the browser from obfuscated template attributes, as described
+  above.
+
+Use `textContent` or text nodes for player names, room names, and other runtime
+text so it is displayed as text rather than interpreted as HTML. Keep repeated
+rows inside their existing template containers; do not append another permanent
+feedback region each time a view is constructed or shown.
