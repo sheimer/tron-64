@@ -7,7 +7,7 @@
 - Source: user execution instruction in this conversation, 2026-09-27 (Europe/Vienna): “I reviewed and approve all five phases of the plan recorded at commit 0d7506a357f0617fc67821061bc79a57a1b997bb, including binary-only movement and removal of client-side JSON arena-delta compatibility.”
 - Execution authorization: “I authorize the skill’s autonomous implementation, independent testing and review, feature-branch commits/pushes, GitHub Actions verification, and creation/update of the final PR. This replaces the plan’s default per-phase human stops with independent agent review and passing CI. Leave the final PR review and merge to me.”
 - All five phases approved, sequential independent testing/review and exact-candidate CI gates. No merge, deployment, force-push, tags, permission changes, or unrelated work.
-- Material scope changes since approval: none. Current execution state is recorded below; the branch has advanced beyond the approval revision.
+- Final PR review on 2026-10-10 approved validation simplification and explicit reload/rejoin in place of parallel-socket exhaustion recovery. These amendments and v1.4.1 release preparation are recorded in [final PR review and release preparation](#final-pr-review-and-release-preparation--2026-10-10); earlier phase evidence remains historical.
 
 ## Live state
 
@@ -20,7 +20,7 @@
 - Shell clone/read works; shell push dry run lacks authentication. Authorized GitHub connector exposes tree/commit/non-forced ref updates and PR/Actions reads/writes.
 - Available requested agent settings: `gpt-6-sol` / high for implementation and separate testing; `gpt-6-astra` / high for independent review. Lead remains current session model, no switch claimed.
 - Approval checkpoint `d5bf71197daa7468e4b426b6674b95591750cb02`: push run `36275808175` and PR run `36275810634` both succeeded. Public Actions metadata confirms exact SHA and branch.
-- Current phase: all five phases verified; final implementation candidate `dbc7c59bdabfc0cb4b860271234e8988ef77a262`. Closure documentation and its exact-head CI precede PR readiness.
+- Current phase: final PR review amendments implemented in `755b05f69df21758460dace5a966270f7b63fbd5`; v1.4.1 release metadata/documentation preparation follows. All five original phases remain verified; the release-preparation commit needs passing CI before the user merges.
 
 ## Evidence by phase
 
@@ -36,7 +36,7 @@ All listed CI runs executed required browser suites; local missing-browser failu
 
 ## Blockers and next action
 
-No unresolved implementation or review findings. Closure documentation independently reviewed. Verify this final documentation head in push/PR CI, then update and mark existing PR #4 ready for the user; final-head/run evidence belongs in the PR to avoid a self-referential checkpoint. No merge or deployment authorized.
+No unresolved implementation findings. Final PR review amendments have full local verification. Review and commit the v1.4.1 release-preparation metadata/documentation, push the branch, and require passing CI for that commit before the user merges PR #4. Final-head/run evidence belongs in the PR to avoid a self-referential checkpoint. The existing release workflow will tag and publish v1.4.1 on merge; no merge, deployment, or manual tag is performed here.
 
 ## Task execution records
 
@@ -264,3 +264,15 @@ Sol/high implementation and separate Sol/high testing produced the phase changes
 Bounded formatting/documentation updates and narrow test-fixture edits are candidates for a future lower-effort or cheaper-model trial, not demonstrated equivalents or savings. Ownership, persistence and race reasoning benefited from cross-file scrutiny and independent review. No task token/quota/cost telemetry was exposed; timestamps include tool/CI waits, overlap and the usage-limit interruption and are not compute time. Lead orchestration/integration overhead is unmeasured. This was a live execution, with all approved phases and exact-candidate CI verified; final PR review/merge is still human-owned.
 
 - Final closure review ended 2026-09-27T11:06:47Z, Astra/high: no blocking findings. One stale historical ownership sentence corrected; six ownership rows and shared registration prerequisites accurately closed, unrelated roadmap work open, relative links/anchors and formatting/diff verified. Final documentation-head CI pending.
+
+## Final PR review and release preparation — 2026-10-10
+
+- The user approved simplifying repeated validation and replacing parallel-socket exhaustion recovery with explicit reload followed by authenticated lobby rejoin. Whole-packet drawing rejection and authoritative server ownership remain required.
+- Review implementation: `755b05f69df21758460dace5a966270f7b63fbd5`. Renderer validation owns packet structure and cell validity; acknowledgement handlers validate handles before binding. Redundant reverse-map, object-entry key-type, token decode/re-encode, and fixed digest-length checks were removed. The parallel-socket/rollback and `requireAll` recovery paths were removed.
+- Local verification: Node 24.0.0 and headless Chromium 151; all 23 suites passed, zero failed, including browser smoke, ownership reload-button/rejoin coverage, and client leak tests. Final run completed in 43,525 ms. Scoped ESLint, supported-file Prettier checks, diff checks, and architecture-guide links passed. This supersedes earlier local Chromium-unavailable limitations for the reviewed implementation; it does not substitute for CI on the next commit.
+- Performance diagnostics compare the committed PR and pre-PR renderer with the simplified renderer, and measure current per-player reconnect saves on temporary and project filesystems. Local p95 drawing cost for 4,096 cells was 0.86 ms on main and 0.87 ms after simplification. Six reconnecting players across 50 populated rooms took 4.37 ms at p95 on the project filesystem, maximum 4.40 ms. These measurements do not establish a need to batch saves; deployment and concurrent-load measurements remain open. See [repeatable benchmark and measurement limits](../architecture/testing.md#ownership-performance-diagnostics).
+- The user requested final release preparation and selected v1.4.1 before merging. Package and lockfile root versions are aligned; release notes move from Unreleased into a dated v1.4.1 section. The roadmap records this focused release while retaining the remaining v1.5.0 and public-launch scope.
+- The implementation plan now reflects the approved final behavior. Original phase/review/CI records above are preserved as historical evidence rather than rewritten to claim they tested later amendments.
+- Merge remains user-owned. Once this preparation is committed and pushed, verify passing CI for that revision. The existing main-branch release workflow automatically creates the v1.4.1 tag and GitHub release; it runs independently of the Tests workflow. No release or deployment has been performed during preparation.
+
+- Release-preparation validation: package/lock root versions match 1.4.1, dependency metadata is unchanged, scoped Prettier checks pass, relative links and anchors resolve, the release workflow extracts the complete v1.4.1 notes, and the final diff is clean. No application code changed after the reviewed implementation’s 23-suite pass.
