@@ -14,9 +14,9 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 
 ### Delta Frame Painting ($O(k)$ per frame)
 
-- Only binary `DRAW` packets reach the renderer. They begin with opcode `0x01` and contain complete five-byte records (`Uint16 x`, `Uint16 y`, `Int8 cellValue`); JSON `GAME_DRAW` type/action envelopes and array deltas are ignored.
-- The network validates packet framing before emitting its internal `GAME_DRAW` event. `Renderer.draw(DataView)` checks the opcode, full record lengths, coordinates, and cell values across the entire packet before painting any modified cells (`drawCell(x, y, value)`). Malformed packets leave both the grid and canvas unchanged.
-- This keeps frame computation minimal ($<0.5\text{ms}$) on mobile and low-power devices.
+- Only binary `DRAW` packets reach the renderer. Valid packets begin with opcode `0x01` and contain complete five-byte records (`Uint16 x`, `Uint16 y`, `Int8 cellValue`); JSON `GAME_DRAW` type/action envelopes and array deltas are ignored.
+- The network routes binary DRAW opcodes to its internal `GAME_DRAW` event. `Renderer.draw(DataView)` owns validation and checks the opcode, full record lengths, coordinates, and cell values across the entire packet before painting any modified cells. Its internal `drawCell(x, y, value)` trusts those validated records. Malformed packets leave both the grid and canvas unchanged.
+- Rendering cost scales with the packet’s changed-cell count. Measure it with the ownership performance benchmark described in [testing](testing.md); no fixed timing is guaranteed across devices.
 
 ### Full Canvas Redraws & Visibility Lifecycle
 

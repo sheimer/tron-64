@@ -201,8 +201,8 @@ try {
     first.receiveBytes(invalid)
     assert.equal(
       drawEvents,
-      eventsBefore,
-      'malformed frame must not emit a delta',
+      eventsBefore + (invalid[0] === BINARY_OPCODE.DRAW ? 1 : 0),
+      'network routes DRAW packets; the renderer owns structural validation',
     )
     assert.equal(
       paints.length,
@@ -281,7 +281,9 @@ try {
   assert.equal(network.changeDir({ id: '00000123', dir: 'left' }), false)
 
   network.bindPlayer('00000123', 247)
-  assert.equal(network.openFreshConnection(), true)
+  network.windowClosing = true
+  first.close()
+  network.connect()
   const second = FakeSocket.instances[1]
   second.readyState = FakeSocket.OPEN
   second.dispatch('open')
@@ -297,7 +299,6 @@ try {
   )
   assert.equal(network.changeDir({ id: '00000123', dir: 'left' }), false)
   network.bindPlayer('00000123', 0) // Coordinator binds only after current JOIN_RESULT.
-  network.completeFreshConnection()
   assert.equal(first.readyState, 3)
   assert.equal(network.changeDir({ id: '00000123', dir: 'left' }), true)
   assert.deepEqual(second.movement(), [[BINARY_OPCODE.CHANGE_DIR, 0, 0]])

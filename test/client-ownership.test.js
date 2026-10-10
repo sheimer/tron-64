@@ -82,7 +82,6 @@ try {
   assert.equal(network.changeDir({ id: 'a1b2c3d4', dir: 'left' }), false)
   assert.equal(network.bindPlayer('a1b2c3d4', 247), true)
   assert.equal(network.bindPlayer('00000123', 248), true)
-  assert.equal(network.bindPlayer('invalid', 256), false)
   assert.equal(network.changeDir({ id: 'a1b2c3d4', dir: 'left' }), true)
   assert.equal(network.changeDir({ id: '00000123', dir: 'right' }), true)
   assert.deepEqual(

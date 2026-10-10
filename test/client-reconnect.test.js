@@ -83,8 +83,9 @@ class View {
 }
 
 try {
+  let reloads = 0
   const feedback = { textContent: '', style: { display: 'none' } }
-  const freshButton = {
+  const reloadButton = {
     style: { display: 'none' },
     addEventListener(type, callback) {
       if (type === 'click') this.click = callback
@@ -99,12 +100,17 @@ try {
     getElementById: (id) =>
       id === 'connection-feedback'
         ? feedback
-        : id === 'btn-fresh-connection'
-          ? freshButton
+        : id === 'btn-reload-connection'
+          ? reloadButton
           : null,
   }
   globalThis.window = {
-    location: { protocol: 'http:', hostname: 'localhost', port: '3000' },
+    location: {
+      protocol: 'http:',
+      hostname: 'localhost',
+      port: '3000',
+      reload: () => reloads++,
+    },
     addEventListener: () => {},
   }
   globalThis.WebSocket = FakeSocket
@@ -299,214 +305,21 @@ try {
       code: 'INPUT_HANDLE_EXHAUSTED',
     },
   )
-  assert.notEqual(freshButton.style.display, 'none')
-  freshButton.click()
-  const third = FakeSocket.instances[2]
-  assert.equal(second.readyState, FakeSocket.OPEN)
-  assert.equal(network.previousSocket, second)
-  assert.equal(network.inputHandles.size, 0)
-  assert.equal(state.isLocalPlayer('first'), false)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), false)
-  freshButton.click()
-  assert.equal(FakeSocket.instances.length, 3)
-  third.readyState = FakeSocket.OPEN
-  third.dispatch('open')
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), false)
-  third.receive(MSG_TYPE.LOBBY_LIST, [])
-  const freshJoin = third.joins().at(-1)
-  assert.equal(freshJoin.payload.requireAll, true)
-  assert.deepEqual(
-    freshJoin.payload.reconnect.map((entry) => entry.id),
-    ['first', 'second'],
-  )
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), false)
-  ack(third, 'old-request', 'room-r', [{ id: 'first', inputHandle: 0 }])
-  assert.equal(second.readyState, FakeSocket.OPEN)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), false)
-  ack(third, freshJoin.requestId, 'room-r', [
-    { id: 'first', inputHandle: 0 },
-    { id: 'second', inputHandle: 1 },
-  ])
-  assert.equal(second.readyState, 3)
-  assert.equal(network.previousSocket, null)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), true)
-  assert.deepEqual(Array.from(third.sent.at(-1)), [
-    BINARY_OPCODE.CHANGE_DIR,
-    0,
-    0,
-  ])
-
-  // A rejected replacement never releases the still-live original socket.
-  network.emit(
-    MSG_TYPE.ERROR,
-    'Open a fresh connection to recover input handles.',
-    { code: 'INPUT_HANDLE_EXHAUSTED' },
-  )
-  freshButton.click()
-  const fourth = FakeSocket.instances[3]
-  assert.equal(third.readyState, FakeSocket.OPEN)
-  fourth.readyState = FakeSocket.OPEN
-  fourth.dispatch('open')
-  fourth.receive(MSG_TYPE.LOBBY_LIST, [])
-  const deniedJoin = fourth.joins().at(-1)
-  fourth.receive(MSG_TYPE.ERROR, 'The target room is full.', {
-    code: 'ROOM_FULL',
-    requestId: deniedJoin.requestId,
-  })
-  assert.equal(network.socket, third)
-  assert.equal(network.previousSocket, null)
-  assert.equal(fourth.readyState, 3)
-  assert.equal(third.readyState, FakeSocket.OPEN)
-  assert.equal(state.isLocalPlayer('first'), true)
-  assert.equal(state.isLocalPlayer('second'), true)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), true)
-  assert.deepEqual(Array.from(third.sent.at(-1)), [
-    BINARY_OPCODE.CHANGE_DIR,
-    0,
-    0,
-  ])
-  assert.equal(FakeSocket.instances.length, 4)
-
-  // A partial fresh claim is rejected as a batch, leaving both old routes live.
-  network.emit(
-    MSG_TYPE.ERROR,
-    'Open a fresh connection to recover input handles.',
-    { code: 'INPUT_HANDLE_EXHAUSTED' },
-  )
-  freshButton.click()
-  const fifth = FakeSocket.instances[4]
-  fifth.readyState = FakeSocket.OPEN
-  fifth.dispatch('open')
-  fifth.receive(MSG_TYPE.LOBBY_LIST, [])
-  const partialJoin = fifth.joins().at(-1)
-  assert.equal(partialJoin.payload.requireAll, true)
-  fifth.receive(MSG_TYPE.ERROR, 'One saved credential was rejected.', {
-    code: 'RECONNECT_INCOMPLETE',
-    requestId: partialJoin.requestId,
-  })
-  assert.equal(network.socket, third)
-  assert.equal(fifth.readyState, 3)
-  assert.equal(network.previousSocket, null)
-  assert.equal(third.readyState, FakeSocket.OPEN)
-  assert.equal(state.isLocalPlayer('first'), true)
-  assert.equal(state.isLocalPlayer('second'), true)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), true)
-  assert.deepEqual(Array.from(third.sent.at(-1)), [
-    BINARY_OPCODE.CHANGE_DIR,
-    0,
-    0,
-  ])
-  assert.equal(network.changeDir({ id: 'second', dir: 'left' }), true)
-  assert.deepEqual(Array.from(third.sent.at(-1)), [
-    BINARY_OPCODE.CHANGE_DIR,
-    1,
-    0,
-  ])
-
-  // A revocation delivered to the previous socket during recovery must not
-  // be restored when the replacement fails.
-  network.emit(
-    MSG_TYPE.ERROR,
-    'Open a fresh connection to recover input handles.',
-    { code: 'INPUT_HANDLE_EXHAUSTED' },
-  )
-  freshButton.click()
-  const sixth = FakeSocket.instances[5]
-  sixth.readyState = FakeSocket.OPEN
-  sixth.dispatch('open')
-  sixth.receive(MSG_TYPE.LOBBY_LIST, [])
-  const revokedJoin = sixth.joins().at(-1)
-  third.receive(MSG_TYPE.OWNERSHIP_REVOKED, {
-    key: 'room-r',
-    ids: ['first'],
-  })
-  sixth.receive(MSG_TYPE.ERROR, 'The room is full.', {
-    code: 'ROOM_FULL',
-    requestId: revokedJoin.requestId,
-  })
-  assert.equal(network.socket, third)
-  assert.equal(state.isLocalPlayer('first'), false)
-  assert.equal(state.isLocalPlayer('second'), true)
-  assert.equal(network.changeDir({ id: 'first', dir: 'left' }), false)
-  assert.equal(network.changeDir({ id: 'second', dir: 'left' }), true)
-
-  // Once the old transport dies, a failed replacement cannot recover it.
-  network.emit(
-    MSG_TYPE.ERROR,
-    'Open a fresh connection to recover input handles.',
-    { code: 'INPUT_HANDLE_EXHAUSTED' },
-  )
-  freshButton.click()
-  const seventh = FakeSocket.instances[6]
-  seventh.readyState = FakeSocket.OPEN
-  seventh.dispatch('open')
-  seventh.receive(MSG_TYPE.LOBBY_LIST, [])
-  const closedOldJoin = seventh.joins().at(-1)
-  third.close()
-  seventh.receive(MSG_TYPE.ERROR, 'The room is full.', {
-    code: 'ROOM_FULL',
-    requestId: closedOldJoin.requestId,
-  })
-  assert.equal(network.changeDir({ id: 'second', dir: 'left' }), false)
-  assert.equal(state.isLocalPlayer('second'), false)
-
-  // An exhausted socket can enter a new room with no saved players.
-  // Missing credentials still block recovery while any player is owned.
-  state.setCurrentGame('empty-room', 'Empty room')
-  app.joinGame('empty-room')
-  ack(seventh, seventh.joins().at(-1).requestId, 'empty-room', [])
-  state.ownedPlayerIds.add('unsaved-player')
-  freshButton.click()
-  assert.equal(FakeSocket.instances.length, 7)
-  assert.match(feedback.textContent, /Every controlled player needs/)
-  state.clearOwnership()
-  network.emit(MSG_TYPE.ERROR, 'Open a fresh connection.', {
-    code: 'INPUT_HANDLE_EXHAUSTED',
-  })
-  assert.notEqual(freshButton.style.display, 'none')
-  freshButton.click()
-  const eighth = FakeSocket.instances[7]
-  assert.ok(eighth, 'Recovery without owned players must open a new socket')
-  assert.equal(seventh.readyState, FakeSocket.OPEN)
-  eighth.readyState = FakeSocket.OPEN
-  eighth.dispatch('open')
-  eighth.receive(MSG_TYPE.LOBBY_LIST, [])
-  const emptyJoin = eighth.joins().at(-1)
-  assert.deepEqual(emptyJoin.payload.reconnect, [])
-  assert.equal(emptyJoin.payload.requireAll, true)
-  ack(eighth, emptyJoin.requestId, 'empty-room', [])
-  assert.equal(seventh.readyState, 3)
-  assert.equal(network.previousSocket, null)
-  assert.equal(state.ownedPlayerIds.size, 0)
-
-  // The acknowledged replacement can now register and steer a new player.
-  app.configView.onAddPlayer({ name: 'New player', left: 65, right: 68 })
-  const registrationRequest = JSON.parse(eighth.sent.at(-1))
-  assert.equal(registrationRequest.type, MSG_TYPE.ADD_PLAYER)
-  eighth.receive(
-    MSG_TYPE.PLAYER_REGISTERED,
-    {
-      key: 'empty-room',
-      id: registrationRequest.payload.id,
-      reconnectToken: 'A'.repeat(43),
-      inputHandle: 0,
-    },
-    { requestId: registrationRequest.requestId },
-  )
-  assert.equal(state.isLocalPlayer(registrationRequest.payload.id), true)
+  assert.notEqual(reloadButton.style.display, 'none')
+  reloadButton.click()
+  assert.equal(reloads, 1)
   assert.equal(
-    network.changeDir({ id: registrationRequest.payload.id, dir: 'left' }),
-    true,
+    FakeSocket.instances.length,
+    2,
+    'Recovery requests a reload, not a parallel socket',
   )
-  assert.deepEqual(Array.from(eighth.sent.at(-1)), [
-    BINARY_OPCODE.CHANGE_DIR,
-    0,
-    0,
-  ])
+  assert.equal(second.readyState, FakeSocket.OPEN)
+  assert.equal(state.isLocalPlayer('first'), true)
+  assert.equal(state.getReconnectEntries('room-r').length, 2)
 
   network.stopPing()
   console.log(
-    'Client reconnect: correlated ACK, revocation, and explicit fresh recovery passed',
+    'Client reconnect: correlated ACK, revocation, and explicit reload recovery passed',
   )
 } finally {
   globalThis.window = originalWindow

@@ -53,16 +53,9 @@ export class PlayerOwnership {
       !/^[A-Za-z0-9_-]{43}$/.test(token)
     )
       return false
-    const bytes = Buffer.from(token, 'base64url')
-    if (bytes.length !== 32 || bytes.toString('base64url') !== token)
-      return false
     const expected = this.verifiers.get(id)
     const actual = createHash('sha256').update(token).digest()
-    return Boolean(
-      expected &&
-      expected.length === actual.length &&
-      timingSafeEqual(expected, actual),
-    )
+    return Boolean(expected && timingSafeEqual(expected, actual))
   }
 
   transfer(id, socket) {

@@ -131,7 +131,19 @@ async function run() {
   for (const id of registration.ids)
     assert.match(saved[id].reconnectToken, /^[A-Za-z0-9_-]{43}$/)
 
-  await owner.reload()
+  // Exhaustion recovery uses the visible reload action and the ordinary
+  // saved-credential rejoin path, without a parallel socket.
+  await owner.evaluate(async () => {
+    const { network } = await import('/javascripts/network.js')
+    const { MSG_TYPE } = await import('/shared/protocol.js')
+    network.emit(MSG_TYPE.ERROR, 'Reload the page, then rejoin the room.', {
+      code: 'INPUT_HANDLE_EXHAUSTED',
+    })
+  })
+  const reloadButton = owner.locator('#btn-reload-connection')
+  await reloadButton.waitFor({ state: 'visible' })
+  assert.match(await reloadButton.textContent(), /disconnects players/)
+  await Promise.all([owner.waitForEvent('load'), reloadButton.click()])
   await owner.locator('#btn-header-enter-lobby').click()
   await join(owner, key)
   await owner.waitForFunction(async (ids) => {

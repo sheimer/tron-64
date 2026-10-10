@@ -46,22 +46,7 @@ class NetworkClient {
     })
 
     socket.addEventListener('close', () => {
-      if (socket !== this.socket) {
-        if (socket === this.previousSocket) {
-          this.previousSocket = null
-          this.previousHandles?.clear()
-          this.emit('previous-close')
-        }
-        return
-      }
-      if (this.abortFreshConnection()) {
-        this.emit(
-          'fresh-recovery-failed',
-          'Fresh connection closed. Existing player controls remain active.',
-        )
-        return
-      }
-      this.completeFreshConnection()
+      if (socket !== this.socket) return
       this.inputHandles.clear()
       this.protocolReady = false
       this.stopPing()
@@ -85,29 +70,14 @@ class NetworkClient {
     })
 
     socket.addEventListener('message', (event) => {
-      if (socket !== this.socket) {
-        if (socket === this.previousSocket && typeof event.data === 'string') {
-          try {
-            const notice = JSON.parse(event.data)
-            if (
-              notice.type === MSG_TYPE.OWNERSHIP_REVOKED &&
-              notice.protocolVersion === PROTOCOL_VERSION
-            ) {
-              this.revokePlayers(notice.payload?.ids || [])
-              this.emit(MSG_TYPE.OWNERSHIP_REVOKED, notice.payload, notice)
-            }
-          } catch {
-            // No raw private frames or parse exceptions in logs.
-          }
-        }
-        return
-      }
+      if (socket !== this.socket) return
       if (typeof event.data !== 'string') {
         if (this.protocolReady && event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
-          if (view.byteLength > 1 && (view.byteLength - 1) % 5 === 0) {
+          if (view.byteLength > 0) {
             const opcode = view.getUint8(0)
             if (opcode === BINARY_OPCODE.DRAW) {
+              // Route by opcode; the renderer validates the complete packet.
               this.emit(MSG_TYPE.GAME_DRAW, view)
             }
           }
@@ -289,58 +259,16 @@ class NetworkClient {
 
   joinGame(key, reconnect = [], requestId) {
     this.inputHandles.clear()
-    this.send(
-      MSG_TYPE.JOIN_GAME,
-      { key, reconnect, requireAll: Boolean(this.previousSocket) },
-      { requestId },
-    )
+    this.send(MSG_TYPE.JOIN_GAME, { key, reconnect }, { requestId })
   }
 
   revokePlayers(ids) {
     for (const id of ids) {
       this.inputHandles.delete(id)
-      this.previousHandles?.delete(id)
     }
   }
 
-  openFreshConnection() {
-    if (!this.isConnected() || this.previousSocket) return false
-    const previous = this.socket
-    this.previousHandles = new Map(this.inputHandles)
-    this.inputHandles.clear()
-    this.connect()
-    this.previousSocket = previous
-    return true
-  }
-
-  abortFreshConnection() {
-    if (
-      !this.previousSocket ||
-      this.previousSocket.readyState !== WebSocket.OPEN
-    )
-      return false
-    const replacement = this.socket
-    this.stopPing()
-    this.socket = this.previousSocket
-    this.previousSocket = null
-    this.inputHandles = this.previousHandles
-    this.previousHandles = null
-    this.protocolReady = true
-    this.generation++
-    replacement.close()
-    this.startPing()
-    return true
-  }
-
-  completeFreshConnection() {
-    const previous = this.previousSocket
-    this.previousSocket = null
-    this.previousHandles = null
-    previous?.close()
-  }
-
   leaveGame() {
-    this.completeFreshConnection()
     this.inputHandles.clear()
     this.send(MSG_TYPE.LEAVE_GAME)
   }
@@ -350,13 +278,7 @@ class NetworkClient {
   }
 
   bindPlayer(id, inputHandle) {
-    if (
-      typeof id !== 'string' ||
-      !Number.isInteger(inputHandle) ||
-      inputHandle < 0 ||
-      inputHandle > 255
-    )
-      return false
+    // The coordinator validates acknowledgements before committing bindings.
     this.inputHandles.set(id, inputHandle)
     return true
   }

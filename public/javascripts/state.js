@@ -122,7 +122,6 @@ class State {
     return Object.entries(entries)
       .flatMap(([id, entry]) =>
         entry?.version === 2 &&
-        typeof id === 'string' &&
         id.length > 0 &&
         /^[A-Za-z0-9_-]{43}$/.test(entry.reconnectToken) &&
         (explicit || !entry.revoked)
