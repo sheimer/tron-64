@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.4.1] - 2026-10-10
+
 ### Added
 
 - Player reconnect credentials survive a server restart through private, versioned SHA-256 verifier snapshots; restored rosters and scores begin disconnected and require authentication.
@@ -16,20 +20,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A visible reload action recovers from exhausted input handles; select “rejoin” in the lobby afterward to authenticate saved credentials. Reloading disconnects active players until the next round.
 - Private, correlated player registration acknowledgements with per-player credentials and socket-local binary input handles. Multiple local players can steer using their canonical string IDs after confirmation.
 - Required independent-browser and real-socket ownership acceptance tests cover spectator rejection, two local players, reload, partial handover, old-owner cleanup, restart, and private credential boundaries.
+- Ownership performance diagnostics compare browser drawing against a Git revision and measure reconnect snapshot-write costs; local measurements leave per-player saves unchanged pending deployment evidence.
 
 ### Fixed
 
 - Reconnecting from the score screen clears the waiting overlay and restores the next-round start button after saved players authenticate, without requiring a page reload.
-
 - Saved players can use the lobby’s “rejoin” button after registration closes, including after a reload or return to the lobby. Credentials are still authenticated by the server.
 
 ### Changed
 
 - Drawing and acknowledgement validation now occurs once at the responsible boundary, retaining whole-packet rejection and authoritative server ownership checks.
-
 - Registration acknowledges ownership only after its roster and verifier are saved together. Storage failures leave no newly registered player or consumed input handle. Legacy snapshots remain historical and unclaimable; unsupported future snapshots are preserved read-only.
 - Arena drawing deltas are accepted only as complete binary frames. Legacy JSON drawing messages and array-delta rendering no longer update the canvas; full-state synchronization and local redraws remain available.
-- Movement remains binary-only across reload, authenticated handover, and fresh-connection recovery, with acknowledged socket-local handles for every local player.
+- Movement remains binary-only across reload/rejoin and authenticated handover, with acknowledged socket-local handles for every local player.
 - Binary movement now validates the current owning socket and room. JSON messages use current `type` constants; obsolete movement messages follow the unknown-message path, and only credential-bearing `reconnect` entries claim players. Protocol mismatches request a reload. Public game information uses explicit fields only.
 - Client and server protocol upgrades must be coordinated. Stale cached pages receive reload guidance; restore a matching snapshot backup and client/server version when rolling back, losing changes made after the backup.
 

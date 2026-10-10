@@ -1,8 +1,8 @@
 # Player Ownership and Reconnection — Implementation Plan
 
 > **Date:** 2026-09-25  
-> **Target:** v1.5.0, Milestone 1, “Player ownership and reconnection”  
-> **Status:** Reviewed and accepted by the user on 2026-09-27; all five phases implemented and verified; final PR review remains with the user
+> **Target:** v1.4.1 focused release from v1.5.0 Milestone 1, “Player ownership and reconnection”\
+> **Status:** All five phases implemented and verified; final PR review feedback incorporated on 2026-10-10; v1.4.1 release preparation, user merge pending
 > **Baseline:** main at `291299c8500ad7f30caf6d335e357d533888355f`
 
 ## User review and acceptance
@@ -13,6 +13,24 @@ The user completed review and explicitly requested: “please mark the plan as r
 - Accepted scope: all five phases, including binary-only movement and removal of client-side JSON arena-delta compatibility.
 - This entry records acceptance without changing the implementation contract or marking tasks complete. Implementation will be initiated separately using the repository orchestration skill.
 - The execution-start instruction must explicitly approve the autonomous commit/push/CI policy and replace the default per-phase human stops below with independent agent review and CI gates, retaining final human PR review. Record that actual instruction in the execution progress document; this assistant-authored entry alone is not transferable proof of execution authorization.
+
+## Final PR review amendments — 2026-10-10
+
+The user approved simplifying duplicate checks while preserving authoritative
+server ownership, acknowledgement correlation, and whole-packet drawing
+rejection. Renderer validation owns packet structure and cell validity;
+internal painting and binding methods trust already validated input. Credentials
+are authenticated by hashing the exact submitted token and comparing SHA-256
+verifiers, without a redundant base64url decode/re-encode step.
+
+The user replaced parallel-socket exhaustion recovery and rollback with an
+explicit reload followed by authenticated lobby rejoin. Reloading uses ordinary
+disconnect behavior; active players can race again next round. This amendment
+supersedes the original seamless fresh-connection recovery requirements.
+
+The user selected v1.4.1 for this focused release. Remaining Milestone 1 and
+public-launch work stay open. Final implementation and local verification are
+recorded in [final PR review and release preparation](2026-09-25-player-ownership-and-reconnection-progress.md#final-pr-review-and-release-preparation--2026-10-10).
 
 ## Scope and completion rule
 
@@ -45,7 +63,7 @@ These are implementation defaults for review, not claims about existing behavior
 
 - Keep public player IDs as canonical nonempty strings, unique within a room. Keep the existing client-generated ID format for compatibility, but reject invalid or duplicate IDs without truncating them into another identity.
 - Issue an independent server-generated secret per successfully registered player using 32 random bytes encoded as base64url. A public ID is never proof of ownership.
-- Store only a SHA-256 verifier on the server, scoped to the room and player. Validate encoding/length before comparing fixed-length digests with a timing-safe comparison.
+- Store only a SHA-256 verifier on the server, scoped to the room and player. Validate the token’s type, base64url alphabet, and expected length before hashing its exact string and comparing fixed-length digests with a timing-safe comparison.
 - Keep an authoritative room-scoped map from player ID to owning socket, plus a socket-local set as an index. Treat the map as authoritative if they disagree.
 - A connection may own zero through six players in its current room. Authorization is evaluated for the specific player on every input.
 - Keep secrets and verifiers out of Player objects, scores, lobby data, public GAME_INFO, error messages, metrics labels, and logs. Use explicit serialization allowlists.
@@ -82,7 +100,7 @@ Movement uses binary frames exclusively. Use a server-assigned, connection-local
 - Remove the client JSON movement fallback and server handlers for both CHANGE_DIR and the legacy changeDir spelling, including the action envelope. Reject JSON movement without changing state and give stale clients an actionable reload error. Remove the unused JSON movement constant while retaining the binary opcode.
 - Use the WebSocket message callback's isBinary argument to distinguish text buffers from binary frames. Reject malformed lengths, unknown opcodes/handles, and invalid direction bytes.
 - Do not reuse handles during a socket lifetime, including room switches and handovers. This prevents an old queued frame targeting a newly assigned player. Repeated acknowledgement of an unchanged ownership binding reuses that active binding, not a new allocation.
-- After 256 allocations, never wrap or fall back to JSON. Preflight handle capacity before registration or ownership transfer; insufficient capacity returns a stable INPUT_HANDLE_EXHAUSTED error without partial mutation and preserves existing valid bindings. Explain that a fresh connection is required. From Phase 2, provide an explicit reconnect action that authenticates saved credentials on the new socket before enabling input; do not silently disconnect or enter an automatic reclaim loop. During Phase 1, explain that recovery requires a new connection and new registration (or a new room), since authenticated reconnection has not landed yet.
+- After 256 allocations, never wrap or fall back to JSON. Preflight handle capacity before registration or ownership transfer; insufficient capacity returns a stable INPUT_HANDLE_EXHAUSTED error without partial mutation and preserves existing valid bindings. Offer an explicit reload action, explain its disconnect consequence, then authenticate saved credentials through the lobby’s rejoin action. Enable input only after new handles are acknowledged; do not create a parallel socket, restore an old connection on failure, or automatically loop through reclaim attempts.
 - Invalidate mappings immediately when ownership is lost. Reconnection on a new socket receives new mappings.
 - Negotiate/require the updated protocol before accepting these frames so stale clients cannot interpret a public ID byte as a handle.
 - Preserve the binary drawing wire format unchanged. Phase 1 must deliver working authorized binary movement end to end; do not ship an intermediate JSON-only movement implementation.
@@ -92,7 +110,7 @@ Movement uses binary frames exclusively. Use a server-assigned, connection-local
 - The server already sends drawing deltas exclusively as binary frames. Remove the remaining client JSON GAME_DRAW reception path, including the legacy action envelope; these messages must never reach the renderer or change its grid/canvas.
 - Keep GAME_DRAW as an internal client event if useful: receiving a binary DRAW frame may still emit that event. An internal event name does not authorize a JSON wire message.
 - Remove the renderer's legacy Array<[x, y, cellValue]> delta input and its documentation; update any fixtures/callers to the binary DataView contract. Preserve full-state initialization/resynchronization, local full redraws, and JSON control messages.
-- Validate drawing frame structure before emitting or applying it: require the DRAW opcode and complete five-byte cell records after the header; malformed/truncated frames must not partially paint or throw an uncaught error.
+- Route binary DRAW opcodes through the internal event; validate packet structure, complete five-byte cell records, coordinates, and values in the renderer before applying any record. Malformed/truncated packets must not partially paint or throw an uncaught error.
 - Add regressions proving valid binary deltas still render, JSON GAME_DRAW envelopes cannot mutate rendering, and reset, theme/resize redraw, and spectator/reconnect state synchronization remain functional.
 
 ### Handover and cleanup
@@ -147,7 +165,7 @@ On a room switch, validate target admission first, then release only currently o
 - [x] Restore saved credentials and bindings only for accepted IDs; display rejected/missing credentials without silently registering replacements.
 - [x] Implement handover, ownership-revoked notifications, and idempotent release for leave, switch, and close. Preserve other players still owned by either socket.
 - [x] Suspend bindings on transport loss and reject late responses from superseded sockets/rooms. A transferred-away client must not automatically reclaim in a loop.
-- [x] Add explicit fresh-connection recovery for INPUT_HANDLE_EXHAUSTED using saved credentials. Test capacity preflight on reconnect batches, preservation of existing owners on failure, and input enabled only after new handles are acknowledged.
+- [x] Provide explicit reload/rejoin recovery for INPUT_HANDLE_EXHAUSTED using saved credentials, as amended during final PR review. Test capacity preflight without ownership mutation, the reload button’s disconnect notice, retained saved credentials, and input enabled only after new handles are acknowledged.
 - [x] Test A-to-B handover followed by A steering/leaving/closing, unrelated C closing, two valid concurrent claimants, repeated joins, partial transfer of shared-keyboard players, and room switching with reused public IDs.
 - [x] Test disconnected mid-round rejoin versus live handover: no resurrection, duplicate explosion, or false disconnected scoreboard state.
 - [x] Update lifecycle/protocol documentation and Unreleased notes; run phase checks.
@@ -192,16 +210,16 @@ On a room switch, validate target admission first, then release only currently o
 
 ## Acceptance matrix
 
-All rows are verified by the suites and exact-candidate CI recorded in the [final acceptance evidence](2026-09-25-player-ownership-and-reconnection-progress.md#final-acceptance-evidence).
+Original phase acceptance is verified by the suites and exact-candidate CI recorded in the [final acceptance evidence](2026-09-25-player-ownership-and-reconnection-progress.md#final-acceptance-evidence). The approved PR-review amendments have full local verification recorded in [final PR review and release preparation](2026-09-25-player-ownership-and-reconnection-progress.md#final-pr-review-and-release-preparation--2026-10-10); the final release-preparation commit still requires CI before merge.
 
-| Roadmap item                                                 | Required proof                                                                                                                                                                                                                  | Phases     |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Public IDs separate from secret credentials                  | Spectator can see public IDs but cannot recover ownership; public frames/logs contain no secret or verifier.                                                                                                                    | 1, 4, 5    |
-| Ownership only after registration or authenticated reconnect | Failed registration/claims leave maps, roster, controls, and scores unchanged; ID-only claims fail.                                                                                                                             | 1, 2       |
-| Binary-only movement authorized; identity aligned            | Binary handles map to canonical string IDs; spectator, foreign, stale, malformed, and all JSON movement inputs are rejected. Exhaustion requires authenticated recovery on a fresh connection without fallback or handle reuse. | 1, 2, 3    |
-| Multiple local players                                       | One socket registers/reconnects multiple players; independent credentials and bindings work; partial transfer preserves the rest.                                                                                               | 1, 2, 3, 5 |
-| Safe reconnection handover                                   | Replacement retains control after old/unrelated socket input, leave, switch, and close; no false disconnect or extra explosion.                                                                                                 | 2, 5       |
-| Credential lifetime and restart                              | Saved verifiers authenticate after restart; all restored players begin disconnected; legacy data never enables takeover.                                                                                                        | 4, 5       |
+| Roadmap item                                                 | Required proof                                                                                                                                                                                                                       | Phases     |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| Public IDs separate from secret credentials                  | Spectator can see public IDs but cannot recover ownership; public frames/logs contain no secret or verifier.                                                                                                                         | 1, 4, 5    |
+| Ownership only after registration or authenticated reconnect | Failed registration/claims leave maps, roster, controls, and scores unchanged; ID-only claims fail.                                                                                                                                  | 1, 2       |
+| Binary-only movement authorized; identity aligned            | Binary handles map to canonical string IDs; spectator, foreign, stale, malformed, and all JSON movement inputs are rejected. Exhaustion requires explicit reload/rejoin and authenticated recovery without fallback or handle reuse. | 1, 2, 3    |
+| Multiple local players                                       | One socket registers/reconnects multiple players; independent credentials and bindings work; partial transfer preserves the rest.                                                                                                    | 1, 2, 3, 5 |
+| Safe reconnection handover                                   | Replacement retains control after old/unrelated socket input, leave, switch, and close; no false disconnect or extra explosion.                                                                                                      | 2, 5       |
+| Credential lifetime and restart                              | Saved verifiers authenticate after restart; all restored players begin disconnected; legacy data never enables takeover.                                                                                                             | 4, 5       |
 
 **Additional protocol-cleanup acceptance:** Valid binary arena deltas render correctly; JSON GAME_DRAW messages and malformed binary deltas leave rendering unchanged. Full-state synchronization, reset, and local redraws retain their behavior (Phases 3 and 5).
 

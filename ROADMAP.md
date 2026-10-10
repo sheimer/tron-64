@@ -16,6 +16,10 @@ This roadmap separates work required before wider community promotion from later
 
 These are proposed release targets for the agreed scope, not fixed dates. Milestones may be delivered through smaller releases; document scope and version changes here as implementation progresses. For published versions, see [CHANGELOG.md](CHANGELOG.md).
 
+The v1.4.1 release candidate delivers the focused player-ownership and
+reconnection security fixes ahead of Milestone 1. The remaining v1.5.0 scope
+is unchanged; see [release notes](CHANGELOG.md#141---2026-10-10).
+
 ### Versioning approach
 
 - **v1.4.x:** focused fixes to the current release that can be delivered independently of a milestone. Ship urgent corrections when ready.
@@ -68,7 +72,7 @@ Reference plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnec
 - [ ] Bound direction queues; define how excess input is rejected or coalesced.
 - [ ] Detect dead peers with a server heartbeat and handle socket errors explicitly.
 - [ ] Define a slow-client policy using outbound buffered bytes; disconnect or resynchronize rather than allowing indefinite accumulation of drawing deltas.
-- [ ] Measure snapshot-write cost under repeated mutations; batch or debounce persistence if necessary without losing required state on shutdown.
+- [ ] Measure snapshot-write cost under repeated mutations; batch or debounce persistence if necessary without losing required state on shutdown. Local reconnect measurements and the repeatable benchmark are recorded in [testing](docs/architecture/testing.md#ownership-performance-diagnostics); deployment filesystem and representative concurrent-load measurements remain open.
 
 ### Acceptance criteria
 
@@ -221,7 +225,7 @@ These features exist or were recorded as completed in the previous roadmap. They
 
 ### Player ownership and reconnection
 
-Verified in all five phases: [implementation plan](docs/plans/2026-09-25-player-ownership-and-reconnection.md), [acceptance and CI evidence](docs/plans/2026-09-25-player-ownership-and-reconnection-progress.md), and [Unreleased notes](CHANGELOG.md#unreleased).
+Verified in all five phases: [implementation plan](docs/plans/2026-09-25-player-ownership-and-reconnection.md), [acceptance and CI evidence](docs/plans/2026-09-25-player-ownership-and-reconnection-progress.md), and [v1.4.1 release notes](CHANGELOG.md#141---2026-10-10).
 
 - [x] Keep public player IDs separate from secret reconnection credentials. Never include credentials in lobby lists, shared game information, or logs.
 - [x] Grant connection ownership only after successful player registration or authenticated reconnection; reject arbitrary `playerIds` claims.
