@@ -127,7 +127,7 @@ try {
       ),
       'utf8',
     ),
-    /^ {2}#connection-feedback[^\n]*\n {2}button#btn-fresh-connection[^\n]*\n {2}#layout$/m,
+    /^ {2}#connection-feedback[^\n]*\n {2}button#btn-reload-connection[^\n]*\n {2}#layout$/m,
   )
   network.emit(
     MSG_TYPE.ERROR,
@@ -182,6 +182,16 @@ try {
   )
   assert.equal(state.isLocalPlayer(player.id), false)
   assert.equal(handles.size, 0)
+
+  for (const inputHandle of [-1, 256, 1.5, '7']) {
+    network.emit(
+      MSG_TYPE.PLAYER_REGISTERED,
+      { key: 'room-a', id: player.id, reconnectToken: 'secret', inputHandle },
+      { requestId },
+    )
+    assert.equal(handles.size, 0)
+    assert.equal(state.isLocalPlayer(player.id), false)
+  }
 
   network.emit(
     MSG_TYPE.PLAYER_REGISTERED,

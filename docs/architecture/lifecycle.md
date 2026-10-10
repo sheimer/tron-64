@@ -123,9 +123,15 @@ Live handover leaves the transferred player's cycle alive and its score marked c
 
 ### Recovery after input-handle exhaustion
 
-Exhausted handles require the visible fresh-connection action and a new private acknowledgement before input resumes. This action requires saved credentials for every currently controlled player and requests all-or-nothing authentication. With no owned players and no saved credentials (for example, in a new room), it joins on the fresh socket as a spectator, then allows new registration after acknowledgement.
+Exhausted handles expose a “Reload, then rejoin” button. Reloading closes the
+current socket and follows normal disconnect behavior, including eliminating
+active cycles. Saved credentials remain in sessionStorage. Select the room’s
+“rejoin” action in the lobby after reload; only accepted private acknowledgements
+restore controls, and disconnected players can race again next round.
 
-Failed admission or authentication restores the still-live original connection and bindings without automatically retrying. If the original socket closes during recovery, ordinary real-disconnect handling applies.
+There is no parallel replacement socket or recovery rollback. Without saved
+credentials, reload grants no recovery authority; join as spectator or register
+new players where registration remains open.
 
 ---
 

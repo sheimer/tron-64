@@ -70,6 +70,46 @@ The client-leak fixture registers two local players in a new room per cycle, lea
 
 ---
 
+### Ownership performance diagnostics
+
+[Ownership benchmark](../../benchmark/ownership-performance.js): run
+`npm run benchmark:ownership -- --baseline HEAD` before committing a
+simplification to compare the working renderer with the PR’s committed version.
+Use another Git revision for a different baseline. The benchmark uses real
+Chromium canvas drawing, warms both implementations, alternates their order,
+and reports p50/p95/max CPU time for 6, 256, 4,096, and 64,000 changed cells.
+The largest case is a full-grid stress bound, not an assumed typical delta.
+Samples for smaller packets average ten calls to reduce timer-resolution noise;
+the results measure draw submission, not GPU completion or displayed frame time.
+
+The same command measures the existing per-player reconnect saves for 1, 2, and
+6 players across registries of 1, 10, and 50 six-player rooms. It calls the real
+`reconnectPlayer` and snapshot writer, reports synchronous batch time, snapshot
+size, and delay of a timer scheduled immediately before the batch. Timer delay
+includes normal timer scheduling overhead; this isolates persistence rather
+than measuring complete WebSocket reconnect latency or concurrent game load.
+Only temporary fixtures are written and removed.
+
+Set `BENCHMARK_DATA_DIR` to an existing writable directory on the deployment
+filesystem to measure representative disk behavior; the default temporary
+filesystem may be much faster. Repeat on a quiet host, then inspect frame time
+and long tasks during six-player explosion-heavy gameplay on a target mobile
+browser. Compare tails against the 25 ms server tick budget and the browser’s
+frame budget. Batch saves only if repeated measurements show meaningful stalls;
+there are no machine-dependent timing assertions in the test suite.
+
+Local diagnostic run on 2026-10-10 (Node 24.0.0, headless Chromium 151):
+4,096-cell draw p95 was 0.86 ms on `main` and 0.87 ms after simplification;
+the 64,000-cell stress bound was 13.0 ms and 12.9 ms respectively. Against
+committed PR revision `435d923`, 4,096-cell p95 was 0.85 ms for both versions.
+Six reconnecting players with 50 populated rooms produced a 164,175-byte
+snapshot per save. The existing six saves took 2.94 ms at p95 on the temporary
+filesystem and 4.37 ms on the project filesystem (maximum 4.40 ms, timer-delay
+p95 4.41 ms). These are local synthetic diagnostics, not deployment or mobile
+frame guarantees; they do not currently establish a need to batch saves.
+
+---
+
 ## 5. Palette Verification Suite & Visual Gallery (`npm run test:palettes`)
 
 - **Mathematical Accessibility Suite (`test/palette.test.js`):**

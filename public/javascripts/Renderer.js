@@ -133,18 +133,7 @@ export class Renderer {
    * @param {number} value
    */
   drawCell(x, y, value) {
-    if (x < 0 || x >= this.size.x || y < 0 || y >= this.size.y) {
-      return
-    }
-
-    if (
-      value !== CELL_TYPE.EMPTY &&
-      value !== CELL_TYPE.BORDER &&
-      value !== CELL_TYPE.EXPLOSION &&
-      !(value >= 0 && value < this.playercolors.length)
-    )
-      return
-
+    // Called only after draw() validates the entire packet.
     this.fields[x][y] = value
 
     const cx = x * this.blocksize

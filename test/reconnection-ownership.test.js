@@ -151,17 +151,6 @@ try {
   assert.deepEqual(idOnly.payload.accepted, [])
   assert.equal(game.ownership.owners.get(first.id), ownerA)
 
-  for (const reconnect of [
-    [{ id: first.id, reconnectToken: 'A'.repeat(43) }],
-    [claim(first), { id: second.id, reconnectToken: 'A'.repeat(43) }],
-  ]) {
-    const denied = await join(b, key, reconnect, { requireAll: true })
-    assert.equal(denied.code, 'RECONNECT_INCOMPLETE')
-    assert.equal(game.ownership.owners.get(first.id), ownerA)
-    assert.equal(game.ownership.owners.get(second.id), ownerA)
-    assert.equal(game.ownership.owners.size, 2)
-  }
-
   const mixed = await join(b, key, [
     { id: first.id, reconnectToken: 'A'.repeat(43) },
     { id: second.id, reconnectToken: first.reconnectToken },
@@ -291,7 +280,7 @@ try {
     claim(targetSecond),
   ])
   assert.equal(denied.code, 'INPUT_HANDLE_EXHAUSTED')
-  assert.match(denied.payload, /fresh connection/i)
+  assert.match(denied.payload, /reload the page/i)
   assert.equal(oldGame.ownership.owners.get('capacity-42-0'), oldOwner)
   assert.equal(targetGame.ownership.owners.get(targetFirst.id), targetOwner)
   assert.equal(targetGame.ownership.owners.get(targetSecond.id), targetOwner)

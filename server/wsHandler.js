@@ -155,12 +155,7 @@ export const setupWebSocketServer = (server) => {
           return
         const game = gameServer.getGame(ws.gameKey)
         const id = ws.idsByHandle.get(raw[1])
-        if (
-          game &&
-          id !== undefined &&
-          game.ownership.owns(id, ws) &&
-          ws.handlesById.get(id) === raw[1]
-        ) {
+        if (game && id !== undefined && game.ownership.owns(id, ws)) {
           game.changeDir({ id, dir: raw[2] === 0 ? 'left' : 'right' })
         }
         return
@@ -301,15 +296,6 @@ export const setupWebSocketServer = (server) => {
                   code: 'INVALID_CREDENTIAL',
                 })
             }
-            if (payload?.requireAll === true && rejected.length) {
-              sendError(
-                ws,
-                'RECONNECT_INCOMPLETE',
-                'Some saved credentials could not be authenticated. Existing owners are unchanged.',
-                msg.requestId,
-              )
-              return
-            }
             const allocations = accepted.filter(
               (id) =>
                 ws.gameKey !== gameKey ||
@@ -320,7 +306,7 @@ export const setupWebSocketServer = (server) => {
               sendError(
                 ws,
                 'INPUT_HANDLE_EXHAUSTED',
-                'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
+                'This connection has no input handles left. Reload the page, then rejoin the room with saved credentials. Reloading disconnects your players until the next round.',
                 msg.requestId,
               )
               return
@@ -485,7 +471,7 @@ export const setupWebSocketServer = (server) => {
                 sendError(
                   ws,
                   'INPUT_HANDLE_EXHAUSTED',
-                  'This connection has no input handles left. Open a fresh connection and reconnect with saved credentials.',
+                  'This connection has no input handles left. Reload the page, then rejoin the room with saved credentials. Reloading disconnects your players until the next round.',
                   requestId,
                 )
                 return

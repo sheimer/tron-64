@@ -37,35 +37,11 @@ class AppCoordinator {
     this.localPlayersConfig = new Map() // playerId -> { left, right }
     this.pendingRegistrations = new Map()
     this.pendingJoin = null
-    this.freshRecovery = null
     this.recoveryNotice = false
     this.connectionFeedback = document.getElementById('connection-feedback')
-    this.freshConnectionButton = document.getElementById('btn-fresh-connection')
-    this.freshConnectionButton?.addEventListener('click', () => {
-      const entries = state.getReconnectEntries(this.currentGameKey, true)
-      const ownedIds = new Set(state.ownedPlayerIds)
-      if (
-        [...ownedIds].some((id) => !entries.some((entry) => entry.id === id))
-      ) {
-        this.showConnectionFeedback(
-          'Every controlled player needs a saved credential before opening a fresh connection.',
-        )
-        return
-      }
-      if (network.openFreshConnection()) {
-        this.freshRecovery = {
-          key: this.currentGameKey,
-          configs: new Map(this.localPlayersConfig),
-          ids: ownedIds,
-        }
-        this.clearPendingRegistrations()
-        this.pendingJoin = null
-        this.localPlayersConfig.clear()
-        state.clearOwnership()
-        this.showConnectionFeedback(
-          'Opening a fresh connection to restore saved players.',
-        )
-      }
+    this.reloadButton = document.getElementById('btn-reload-connection')
+    this.reloadButton?.addEventListener('click', () => {
+      window.location.reload()
     })
     this.unsubscribers = []
     this.keyboardBound = false
@@ -313,7 +289,6 @@ class AppCoordinator {
     })
 
     network.on('close', () => {
-      this.freshRecovery = null
       if (this.currentGameKey) this.recoveryNotice = true
       this.clearPendingRegistrations()
       this.pendingJoin = null
@@ -328,24 +303,6 @@ class AppCoordinator {
       }
     })
 
-    network.on('previous-close', () => {
-      this.freshRecovery = null
-      this.localPlayersConfig.clear()
-      state.clearOwnership()
-      state.set(
-        'players',
-        state.players.map((p) => ({ ...p, isLocal: false })),
-      )
-      this.configView.updatePlayersTable(state.players)
-      this.showConnectionFeedback(
-        'The original connection closed during recovery. Waiting for authentication on the new connection.',
-      )
-    })
-
-    network.on('fresh-recovery-failed', (message) => {
-      this.restoreFreshRecovery(message)
-    })
-
     network.on(MSG_TYPE.PLAYER_REGISTERED, (binding, msg) => {
       const pending = this.pendingRegistrations.get(msg.requestId)
       if (
@@ -355,9 +312,12 @@ class AppCoordinator {
         pending.key !== binding?.key ||
         pending.player.id !== binding.id ||
         typeof binding.reconnectToken !== 'string' ||
-        !network.bindPlayer(binding.id, binding.inputHandle)
+        !Number.isInteger(binding.inputHandle) ||
+        binding.inputHandle < 0 ||
+        binding.inputHandle > 255
       )
         return
+      network.bindPlayer(binding.id, binding.inputHandle)
       clearTimeout(pending.timer)
       this.pendingRegistrations.delete(msg.requestId)
       this.localPlayersConfig.set(binding.id, {
@@ -411,8 +371,8 @@ class AppCoordinator {
       this.pendingJoin = null
       for (const binding of accepted) {
         const config = state.acknowledgeReconnect(binding.id, pending.key)
-        if (!config || !network.bindPlayer(binding.id, binding.inputHandle))
-          continue
+        if (!config) continue
+        network.bindPlayer(binding.id, binding.inputHandle)
         this.localPlayersConfig.set(binding.id, config)
       }
       const rejected = result.rejected.length
@@ -435,8 +395,6 @@ class AppCoordinator {
       )
       this.configView.updatePlayersTable(state.players)
       this.settingsView.setSpectatorMode(!state.players.some((p) => p.isLocal))
-      this.freshRecovery = null
-      network.completeFreshConnection?.()
     })
 
     network.on(MSG_TYPE.OWNERSHIP_REVOKED, (notice) => {
@@ -445,10 +403,6 @@ class AppCoordinator {
       state.revokeOwnership(notice.ids, notice.key)
       network.revokePlayers(notice.ids)
       for (const id of notice.ids) this.localPlayersConfig.delete(id)
-      for (const id of notice.ids) {
-        this.freshRecovery?.ids.delete(id)
-        this.freshRecovery?.configs.delete(id)
-      }
       state.set(
         'players',
         state.players.map((p) => ({
@@ -471,12 +425,6 @@ class AppCoordinator {
       }
       if (this.pendingJoin && msg?.requestId === this.pendingJoin.requestId)
         this.pendingJoin = null
-      if (network.previousSocket && network.abortFreshConnection?.()) {
-        this.restoreFreshRecovery(
-          `${message} Existing player controls remain active.`,
-        )
-        return
-      }
       if (this.currentGameKey) this.configView.showFeedback(message)
       if (msg?.code === 'INPUT_HANDLE_EXHAUSTED' && this.currentGameKey) {
         this.showConnectionFeedback(message, true)
@@ -619,29 +567,9 @@ class AppCoordinator {
     this.pendingRegistrations.clear()
   }
 
-  restoreFreshRecovery(message) {
-    const recovery = this.freshRecovery
-    this.freshRecovery = null
-    this.pendingJoin = null
-    if (recovery && recovery.key === this.currentGameKey) {
-      this.localPlayersConfig = recovery.configs
-      state.ownedPlayerIds = recovery.ids
-      state.set(
-        'players',
-        state.players.map((p) => ({
-          ...p,
-          isLocal: state.isLocalPlayer(p.id),
-        })),
-      )
-      this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.players.some((p) => p.isLocal))
-    }
-    this.showConnectionFeedback(message, true)
-  }
-
-  showConnectionFeedback(message, freshConnection = false) {
-    if (this.freshConnectionButton)
-      this.freshConnectionButton.style.display = freshConnection ? '' : 'none'
+  showConnectionFeedback(message, offerReload = false) {
+    if (this.reloadButton)
+      this.reloadButton.style.display = offerReload ? '' : 'none'
     if (!this.connectionFeedback) return
     this.connectionFeedback.textContent = message
     this.connectionFeedback.style.display = message ? '' : 'none'
