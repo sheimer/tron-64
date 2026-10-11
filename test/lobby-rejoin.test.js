@@ -50,7 +50,7 @@ try {
   }
   state.setCurrentGame('room', 'Room')
   assert.equal(button(true).disabled, false)
-  assert.equal(button(false).disabled, true)
+  assert.equal(button(false).disabled, false)
   assert.equal(button(false).children[0].text.trim(), 'join')
   state.addLocalPlayer('player', { left: 65, right: 68 }, 'A'.repeat(43))
   state.clearOwnership()
@@ -66,12 +66,12 @@ try {
     'Explicit reclaim includes revoked credentials',
   )
   state.connectedGames.room.localPlayers.player.reconnectToken = 'invalid'
-  assert.equal(button(false).disabled, true)
+  assert.equal(button(false).disabled, false)
   state.connectedGames.room.localPlayers.player = { left: 65, right: 68 }
   assert.equal(
     button(false).disabled,
-    true,
-    'Legacy IDs alone cannot enable recovery',
+    false,
+    'Legacy IDs still permit spectator admission without enabling recovery',
   )
   state.saveRoomOwner('room', {
     ownerClientId: 'a'.repeat(32),

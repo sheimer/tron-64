@@ -158,7 +158,9 @@ export class LobbyView {
         this.onSelectGame(item.key, item.name)
       }
 
-      joinButton.disabled = !item.acceptingPlayers && !canRejoin
+      // Room admission remains available to spectators after bike registration
+      // closes. The server owns membership/capacity checks for every join.
+      joinButton.disabled = false
 
       tdAction.appendChild(joinButton)
       tr.appendChild(tdAction)
