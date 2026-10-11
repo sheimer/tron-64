@@ -13,19 +13,19 @@
 
 - Branch: `feat/registration-invariants-and-round-authority`; base `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`.
 - PR: #5, existing draft; no unmerged dependency.
-- Latest published implementation candidate: `75d7110a602eca6aaa25e0450185b68f07ee892a` (Phase 4, failed CI). Last verified branch head: `ab670137b7aaaaf994c67e4eb7bc5e7b3a798af0` (Phase 3).
-- Current phase: Phases 1–3 verified; Phase 4 registration snapshot repair and actual-output regression frozen, independently verified/reviewed; follow-up candidate CI pending.
+- Latest published implementation candidate: `4691ca0abf352ee487d4dfdcbd1eb6274ea68350` (Phase 4 first repair, failed CI). Last verified branch head: `ab670137b7aaaaf994c67e4eb7bc5e7b3a798af0` (Phase 3).
+- Current phase: Phases 1–3 verified; Phase 4 registration fix and three browser journeys verified; second repair aligns the leak fixture with saved rejoin rows, independent review passed and new CI pending.
 - Isolated full checkout preserves `AGENTS.md` as the `GEMINI.md` symlink. No user changes were present in this checkout; changes on the user's other machines are not visible.
 
 ## Evidence by phase
 
-| Phase     | Candidate commit                           | Local results                                                                          | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                                                  | Status         |
-| --------- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | -------------- |
-| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                                | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected                                    | Verified       |
-| 1         | 28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed  | Push 38145291262 / PR 38145295223: both 26 passed / 0 failed, three real browser suites                                                                                        | Independent tests/review passed; two CI repairs verified                          | Verified       |
-| 2         | c242573cb88a679b3b510b4ea6e0e2f2d00b281b   | 25 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38147260346 / PR 38147263738: both 28 passed / 0 failed; three browser suites actually executed                                                                           | Independent testing and final max review found no blocking findings               | Verified       |
-| 3         | ab670137b7aaaaf994c67e4eb7bc5e7b3a798af0   | 27 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38148612048 / PR 38148614711: both 30 passed / 0 failed; three browser suites actually executed                                                                           | Independent testing/review passed; legacy documentation clarified and re-reviewed | Verified       |
-| 4         | 75d7110a602eca6aaa25e0450185b68f07ee892a   | 28 executed passes / 3 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38150711561 / PR 38150715542: both 28 passed / 4 failed with actual Chromium                                                                                              | Initial review passed; real CI exposed missing registration snapshot field        | Repair pending |
+| Phase     | Candidate commit                           | Local results                                                                          | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                                                  | Status                |
+| --------- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | --------------------- |
+| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                                | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected                                    | Verified              |
+| 1         | 28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed  | Push 38145291262 / PR 38145295223: both 26 passed / 0 failed, three real browser suites                                                                                        | Independent tests/review passed; two CI repairs verified                          | Verified              |
+| 2         | c242573cb88a679b3b510b4ea6e0e2f2d00b281b   | 25 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38147260346 / PR 38147263738: both 28 passed / 0 failed; three browser suites actually executed                                                                           | Independent testing and final max review found no blocking findings               | Verified              |
+| 3         | ab670137b7aaaaf994c67e4eb7bc5e7b3a798af0   | 27 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38148612048 / PR 38148614711: both 30 passed / 0 failed; three browser suites actually executed                                                                           | Independent testing/review passed; legacy documentation clarified and re-reviewed | Verified              |
+| 4         | 4691ca0abf352ee487d4dfdcbd1eb6274ea68350   | 28 executed passes / 3 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38151612711 / PR 38151617524: both 31 passed / 1 failed with actual Chromium                                                                                              | Registration repair passed; only leak-fixture saved-row teardown mismatch remains | Second repair pending |
 
 Record administrative checkpoint commits in the next checkpoint; never embed this document's own commit hash. Verify exact-head CI before advancing.
 
@@ -37,7 +37,7 @@ First repair candidate `aeb8945ea0add6eebee3f2a09adc21425bd5d461` also failed Te
 
 ## Blockers and next action
 
-No product or access blocker. Repair the missing authoritative registration field in the current room snapshot, verify actual private-result/snapshot registration controls independently, then re-review and publish a follow-up candidate for exact-head push/PR CI. Keep all browser assertions, minimum-roster assertions and leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
+No product or access blocker. Publish the independently tested/reviewed browser leak-fixture correction, then require exact-head push/PR CI for all 32 suites before closure. Keep all browser assertions, minimum-roster assertions and leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
 
 Local Chromium launch failed because the Playwright executable is missing. One installation command failed with invalid/truncated archives on all of its internal download retries. This is an environment failure; local browser coverage is unavailable. Required browser checks will run in Actions, with assertions and prerequisite failures preserved.
 
@@ -290,6 +290,34 @@ The new client gate required `GAME_INFO.acceptingPlayers`, but the actual room p
 - Correction: reviewer acknowledged the original producer/consumer mismatch was missed. Actual-source wire integration now covers the gap. Both full logs show actual 28 Node passes / three absent-Chromium failures / one optional skip; exact follow-up push/PR CI remains required.
 
 Lead artifact verification also parsed all 559 JSON trace/network records across three retained authority traces and found no token/verifier-format strings. The actual failure diagnostics were successfully sanitized and structurally valid; no raw archive entered uploaded artifacts.
+
+### Phase 4 first repair verification and distinct fixture failure
+
+Candidate `4691ca0abf352ee487d4dfdcbd1eb6274ea68350` failed Tests push `38151612711` (job `114506055326`) and PR `38151617524` (job `114506069838`): both 31 passed / 1 failed. The missing registration projection is fixed: actual smoke 12.320s / 12.351s, ownership flow 13.463s / 13.500s, and new integrated authority journey 8.409s / 8.689s passed. Full durations 103.433s / 103.034s; leak alone timed out after cycle 1's two completed rounds at the pre-retirement DOM-key-absence wait. Both logs and artifact `11707140916` were inspected.
+
+This is a distinct fixture mismatch: the new saved-room UI deliberately renders retained private proof after normal public-list removal, so its row cannot disappear until explicit retirement. The fixture waited for row disappearance before its preserved-proof checks/retirement. Product retention remains correct. The second repair moves that same row-removal gate after trusted destroyed-fixture retirement, first asserts normal public omission and one usable saved row, and preserves exact proof checks plus every three-cycle/two-round measurement threshold. Two failed published Phase 4 candidates address separate concrete issues; no unchanged CI retries. Phase 4 is not complete until the leak suite and all final checks pass together.
+
+### phase4_implement.2 — Saved-row leak-fixture repair
+
+- Requested model / effort: existing `gpt-6.1-sol` / `high` implementer resumed; actual settings/usage unavailable.
+- Observed UTC window: 2026-10-11T15:35:11Z–15:36:36Z, 1m25s including source/docs/scoped checks; not compute time.
+- Scope: existing leak browser fixture and testing guide only. Runtime unchanged; no full local repeat for a browser-only path unavailable without Chromium.
+- Outcome: normal public-list absence first, exact pre/post state/session proof equality without printing bearer values, exactly one enabled saved-room/rejoin row, trusted fixture-only retirement, then the original row-absence polling before metrics. All three cycles/two rounds, start/ownership assertions and heap/DOM/node/listener thresholds retained.
+- Checks: scoped ESLint/Prettier/diff pass; only the original math-header formatting exception remains. Final tester/reviewer and exact new CI are gates.
+
+### phase4_test.3 — Independent saved-row fixture audit
+
+- Requested model / effort: existing `gpt-6.1-sol` / `high` independent tester resumed; actual settings/usage unavailable.
+- Observed UTC window: 2026-10-11T15:35:26Z–15:37:00Z, 1m34s including source/targeted checks; final implementer freeze re-inspected. No tester edits.
+- Outcome: distinct impossible pre-retirement DOM wait confirmed independently; actual client-controls saved-row omission/retirement suite passes. Final leak delta retains synchronous polling, exact state/session proof, saved-row assertion and immediate removal before unchanged measurements. Final leak fingerprint matches.
+- Checks: targeted actual client suite passed; no full local repeat or browser claim. Exact candidate Actions must execute all three cycles/two rounds and unchanged thresholds.
+
+### phase4_review.3 — Final saved-row fixture re-review
+
+- Requested model / effort: existing `gpt-6.1-sol` / `xhigh` independent reviewer resumed; actual settings/usage unavailable.
+- Read-only UTC window: 2026-10-11T15:37:15Z–15:37:57Z, 42s including source/log/diff checks; no suites repeated or escalation.
+- Outcome: no blocking finding. Public-list omission, exact two-copy proof retention without secret diagnostics, one enabled saved rejoin row, fixture-only retirement and post-retirement row removal all match product policy. All three cycles/two rounds, heap below 1 MB, attached DOM delta zero, internal-node allowance 35 and listener allowance 5, plus gameplay/recovery assertions, unchanged. Documentation and both hashes match; symlink preserved.
+- Gate: exact new push/PR Chromium CI remains mandatory; no browser execution claimed from local source/Node audit.
 
 ## Model-efficiency review
 

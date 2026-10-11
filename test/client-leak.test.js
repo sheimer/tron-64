@@ -235,17 +235,22 @@ try {
     const { savedRecord: beforeSavedRecord, ...beforeReap } =
       await page.evaluate(async (key) => {
         const { state } = await import('/javascripts/state.js')
+        const persisted = JSON.parse(sessionStorage.getItem('connectedGames'))
         return {
           listed: state.gamesList.some((game) => game.key === key),
           ownerProof: Boolean(state.getRoomOwnerClaim(key, true)),
           bikeProofs: state.getReconnectEntries(key, true).length,
           savedRecord: JSON.stringify(state.connectedGames[key]),
+          persisted:
+            JSON.stringify(persisted[key]) ===
+            JSON.stringify(state.connectedGames[key]),
         }
       }, roomKey)
     assert.deepEqual(beforeReap, {
       listed: true,
       ownerProof: true,
       bikeProofs: 2,
+      persisted: true,
     })
 
     // Simulate the normal idle room reap after all owners leave. Public-list
@@ -258,13 +263,6 @@ try {
     }
     assert.equal(room.clients.length, 0, 'Leaving must release room membership')
     room.destroy()
-    await page.waitForFunction(
-      (key) =>
-        !document
-          .querySelector('#body-gamelisttable')
-          ?.textContent?.includes(key),
-      roomKey,
-    )
     await page.waitForFunction((key) => {
       const { state } = window.browserFixture
       return !state.gamesList.some((game) => game.key === key)
@@ -290,9 +288,31 @@ try {
       persisted: true,
     })
     assert.equal(
-      afterSavedRecord,
-      beforeSavedRecord,
+      afterSavedRecord === beforeSavedRecord,
+      true,
       'Public-list disappearance must preserve the exact saved creator and bike proof',
+    )
+    const savedRows = await page.evaluate((key) => {
+      return [...document.querySelectorAll('#body-gamelisttable tr')]
+        .filter((row) => row.cells[0]?.textContent === key)
+        .map((row) => ({
+          name: row.cells[1]?.textContent,
+          status: row.cells[3]?.textContent,
+          action: row.cells[4]?.querySelector('button')?.textContent.trim(),
+          disabled: row.cells[4]?.querySelector('button')?.disabled,
+        }))
+    }, roomKey)
+    assert.deepEqual(
+      savedRows,
+      [
+        {
+          name: `Saved room ${roomKey}`,
+          status: 'saved; rejoin to check',
+          action: 'rejoin',
+          disabled: false,
+        },
+      ],
+      'Public omission must leave only the explicit saved-room rejoin row',
     )
 
     // Only this trusted test knows the room was destroyed. Retire its saved
@@ -310,6 +330,16 @@ try {
       fixtureRemoved,
       true,
       'Trusted teardown must retire its fixture record',
+    )
+
+    // Removing the known destroyed fixture must refresh the saved-room row
+    // before measuring the original lobby baseline.
+    await page.waitForFunction(
+      (key) =>
+        !document
+          .querySelector('#body-gamelisttable')
+          ?.textContent?.includes(key),
+      roomKey,
     )
 
     // Step H: Measure client metrics after GC
