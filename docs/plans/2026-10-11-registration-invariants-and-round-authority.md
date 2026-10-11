@@ -17,10 +17,11 @@ Room ownership is independent of which players/bikes a client controls.
 
 The user specified client ownership and first/subsequent-round permissions during
 review on 2026-10-11. Any joined client includes spectators; this is a settled
-requirement. The user also requires one current wire protocol throughout the code,
-without support or dedicated checks for older versions. These requirements replace
-the original player-host and version-transition proposals. The complete revised
-plan still awaits implementation approval; other policies remain proposed defaults.
+requirement. Keep protocol version fields, an exact check against the single current
+version, and reload guidance for mismatched clients. The server supports only that
+version and its current message formats; no older-version compatibility branches
+or fallbacks. These are settled requirements. The complete revised plan still
+awaits implementation approval; other policies remain proposed defaults.
 
 Validate two-to-six registered slots and at least two eligible connected players
 before reset and again before launch. A requester need not control a bike.
@@ -78,9 +79,11 @@ remains a later [room feature](../../ROADMAP.md#target-v180--milestone-4-room-fe
 
 - [The current wire implementation](../../shared/protocol.js),
   [NetworkClient](../../public/javascripts/network.js), and WebSocket handling
-  carry/check a protocol version. main.js and the browser smoke test also contain
-  mismatch/reload feedback. Phase 1 removes this version-only machinery under the
-  user's preproduction policy while retaining current-message and authority checks.
+  carry/check the shared current protocol version (currently `2`). The server
+  rejects a mismatch before processing the request; NetworkClient validates the
+  initial lobby version and shows reload guidance. main.js and the browser smoke
+  test also cover mismatch feedback. Preserve this strict single-version guard;
+  it does not provide older-version compatibility.
 
 ### Creator-client identity and room ownership
 
@@ -323,41 +326,49 @@ remains a later [room feature](../../ROADMAP.md#target-v180--milestone-4-room-fe
   [UI markup guidance](../architecture/rendering.md#5-ui-markup-pug-templates-and-javascript).
   Use text nodes/textContent for names and messages. Preserve keyboard/shared
   keyboard operation and explain disabled controls.
-- Use one current wire contract throughout server, client, tests, and protocol
-  documentation. Phase 1 adds correlated creation and owner authentication/results;
-  Phase 2 adds attempt-scoped reset/readiness/stage handling. Update both ends and
-  affected fixtures together in each phase; no older wire version remains supported.
-- In Phase 1 remove `PROTOCOL_VERSION`, wire `protocolVersion` fields,
-  `PROTOCOL_MISMATCH` branches, version negotiation/comparisons, and version-specific
-  reload feedback/tests. Do not add version-1/2/3 paths, adapters, fallback formats,
-  or older-client rollout handling. There is no public production system requiring
-  these mechanisms. Connection initialization may still wait for current lobby
-  data, but it must not depend on a protocol-version comparison.
-- Replace any version-based input readiness with current connection/room admission
-  and accepted bike bindings. Preserve private acknowledgement before local input,
-  authoritative ownership and input-handle checks, binary opcode/length/direction
-  validation, room/attempt/generation guards, and binary-only movement/drawing.
-  Keep useful feedback/layout coverage using errors from the current contract.
+- Keep one shared `PROTOCOL_VERSION` and the wire `protocolVersion` fields.
+  Phase 1 advances the current value from 2 to 3 for the changed creation/owner
+  payloads. Update client, server, fixtures, and docs together; accept only the
+  current shared value. Phase 2 advances the current value again for its changed
+  reset/readiness/stage payloads, updating both ends together. Each phase accepts
+  only its current value; previous values receive mismatch/reload guidance.
+- Preserve strict version checks and `PROTOCOL_MISMATCH` reload guidance. Missing,
+  invalid, older, or future wire versions cannot authorize room mutations or input.
+  Reject a mismatched request before mutation and preserve a valid request ID;
+  mismatched clients must see that they need to reload. Keep the current browser
+  initialization/version check and connection feedback behavior.
+- Use an exact-current-version guard, not a supported-version list or negotiated
+  range. Do not add per-version handlers, older payload shapes, aliases, adapters,
+  JSON movement/drawing fallbacks, or a dual-version rollout. Each implementation
+  phase and its fixtures use only the current message contract. Tests that reject
+  mismatched versions are required; they are not older-version support.
+- Preserve version readiness plus authenticated room admission/accepted bike
+  bindings before input. Keep private acknowledgements, authoritative ownership
+  and input-handle checks, binary opcode/length/direction validation, and
+  room/attempt/generation guards. Binary movement/drawing remains unchanged; its
+  connection must have joined using the current version. Retain mismatch/reload
+  tests and useful error feedback/layout coverage.
 
 ## Confirmed requirements and proposed policies
 
 Client ownership, first/subsequent start permissions, inclusion of joined
-spectators, and the current-only wire protocol are settled user requirements.
+spectators, and strict checking of a single current wire version with mismatch
+reload guidance are settled user requirements.
 The other rows describe proposed policies. Implementation of the whole plan still
 awaits approval.
 
-| Decision                    | Contract                                                                                                                                                                                                                         |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initial versus later starts | Creator client alone starts the first round; any joined room client may start subsequent rounds between rounds. User-specified.                                                                                                  |
-| Room ownership              | Belongs to the client that creates the room, independently of its local players/bikes. User-specified.                                                                                                                           |
-| Meaning of any client       | All open joined room clients, including spectators and clients with no local bikes. Lobby, other-room, and disconnected clients are outside that room's membership. Settled requirement.                                         |
-| Wire protocol               | Only the current message contract throughout code/tests; remove wire-version fields/checks, older-version paths, and version-mismatch reload handling. User-specified; no public production system needs compatibility handling. |
-| Recovery                    | A private room credential restores the same logical creator on a replacement socket; bike handover does not transfer room ownership.                                                                                             |
-| Owner loss                  | No automatic takeover. Before the first launch wait for creator recovery or create a new room; later starts remain available without the creator.                                                                                |
-| Minimum roster              | Two authenticated/connected bikes; two on one shared client qualify, and the requester need not own either.                                                                                                                      |
-| Restarting                  | No active-round restart; repeated start while pending/running is rejected. Cancellation does not consume the creator-only initial start.                                                                                         |
-| Speed                       | Creator-client-only between rounds; unrestricted later starts do not imply permission to change speed. Proposed default.                                                                                                         |
-| Persisted rooms             | Additive private creator proof and durable first-launch marker in snapshot version 1; legacy unstarted rooms without creator proof require a new room.                                                                           |
+| Decision                    | Contract                                                                                                                                                                                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Initial versus later starts | Creator client alone starts the first round; any joined room client may start subsequent rounds between rounds. User-specified.                                                                                                         |
+| Room ownership              | Belongs to the client that creates the room, independently of its local players/bikes. User-specified.                                                                                                                                  |
+| Meaning of any client       | All open joined room clients, including spectators and clients with no local bikes. Lobby, other-room, and disconnected clients are outside that room's membership. Settled requirement.                                                |
+| Wire protocol               | Keep version fields, strict equality against the one current version, and mismatch/reload guidance. Accept only the current wire format; no older-version handlers, adapters, fallbacks, or multiple accepted versions. User-specified. |
+| Recovery                    | A private room credential restores the same logical creator on a replacement socket; bike handover does not transfer room ownership.                                                                                                    |
+| Owner loss                  | No automatic takeover. Before the first launch wait for creator recovery or create a new room; later starts remain available without the creator.                                                                                       |
+| Minimum roster              | Two authenticated/connected bikes; two on one shared client qualify, and the requester need not own either.                                                                                                                             |
+| Restarting                  | No active-round restart; repeated start while pending/running is rejected. Cancellation does not consume the creator-only initial start.                                                                                                |
+| Speed                       | Creator-client-only between rounds; unrestricted later starts do not imply permission to change speed. Proposed default.                                                                                                                |
+| Persisted rooms             | Additive private creator proof and durable first-launch marker in snapshot version 1; legacy unstarted rooms without creator proof require a new room.                                                                                  |
 
 The [roadmap](../../ROADMAP.md#registration-invariants-and-round-authority) is
 updated to describe these planned permissions, including the deliberate later-round
@@ -379,7 +390,7 @@ spectator permission. All implementation checkboxes remain unchecked.
 | Durable identity/restart   | Zero-player creator recovery, lost/invalid proof, old already-played/unstarted rooms, invalid marker, save failures, and cold restore follow the documented policy without new ownership election; committed launch with zero completed rounds restores closed registration and later-start permission without invented scores. | 3       |
 | Room entry and saved proof | New spectators can join registration-closed rooms; owner-only records survive normalization; omission of a live private room from the public list preserves saved credentials, while a matching explicit missing-room response can clear its record.                                                                            | 3, 4    |
 | Clear client controls      | Independent browser contexts for creator, ordinary bike client, owner replacement, and spectator show creator-only initial controls, any-client later starts, speed/status/errors, and shared-keyboard play.                                                                                                                    | 4       |
-| Current protocol/privacy   | Client, server, real-socket/browser fixtures, and docs use one current contract without wire-version fields/checks or older-version handlers; binary/ownership suites pass; public packets and logs never expose creator or bike secrets.                                                                                       | 1, 4    |
+| Current protocol/privacy   | Current client/server/fixtures agree on the shared version; missing, invalid, older, or future versions are rejected before mutation/input and show reload guidance. No multiple-version handlers/fallbacks; binary/ownership suites pass; public packets and logs expose no creator or bike secrets.                           | 1, 4    |
 | Complete section           | Five open roadmap items linked to evidence under the clarified policy; full suite and required browser checks pass for final branch/applicable PR candidate.                                                                                                                                                                    | 4       |
 
 ## Phases
@@ -390,10 +401,11 @@ spectator permission. All implementation checkboxes remain unchecked.
       bounded correlated creation retries; authenticate owner claims on join without
       requiring a player registration. Update the single current wire contract,
       minimal client storage, creation/join handling, and affected fixtures together.
-- [ ] Remove wire-version constants/fields, comparisons, version-only readiness,
-      mismatch/reload branches and older-version tests in shared/server/client code.
-      Retain current message validation, authenticated input bindings, initialization,
-      and useful generic error feedback/layout coverage; update protocol docs.
+- [ ] Retain shared version constants/fields, strict-current-version checks,
+      version readiness, and mismatch/reload feedback. Advance the shared version
+      for the new wire contract and update both ends/fixtures together. Prove
+      mismatch rejection before mutation/input while allowing only the current
+      format; add no compatibility branches, adapters, or older-version handlers.
 - [ ] Preserve the independently stored owner credential through room-record
       normalization from this phase onward; owner-only records have an empty bike map.
 - [ ] Gate the first start by verified creator-client binding and later starts by
@@ -538,11 +550,11 @@ open.
 
 ## Migration and rollback
 
-Use the matching current client and server from the same revision. The wire
-protocol has no historical-version support, negotiation, mismatch checks, or
-version-specific reload/migration flow. Bike credentials follow their existing
-room/roster rules. New creator credentials are stored independently and never
-derived from a player ID/token.
+Use matching current client/server builds with one shared protocol version. Advance
+that version when changing the wire contract and retain strict mismatch rejection
+with reload guidance; accept no historical wire format or parallel version. Bike
+credentials follow their existing room/roster rules. New creator credentials are
+stored independently and never derived from a player ID/token.
 
 Add private creator metadata and the durable first-launch marker to version-1
 snapshots. Older records have no reliable creator identity: completed-round
@@ -596,10 +608,16 @@ The follow-up found all four resolved and no remaining substantive issue in the
 reviewed fixes. This is advisory consistency evidence, not product approval or
 proof that the planned feature is implemented/tested.
 
-A further user refinement settled joined-spectator scope and required only the
-current wire protocol, removing version fields/checks and mismatch/reload handling
-in Phase 1. A read-only follow-up by the same requested reviewer reported
+At `a881efcbd9a15c52cfce7bce05f945956705d637`, the lead interpreted the preceding
+refinement as removing version fields/checks and mismatch/reload handling.
+A read-only follow-up by the same requested reviewer reported
 09:36:05.896–09:36:14.812 UTC on 2026-10-11 (8.916s), with no substantive issue in
-that delta. Actual model/effort and usage telemetry were unavailable; no application
-tests or runtime changes were performed. The earlier snapshot recovery policies
-remain separate from this wire-protocol refinement. Implementation remains unapproved.
+the internal consistency of that draft. Actual model/effort and usage telemetry
+were unavailable; no application tests or runtime changes were performed.
+
+The user's subsequent clarification supersedes that interpretation: retain version
+fields, exact-current-version checking, and reload guidance, while accepting only
+one version and adding no backward-compatibility handlers. This revision corrects
+the plan to that clarified intent and preserves the already implemented strict
+version guard. Snapshot recovery remains a separate policy. Implementation remains
+unapproved.
