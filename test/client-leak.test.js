@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import http from 'node:http'
 import path from 'node:path'
 import fs from 'node:fs'
+import { exposeBrowserFixture } from './helpers/browser-client.js'
 
 /**
  * Client-Side Browser Memory Leak & DOM Retention Verification Test
@@ -77,6 +78,7 @@ try {
   await page.goto(`http://localhost:${TEST_PORT}`, {
     waitUntil: 'domcontentloaded',
   })
+  await exposeBrowserFixture(page)
 
   await page.click('#btn-header-enter-lobby')
 
@@ -117,16 +119,31 @@ try {
 
   const TOTAL_CYCLES = 3
   let steadyBaseline = null
+  const fixtureKeys = new Set()
 
   for (let cycle = 1; cycle <= TOTAL_CYCLES; cycle++) {
     // Create a fresh match each cycle, then authenticate a rejoin and play
     // two rounds while both local players remain on this socket.
-    await page.fill('#input-create-game', `ClientLeak_Room_${cycle}`)
+    const roomName = `ClientLeak_Room_${cycle}`
+    await page.fill('#input-create-game', roomName)
     await page.click('#btn-create-game')
+    await page.waitForFunction((name) => {
+      const { state } = window.browserFixture
+      return state.screen === 'config' && state.currentGame.name === name
+    }, roomName)
     await page.waitForSelector(
       '#playersconfig:not([style*="display: none"]):not([style*="display:none"])',
     )
     const roomKey = await page.locator('#gameId').textContent()
+    assert.equal(await page.locator('#gameName').textContent(), roomName)
+    assert.equal(fixtureKeys.has(roomKey), false, 'Each cycle needs a new room')
+    fixtureKeys.add(roomKey)
+    const createdRoom = gameServer.getGame(roomKey)
+    assert.ok(createdRoom, 'Created fixture room must exist on the server')
+    assert.equal(createdRoom.name, roomName)
+    assert.equal(createdRoom.stats.gamecount, 0)
+    assert.equal(createdRoom.firstRoundStarted, false)
+    assert.equal(createdRoom.arena.players.length, 0)
     lifecycle = { cycle, roomKey, round: null, step: 'registering' }
     for (const [name, keys] of [
       ['Alice', '66_78'],
@@ -149,9 +166,8 @@ try {
       .filter({ hasText: roomKey })
       .getByRole('button', { name: 'join' })
       .click()
-    await page.waitForFunction(async () => {
-      const { state } = await import('/javascripts/state.js')
-      const { network } = await import('/javascripts/network.js')
+    await page.waitForFunction(() => {
+      const { state, network } = window.browserFixture
       return state.ownedPlayerIds.size === 2 && network.inputHandles.size === 2
     })
 
@@ -189,8 +205,8 @@ try {
       // full cross-room callback cancellation is implemented in Phase 2.
       lifecycle.step = 'waiting for finished round'
       await page.waitForFunction(
-        async ({ key, expectedRound }) => {
-          const { state } = await import('/javascripts/state.js')
+        ({ key, expectedRound }) => {
+          const { state } = window.browserFixture
           return (
             state.currentGame.key === key &&
             state.scores.gamecount === expectedRound &&
@@ -249,8 +265,8 @@ try {
           ?.textContent?.includes(key),
       roomKey,
     )
-    await page.waitForFunction(async (key) => {
-      const { state } = await import('/javascripts/state.js')
+    await page.waitForFunction((key) => {
+      const { state } = window.browserFixture
       return !state.gamesList.some((game) => game.key === key)
     }, roomKey)
     const { savedRecord: afterSavedRecord, ...afterReap } = await page.evaluate(

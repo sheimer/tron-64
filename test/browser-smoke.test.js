@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { exposeBrowserFixture } from './helpers/browser-client.js'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const artifacts = path.join(root, 'test/artifacts/browser-smoke')
@@ -115,6 +116,7 @@ async function smokeTest() {
   })
   const response = await page.goto(`http://127.0.0.1:${port}/`)
   assert.equal(response.status(), 200)
+  await exposeBrowserFixture(page)
   await page.locator('#welcome').waitFor({ state: 'visible' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.evaluate(async () => {
@@ -138,12 +140,13 @@ async function smokeTest() {
   await page.locator('#btn-info').click()
   await page.locator('#welcome').waitFor({ state: 'visible' })
   await page.reload()
+  await exposeBrowserFixture(page)
   await page.locator('#welcome').waitFor({ state: 'visible' })
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.locator('#btn-header-enter-lobby').click()
   await page.locator('#lobby').waitFor({ state: 'visible' })
-  await page.waitForFunction(async () => {
-    const { network } = await import('/javascripts/network.js')
+  await page.waitForFunction(() => {
+    const { network } = window.browserFixture
     return network.isConnected()
   })
   await page.locator('#input-create-game').fill('CI smoke room')
@@ -166,15 +169,15 @@ async function smokeTest() {
   assert.equal(await page.locator('#body-playerstable tr').count(), 2)
   const roomKey = await page.locator('#gameId').textContent()
   await page.reload()
+  await exposeBrowserFixture(page)
   await page.locator('#btn-header-enter-lobby').click()
   await page
     .locator('#body-gamelisttable tr')
     .filter({ hasText: roomKey })
     .getByRole('button', { name: 'join' })
     .click()
-  await page.waitForFunction(async () => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await page.waitForFunction(() => {
+    const { state, network } = window.browserFixture
     return state.ownedPlayerIds.size === 2 && network.inputHandles.size === 2
   })
   await page.evaluate(async () => {
@@ -201,16 +204,16 @@ async function smokeTest() {
   })
   await page.locator('#btn-init-game').click()
   await page.locator('#arena').waitFor({ state: 'visible' })
-  await page.waitForFunction(async () => {
-    const { state } = await import('/javascripts/state.js')
+  await page.waitForFunction(() => {
+    const { state } = window.browserFixture
     return state.screen === 'game' && state.matchState === 'running'
   })
   // Reset already draws starting dots, and the running announcement signals
   // countdown. Wait for the server's durable launch before accepting drawing
   // evidence or transferring bikes; otherwise the fixture can cancel its first
   // start without ever having run physics.
-  await page.waitForFunction(async (key) => {
-    const { state } = await import('/javascripts/state.js')
+  await page.waitForFunction((key) => {
+    const { state } = window.browserFixture
     return (
       state.currentGame.key === key &&
       state.roundInfo?.firstRoundStarted === true &&
@@ -219,8 +222,8 @@ async function smokeTest() {
   }, roomKey)
   await page.waitForFunction(() => window.smokePlayerDrawReceived === true)
   const rendered = await page.waitForFunction(
-    async () => {
-      const { GRID_WIDTH, GRID_HEIGHT } = await import('/shared/constants.js')
+    () => {
+      const { GRID_WIDTH, GRID_HEIGHT } = window.browserFixture.constants
       const canvas = document.getElementById('arena')
       const { width, height } = canvas
       if (!width || !height) return false
@@ -289,6 +292,7 @@ async function smokeTest() {
     sessionStorage.setItem('connectedGames', JSON.stringify(records))
   }, saved.records)
   await secondTab.goto(page.url())
+  await exposeBrowserFixture(secondTab)
   await secondTab.locator('#btn-header-enter-lobby').click()
   // Saved credentials must make the real lobby recovery action available,
   // even after registration closes. Exercise it again after a page reload.
@@ -299,17 +303,16 @@ async function smokeTest() {
       .getByRole('button', { name: 'rejoin', exact: true })
       .click()
   await rejoin()
-  await secondTab.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await secondTab.waitForFunction((id) => {
+    const { state, network } = window.browserFixture
     return state.isLocalPlayer(id) && network.inputHandles.has(id)
   }, saved.first)
   await secondTab.reload()
+  await exposeBrowserFixture(secondTab)
   await secondTab.locator('#btn-header-enter-lobby').click()
   await rejoin()
-  await secondTab.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await secondTab.waitForFunction((id) => {
+    const { state, network } = window.browserFixture
     return state.isLocalPlayer(id) && network.inputHandles.has(id)
   }, saved.first)
   const transferredFrame = await secondTab.evaluate(async (id) => {
@@ -325,9 +328,8 @@ async function smokeTest() {
     return { frames, handle }
   }, saved.first)
   assert.deepEqual(transferredFrame.frames, [[2, transferredFrame.handle, 1]])
-  await page.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await page.waitForFunction((id) => {
+    const { state, network } = window.browserFixture
     return (
       !state.isLocalPlayer(id) &&
       !network.inputHandles.has(id) &&
@@ -348,13 +350,13 @@ async function smokeTest() {
     staleFrameCount[1],
     staleFrameCount[1],
   ])
-  await page.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
+  await page.waitForFunction((id) => {
+    const { state } = window.browserFixture
     return state.players.find((player) => player.id === id)?.connected === true
   }, saved.first)
   await secondTab.close()
-  await page.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
+  await page.waitForFunction((id) => {
+    const { state } = window.browserFixture
     return (
       state.players.find((player) => player.id === id)?.connected === false &&
       state.ownedPlayerIds.size === 1
@@ -362,8 +364,8 @@ async function smokeTest() {
   }, saved.first)
 
   // Disconnect on the finished scoreboard, then recover without a reload.
-  await page.waitForFunction(async () => {
-    const { state } = await import('/javascripts/state.js')
+  await page.waitForFunction(() => {
+    const { state } = window.browserFixture
     return state.matchState === 'finished'
   })
   await page.evaluate(async () => {
@@ -371,9 +373,8 @@ async function smokeTest() {
     network.socket.close()
   })
   await page.locator('#scores-waiting').waitFor({ state: 'visible' })
-  await page.waitForFunction(async () => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await page.waitForFunction(() => {
+    const { state, network } = window.browserFixture
     return network.isConnected() && state.ownedPlayerIds.size === 1
   })
   await page.locator('#scores-waiting').waitFor({ state: 'hidden' })
@@ -405,9 +406,8 @@ async function smokeTest() {
     .filter({ hasText: roomKey })
     .getByRole('button', { name: 'rejoin', exact: true })
     .click()
-  await page.waitForFunction(async () => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await page.waitForFunction(() => {
+    const { state, network } = window.browserFixture
     return (
       state.ownedPlayerIds.size === 2 &&
       network.inputHandles.size === 2 &&

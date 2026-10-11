@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { exposeBrowserFixture } from './helpers/browser-client.js'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const artifacts = path.join(root, 'test/artifacts/ownership-flow')
@@ -63,11 +64,12 @@ async function run() {
     )
     const response = await page.goto(url)
     assert.equal(response.status(), 200)
+    await exposeBrowserFixture(page)
     await page.locator('#welcome').waitFor({ state: 'visible' })
     await page.locator('#btn-header-enter-lobby').click()
     await page.locator('#lobby').waitFor({ state: 'visible' })
-    await page.waitForFunction(async () => {
-      const { network } = await import('/javascripts/network.js')
+    await page.waitForFunction(() => {
+      const { network } = window.browserFixture
       return network.isConnected()
     })
     return page
@@ -79,8 +81,8 @@ async function run() {
       .filter({ hasText: key })
       .getByRole('button', { name: 'join' })
       .click()
-    await page.waitForFunction(async (roomKey) => {
-      const { state } = await import('/javascripts/state.js')
+    await page.waitForFunction((roomKey) => {
+      const { state } = window.browserFixture
       return state.currentGame.key === roomKey && state.players.length === 2
     }, key)
   }
@@ -144,11 +146,11 @@ async function run() {
   await reloadButton.waitFor({ state: 'visible' })
   assert.match(await reloadButton.textContent(), /disconnects players/)
   await Promise.all([owner.waitForEvent('load'), reloadButton.click()])
+  await exposeBrowserFixture(owner)
   await owner.locator('#btn-header-enter-lobby').click()
   await join(owner, key)
-  await owner.waitForFunction(async (ids) => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await owner.waitForFunction((ids) => {
+    const { state, network } = window.browserFixture
     return ids.every(
       (id) => state.isLocalPlayer(id) && network.inputHandles.has(id),
     )
@@ -202,15 +204,13 @@ async function run() {
   }
   const replacement = await openPage('replacement', secondRecords)
   await join(replacement, key)
-  await replacement.waitForFunction(async (id) => {
-    const { state } = await import('/javascripts/state.js')
-    const { network } = await import('/javascripts/network.js')
+  await replacement.waitForFunction((id) => {
+    const { state, network } = window.browserFixture
     return state.isLocalPlayer(id) && network.inputHandles.has(id)
   }, transferredId)
   await owner.waitForFunction(
-    async ([lost, kept]) => {
-      const { state } = await import('/javascripts/state.js')
-      const { network } = await import('/javascripts/network.js')
+    ([lost, kept]) => {
+      const { state, network } = window.browserFixture
       return (
         !state.isLocalPlayer(lost) &&
         !network.inputHandles.has(lost) &&
