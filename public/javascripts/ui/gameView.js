@@ -115,7 +115,11 @@ export class GameView {
 
     // Touch control buttons
     if (this.leftBtn && this.rightBtn) {
-      if (!canHover && (state === 'start' || state === 'running')) {
+      if (
+        !canHover &&
+        appState.ownedPlayerIds.size > 0 &&
+        (state === 'start' || state === 'running')
+      ) {
         this.leftBtn.style.display = ''
         this.rightBtn.style.display = ''
       } else {

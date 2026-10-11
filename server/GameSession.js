@@ -1,4 +1,5 @@
 import WebSocket from 'ws'
+import { randomBytes } from 'node:crypto'
 
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
@@ -36,6 +37,8 @@ export class GameSession {
 
     this.interval = interval
     this.timer = null
+    this.physicsGeneration = 0
+    this.activeRoundIsCurrent = () => true
     this.nextTickTime = null
     this.gameStarted = null
     this.running = false
@@ -49,6 +52,9 @@ export class GameSession {
     this.firstRoundStarted =
       firstRoundStarted === true || this.stats.gamecount > 0
     this.pendingStart = null
+    this.stage = this.firstRoundStarted ? 'finished' : 'configuration'
+    this.startId = null
+    this.onstate = null
     // Restored ownership always starts empty; only matching persisted
     // verifiers allow a new socket to reclaim an existing player.
     if (Array.isArray(players)) {
@@ -84,6 +90,8 @@ export class GameSession {
 
   destroy() {
     this.stop()
+    this.stage = 'destroyed'
+    this.onstate = null
     if (this.statusTimer !== null) {
       clearTimeout(this.statusTimer)
       this.statusTimer = null
@@ -130,21 +138,28 @@ export class GameSession {
     }
   }
 
-  connect({ client, ondraw, onfinish, onreset }) {
+  connect({ client, ondraw, onfinish, onreset, onstate }) {
     // Prune closed socket references before adding new client
     this.clients = this.clients.filter((c) => c?.readyState === WebSocket.OPEN)
     this.clients.push(client)
     this.allDisconnected = null
+    if (!this.onstate) this.onstate = onstate
     this.arena.addHandler({
       ondraw,
       onfinish: (stats) => {
+        if (!this.running) return
         this.stop()
+        this.stage = 'finished'
         this.addStats(stats)
         if (typeof onfinish === 'function') {
-          onfinish(this.stats)
+          onfinish({ key: this.key, startId: this.startId, scores: this.stats })
         }
       },
-      onreset,
+      onreset: (positions) => {
+        if (this.pendingStart) this.pendingStart.positions = positions
+        if (typeof onreset === 'function')
+          onreset({ key: this.key, startId: this.startId, positions })
+      },
     })
   }
 
@@ -194,42 +209,167 @@ export class GameSession {
     return { ok: true }
   }
 
-  beginRound(client) {
+  captureRoundRoster() {
+    return (
+      this.arena?.players.map((player) => {
+        const owner = this.ownership.owners.get(player.id) ?? null
+        return {
+          id: player.id,
+          owner,
+          connected: player.connected !== false,
+          eligible: player.connected !== false && this.isJoined(owner),
+        }
+      }) ?? []
+    )
+  }
+
+  sameRoundRoster(roster) {
+    const current = this.captureRoundRoster()
+    return (
+      current.length === roster.length &&
+      current.every((entry, index) =>
+        Object.keys(entry).every((key) => entry[key] === roster[index][key]),
+      )
+    )
+  }
+
+  publishStage(reason, startId = this.startId) {
+    this.onstate?.({
+      key: this.key,
+      startId,
+      stage: this.stage,
+      ...(reason ? { reason } : {}),
+    })
+  }
+
+  reconcilePendingStart(reason = 'PARTICIPANTS_CHANGED') {
+    const pending = this.pendingStart
+    if (!pending) return
+    if (!this.sameRoundRoster(pending.roster)) this.cancelPendingStart(reason)
+    else if (
+      !this.firstRoundStarted &&
+      (!this.isJoined(pending.creator) || !this.roomOwner.owns(pending.creator))
+    )
+      this.cancelPendingStart('CREATOR_CHANGED')
+  }
+
+  beginRound(
+    client,
+    { save = () => true, isCurrent = () => true, onError, requestId } = {},
+  ) {
     const result = this.validateRound(client)
     if (!result.ok) return result
-    // This latch is owned by the room before reset or any timer is scheduled.
-    // Full attempt-scoped cancellation and readiness are implemented in Phase 2.
+    const roster = this.captureRoundRoster()
     const pending = {
+      startId: randomBytes(16).toString('hex'),
       requester: client,
+      creator: this.firstRoundStarted ? null : client,
       acceptingPlayers: this.acceptingPlayers,
+      roster,
+      expectedClients: new Set(
+        roster.filter((entry) => entry.eligible).map((entry) => entry.owner),
+      ),
       readyClients: new Set(),
       countdownStarted: false,
       fallbackTimer: null,
       startTimer: null,
+      isCurrent,
+      requestId,
     }
     this.pendingStart = pending
+    this.startId = pending.startId
+    this.stage = 'preparation'
     this.acceptingPlayers = false
     this.arena.reset({ finish: false })
+    this.publishStage()
+    pending.launchCountdown = () => {
+      if (
+        !isCurrent() ||
+        this.pendingStart !== pending ||
+        this.stage !== 'preparation'
+      )
+        return
+      this.reconcilePendingStart()
+      if (this.pendingStart !== pending) return
+      pending.countdownStarted = true
+      clearTimeout(pending.fallbackTimer)
+      pending.fallbackTimer = null
+      this.stage = 'countdown'
+      this.publishStage()
+      pending.startTimer = setTimeout(() => {
+        if (
+          !isCurrent() ||
+          this.pendingStart !== pending ||
+          this.stage !== 'countdown'
+        )
+          return
+        const launched = this.launchRound(pending, save, isCurrent)
+        if (!launched.ok) onError?.(launched)
+      }, 1000)
+      pending.startTimer?.unref?.()
+    }
+    pending.fallbackTimer = setTimeout(pending.launchCountdown, 2000)
+    pending.fallbackTimer?.unref?.()
     return { ok: true, pending }
   }
 
-  launchRound(pending, save) {
-    if (this.pendingStart !== pending)
+  acknowledgeReady(client, startId) {
+    const pending = this.pendingStart
+    if (
+      !pending ||
+      this.stage !== 'preparation' ||
+      pending.startId !== startId ||
+      !pending.isCurrent() ||
+      !pending.expectedClients.has(client) ||
+      !this.isJoined(client)
+    )
+      return false
+    this.reconcilePendingStart()
+    if (this.pendingStart !== pending) return false
+    pending.readyClients.add(client)
+    if (pending.readyClients.size === pending.expectedClients.size)
+      pending.launchCountdown()
+    return true
+  }
+
+  launchRound(pending, save, isCurrent = pending?.isCurrent ?? (() => true)) {
+    if (
+      !pending ||
+      !isCurrent() ||
+      this.pendingStart !== pending ||
+      !['preparation', 'countdown'].includes(this.stage)
+    )
       return { ok: false, code: 'ROUND_PENDING' }
     const result = this.validateRound(pending.requester, { launching: true })
     if (!result.ok) {
-      this.cancelPendingStart()
+      this.cancelPendingStart(result.code)
       return result
+    }
+    if (!this.sameRoundRoster(pending.roster)) {
+      this.cancelPendingStart('PARTICIPANTS_CHANGED')
+      return { ok: false, code: 'PARTICIPANTS_CHANGED' }
+    }
+    if (
+      !this.firstRoundStarted &&
+      (!this.isJoined(pending.creator) || !this.roomOwner.owns(pending.creator))
+    ) {
+      this.cancelPendingStart('CREATOR_CHANGED')
+      return { ok: false, code: 'CREATOR_REQUIRED' }
     }
     if (!this.firstRoundStarted) {
       this.firstRoundStarted = true
       if (!save()) {
         this.firstRoundStarted = false
-        this.cancelPendingStart()
+        this.cancelPendingStart('PERSISTENCE_FAILED')
         return { ok: false, code: 'PERSISTENCE_FAILED' }
       }
     }
-    this.start()
+    clearTimeout(pending.fallbackTimer)
+    clearTimeout(pending.startTimer)
+    this.pendingStart = null
+    this.start({ isCurrent })
+    this.stage = 'running'
+    this.publishStage()
     return { ok: true }
   }
 
@@ -250,13 +390,23 @@ export class GameSession {
     return { ok: true }
   }
 
-  cancelPendingStart() {
+  cancelPendingStart(reason = 'CANCELLED') {
     const pending = this.pendingStart
-    if (!pending) return
+    if (!pending) return false
     clearTimeout(pending.fallbackTimer)
     clearTimeout(pending.startTimer)
+    pending.fallbackTimer = null
+    pending.startTimer = null
     this.pendingStart = null
-    this.acceptingPlayers = pending.acceptingPlayers && !this.firstRoundStarted
+    this.startId = null
+    this.stage = this.firstRoundStarted ? 'finished' : 'configuration'
+    this.acceptingPlayers =
+      !this.firstRoundStarted &&
+      pending.acceptingPlayers &&
+      this.arena.players.length < MAX_PLAYERS &&
+      this.stats.players.length < MAX_PLAYERS
+    this.publishStage(reason, pending.startId)
+    return true
   }
 
   addPlayer(player, { deferChange = false } = {}) {
@@ -404,7 +554,7 @@ export class GameSession {
   }
 
   // Trusted simulation/fixture entry point. Network launches use launchRound.
-  start() {
+  start({ isCurrent = () => true } = {}) {
     if (this.acceptingPlayers) {
       this.acceptingPlayers = false
       if (typeof this.onChange === 'function') {
@@ -415,7 +565,9 @@ export class GameSession {
     this.arena.startRound()
 
     this.stop()
+    this.activeRoundIsCurrent = isCurrent
     this.running = true
+    this.stage = 'running'
     this.gameStarted = Date.now()
     this.nextTickTime = Date.now() + this.interval
 
@@ -451,8 +603,10 @@ export class GameSession {
   }
 
   stop() {
+    this.physicsGeneration++
     this.cancelPendingStart()
     this.running = false
+    if (this.stage === 'running') this.stage = 'finished'
     if (this.timer !== null) {
       clearTimeout(this.timer)
       this.timer = null
@@ -469,17 +623,29 @@ export class GameSession {
    * @see https://developer.mozilla.org/en-US/docs/Games/Anatomy#building_a_main_loop_in_javascript
    */
   scheduleNextTick() {
+    const generation = this.physicsGeneration
     const delay = Math.max(0, this.nextTickTime - Date.now())
 
-    this.timer = setTimeout(() => {
-      if (!this.running) return
+    const timer = setTimeout(() => {
+      if (
+        !this.running ||
+        generation !== this.physicsGeneration ||
+        this.timer !== timer ||
+        !this.activeRoundIsCurrent()
+      )
+        return
 
       const endTimer = tickDurationSummary.startTimer()
       this.arena.run()
       endTimer()
 
-      if (!this.running) {
-        // Round ended during arena.run() (finish() was called)
+      if (
+        !this.running ||
+        generation !== this.physicsGeneration ||
+        this.timer !== timer ||
+        !this.activeRoundIsCurrent()
+      ) {
+        // Finish hooks may stop, destroy, or replace this round synchronously.
         return
       }
 
@@ -493,6 +659,7 @@ export class GameSession {
 
       this.scheduleNextTick()
     }, delay)
+    this.timer = timer
   }
 
   changeDir({ id, dir }) {

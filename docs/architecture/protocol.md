@@ -32,7 +32,7 @@ To minimize string allocations, GC pressure, and serialization overhead during t
 
 ## 3. Registration, Ownership & Input Handles
 
-Clients send protocol version `3` with JSON requests. The server requires the version before processing them and sends `PROTOCOL_MISMATCH` with reload guidance to clients with a missing or mismatched version. The initial lobby response carries the version, and the browser waits for it before sending room actions. Binary movement is accepted only after a versioned room join.
+Clients send protocol version `4` with JSON requests. The server requires the version before processing them and sends `PROTOCOL_MISMATCH` with reload guidance to clients with a missing or mismatched version. The initial lobby response carries the version, and the browser waits for it before sending room actions. Binary movement is accepted only after a versioned room join.
 
 Deploy the matching client bundle and server protocol together; stale cached clients must reload when they receive `PROTOCOL_MISMATCH`. JSON messages use the current `type` constants only; `action` envelopes and lowercase aliases are unsupported. Unknown message types return `UNKNOWN_MESSAGE_TYPE` with a correlated request ID when supplied. Keep the room snapshot backup and matching client/server build together for rollback; see [lifecycle](lifecycle.md#9-upgrade-and-rollback).
 
@@ -56,7 +56,13 @@ The authenticated creator alone may request the first round, including a creator
 
 `SET_INTERVAL` requires the current authenticated creator between rounds and an integer in the inclusive 10–500 ms range. Save before broadcasting the new room interval; failure restores the old value. Control errors use `NOT_IN_ROOM`, `CREATOR_REQUIRED`, `INSUFFICIENT_PLAYERS`, `ROUND_PENDING`, `ROUND_RUNNING`, `INVALID_INTERVAL`, and `PERSISTENCE_FAILED`, with an explanation and supplied request ID.
 
-This is Phase 1 scaffolding: reset/readiness/countdown messages retain their current unscoped payloads, and `GAME_STATE: 'running'` still signals the countdown. Full attempt identities, participant cancellation, authoritative client cancellation routing, and strict cold-restore validation are pending in [the approved plan](../plans/2026-10-11-registration-invariants-and-round-authority.md). This intermediate phase is not launch-ready.
+Rooms expose `GAME_INFO.round: { stage, startId, positions? }`. Stages are `configuration`, `preparation`, `countdown`, `running`, `finished`, and `destroyed`; prepared positions are included during preparation/countdown for joining clients. Each accepted start gets a fresh opaque `startId`, retained through running/finished and retired on cancellation. Physics alone sets `running`; pending preparation also sets `started`.
+
+Current lifecycle payloads are `GAME_RESET: { key, startId, positions }`, `ARENA_READY: { startId }`, `GAME_STATE: { key, startId, stage, reason? }`, and `GAME_FINISH: { key, startId, scores }`, with current protocol version fields. Cancellation transitions carry the retired attempt ID so clients can reject stale cancellation; the subsequent idle snapshot has `startId: null`. No historical lifecycle payload is accepted.
+
+The room owns a two-second preparation fallback and one-second countdown. Readiness deduplicates the captured participating bike-owner sockets; spectators and a creator without bikes do not acknowledge. Only a currently joined expected participant acknowledging the matching attempt can advance preparation. Full roster owner/connected eligibility changes cancel after a successful whole join/handover commits; rejected resource preflights preserve the attempt and timers. Initial creator binding loss/replacement also cancels, including a creator with no bikes. Pure spectator changes and creator-only binding changes after first launch do not cancel later rounds. Final launch rechecks the same live room instance, attempt, stage, captured full roster and initial creator before saving the launch marker and starting physics exactly once.
+
+Cancellation clears both pending timers and preserves scores. It restores configuration and prior registration availability before the first launch, subject to six slots; later cancellation returns to finished scores with registration closed. Client reset/readiness and score-reveal timers validate room, socket generation, and attempt, and are cancelled on close, leave, switch, or replacement attempt. Pending spectators display positions without readiness or bike controls. Strict persisted-room migration and final permission presentation remain pending in [the approved plan](../plans/2026-10-11-registration-invariants-and-round-authority.md). This intermediate phase is not launch-ready.
 
 ## 4. Direction Input Queue & Fast-Path
 

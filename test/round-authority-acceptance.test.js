@@ -52,6 +52,8 @@ async function serve() {
               stats: game.stats,
               acceptingPlayers: game.acceptingPlayers,
               pending: Boolean(game.pendingStart),
+              readyClients: game.pendingStart?.readyClients.size ?? 0,
+              expectedClients: game.pendingStart?.expectedClients.size ?? 0,
               fallbackTimer: timerId(game.pendingStart?.fallbackTimer),
               startTimer: timerId(game.pendingStart?.startTimer),
               physicsTimer: timerId(game.timer),
@@ -213,7 +215,7 @@ async function acceptance() {
       isPublic: true,
     })
     assert.equal(response.type, MSG_TYPE.GAME_CREATED)
-    assert.equal(response.protocolVersion, 3)
+    assert.equal(response.protocolVersion, PROTOCOL_VERSION)
     assert.match(response.payload.ownerClientId, /^[a-f0-9]{32}$/)
     assert.match(response.payload.roomOwnerToken, /^[A-Za-z0-9_-]{43}$/)
     rememberSecret(response.payload.roomOwnerToken, ws)
@@ -294,10 +296,10 @@ async function acceptance() {
     const rider = await connect(url)
     const spectator = await connect(url)
     const lobbyClient = await connect(url)
-    assert.equal(PROTOCOL_VERSION, 3)
+    assert.equal(PROTOCOL_VERSION, 4)
 
     // Every mismatched version is rejected before a creation can mutate rooms.
-    for (const protocolVersion of [undefined, null, '3', 2, 4]) {
+    for (const protocolVersion of [undefined, null, '4', 3, 5]) {
       const response = await request(
         lobbyClient,
         MSG_TYPE.CREATE_GAME,
@@ -766,6 +768,109 @@ async function acceptance() {
       undefined,
       'INSUFFICIENT_PLAYERS',
     )
+
+    // Real socket transaction ordering: pending attempts survive both resource
+    // preflight failures, then cancel when a previously disconnected roster
+    // bike is admitted after the whole successful join commits.
+    const transactionOwner = await connect(url)
+    const transactionRider = await connect(url)
+    const lateRider = await connect(url)
+    const transactionRoom = await create(
+      transactionOwner,
+      'Pending transaction',
+    )
+    await join(transactionOwner, transactionRoom, { owner: true })
+    await join(transactionRider, transactionRoom)
+    await join(lateRider, transactionRoom)
+    await register(transactionRider, 'transaction-one')
+    await register(transactionRider, 'transaction-two')
+    const lateBike = await register(lateRider, 'transaction-late')
+    transmit(lateRider, MSG_TYPE.LEAVE_GAME)
+    await fence(lateRider)
+    for (const stage of ['preparation', 'countdown']) {
+      await startRound(transactionOwner, transactionRoom.key)
+      if (stage === 'countdown') {
+        const preparation = await rpc('inspect', { key: transactionRoom.key })
+        transmit(transactionRider, MSG_TYPE.ARENA_READY, {
+          startId: preparation.info.round.startId,
+        })
+        await fence(transactionRider)
+      }
+      let before = await rpc('inspect', { key: transactionRoom.key })
+      const sourceBefore = await rpc('inspect', { key: room.key })
+      assert.equal(before.info.round.stage, stage)
+      expectError(
+        await request(claimant, MSG_TYPE.JOIN_GAME, {
+          key: transactionRoom.key,
+          roomOwner: ownerClaim(transactionRoom),
+          reconnect: [
+            bikeClaim(lateBike),
+            { id: 'transaction-one', reconnectToken: 'A'.repeat(43) },
+          ],
+        }),
+        'INPUT_HANDLE_EXHAUSTED',
+      )
+      assert.deepEqual(
+        await rpc('inspect', { key: transactionRoom.key }),
+        before,
+      )
+      assert.deepEqual(await rpc('inspect', { key: room.key }), sourceBefore)
+      const capacityClients = []
+      for (let i = before.clients.length; i < MAX_CLIENTS_PER_ROOM; i++) {
+        const filler = await connect(url)
+        await join(filler, transactionRoom)
+        capacityClients.push(filler)
+      }
+      before = await rpc('inspect', { key: transactionRoom.key })
+      expectError(
+        await request(lateRider, MSG_TYPE.JOIN_GAME, {
+          key: transactionRoom.key,
+          roomOwner: ownerClaim(transactionRoom),
+          reconnect: [
+            bikeClaim(lateBike),
+            { id: 'transaction-one', reconnectToken: 'A'.repeat(43) },
+          ],
+        }),
+        'ROOM_FULL',
+      )
+      assert.deepEqual(
+        await rpc('inspect', { key: transactionRoom.key }),
+        before,
+      )
+      assert.deepEqual(await rpc('inspect', { key: room.key }), sourceBefore)
+      for (const filler of capacityClients) {
+        transmit(filler, MSG_TYPE.LEAVE_GAME)
+        await fence(filler)
+      }
+      const retired = before.info.round.startId
+      await join(lateRider, transactionRoom, {
+        reconnect: [bikeClaim(lateBike)],
+      })
+      const cancelled = await rpc('inspect', { key: transactionRoom.key })
+      assert.equal(cancelled.pending, false)
+      assert.equal(cancelled.info.round.stage, 'configuration')
+      assert.equal(cancelled.info.round.startId, null)
+      assert.equal(cancelled.info.firstRoundStarted, false)
+      assert.equal(cancelled.stats.gamecount, 0)
+      assert.equal(cancelled.fallbackTimer, null)
+      assert.equal(cancelled.startTimer, null)
+      const cancellation = await receive(
+        transactionOwner,
+        (message) =>
+          message.type === MSG_TYPE.GAME_STATE &&
+          message.payload.startId === retired &&
+          message.payload.reason,
+      )
+      assert.equal(cancellation.payload.reason, 'PARTICIPANTS_CHANGED')
+      transmit(lateRider, MSG_TYPE.LEAVE_GAME)
+      await fence(lateRider)
+      await rpc('tick', { milliseconds: 3000 })
+      assert.equal(
+        (await rpc('inspect', { key: transactionRoom.key })).info.running,
+        false,
+      )
+    }
+    await rpc('destroy', { key: transactionRoom.key })
 
     // A socket cannot retain unbounded private creation acknowledgements.
     const pressureClient = await connect(url)

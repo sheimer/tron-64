@@ -146,9 +146,15 @@ export class GameServer {
         game.firstRoundStarted ||
         Boolean(game.pendingStart) ||
         Boolean(game.gameStarted) ||
-        game.stats.gamecount > 0 ||
-        !game.acceptingPlayers,
+        game.stats.gamecount > 0,
       running: game.running,
+      round: {
+        stage: game.stage,
+        startId: game.startId,
+        ...(game.pendingStart
+          ? { positions: game.pendingStart.positions }
+          : {}),
+      },
       scores: {
         gamecount: game.stats.gamecount,
         players: game.stats.players.map((player) => ({

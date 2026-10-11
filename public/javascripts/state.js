@@ -210,6 +210,7 @@ class State {
     return Boolean(
       this.roundInfo &&
       !this.roundInfo.running &&
+      !['preparation', 'countdown'].includes(this.roundInfo.round?.stage) &&
       this.roundInfo.eligiblePlayerCount >= 2 &&
       (this.roundInfo.firstRoundStarted || this.isRoomOwner()),
     )

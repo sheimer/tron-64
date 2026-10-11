@@ -34,6 +34,11 @@ const buildColorConfig = () => {
 class AppCoordinator {
   constructor() {
     this.currentGameKey = null
+    this.currentStartId = null
+    this.roundStage = 'configuration'
+    this.roundGeneration = 0
+    this.resetTimer = null
+    this.scoreTimer = null
     this.localPlayersConfig = new Map() // playerId -> { left, right }
     this.pendingRegistrations = new Map()
     this.pendingJoin = null
@@ -293,6 +298,7 @@ class AppCoordinator {
     })
 
     network.on('close', () => {
+      this.clearRoundCallbacks()
       if (this.currentGameKey) this.recoveryNotice = true
       this.clearPendingRegistrations()
       this.pendingJoin = null
@@ -498,43 +504,74 @@ class AppCoordinator {
         this.settingsView.updateSpeed(closestSpeed)
       }
 
-      if (info.started) {
-        if (info.scores) {
-          state.set('scores', info.scores)
-          this.gameView.updateScores(info.scores, players)
-        }
-        if (state.screen !== 'game') {
-          this.setScreen('game')
-          this.setMatchState(info.running ? 'scoresWaiting' : 'finished')
-        } else if (state.matchState === 'scoresWaiting') {
-          // Reconnect already puts us on the game screen. Resolve its waiting
-          // state from the snapshot without interrupting an active local round.
-          this.setMatchState(info.running ? 'scoresWaiting' : 'finished')
-        }
-      } else {
-        if (state.screen !== 'config') {
-          this.setScreen('config')
-        }
+      if (info.scores) {
+        state.set('scores', info.scores)
+        this.gameView.updateScores(info.scores, players)
+      }
+      const round = info.round
+      if (!round) return
+      if (['preparation', 'countdown'].includes(round.stage)) {
+        this.prepareRound({ key: info.key, ...round })
+        this.roundStage = round.stage
+        this.setMatchState('start')
+      } else if (round.stage === 'configuration') {
+        this.clearRoundCallbacks()
+        this.currentStartId = null
+        this.roundStage = round.stage
+        this.setScreen('config')
         this.setMatchState('settingPlayers')
+      } else if (round.stage === 'finished') {
+        const revealing =
+          this.currentStartId === round.startId && this.scoreTimer !== null
+        if (this.currentStartId !== round.startId) this.clearRoundCallbacks()
+        this.currentStartId = round.startId
+        this.roundStage = round.stage
+        this.setScreen('game')
+        if (!revealing) this.setMatchState('finished')
+      } else if (round.stage === 'running') {
+        const prepared =
+          this.currentStartId === round.startId &&
+          state.matchState !== 'scoresWaiting'
+        if (!prepared) this.clearRoundCallbacks()
+        this.currentStartId = round.startId
+        this.roundStage = round.stage
+        this.setScreen('game')
+        this.setMatchState(prepared ? 'running' : 'scoresWaiting')
       }
     })
 
-    network.on(MSG_TYPE.GAME_STATE, (matchState) => {
-      if (!this.currentGameKey) return
-      this.setMatchState(matchState)
+    network.on(MSG_TYPE.GAME_STATE, (transition) => {
+      if (!transition || transition.key !== this.currentGameKey) return
+      if (transition.startId !== this.currentStartId) return
+      if (transition.reason) {
+        this.clearRoundCallbacks()
+        this.currentStartId = null
+        this.roundStage = transition.stage
+        if (state.roundInfo)
+          state.roundInfo = {
+            ...state.roundInfo,
+            running: false,
+            round: { stage: transition.stage, startId: null },
+          }
+        this.renderer.clear()
+        state.set('positions', {})
+        this.setScreen(transition.stage === 'configuration' ? 'config' : 'game')
+        this.setMatchState(
+          transition.stage === 'configuration' ? 'settingPlayers' : 'finished',
+        )
+        this.showConnectionFeedback(
+          `Round cancelled: ${transition.reason}. Start again when ready.`,
+        )
+        return
+      }
+      this.roundStage = transition.stage
+      if (transition.stage === 'running') this.setMatchState('running')
+      else if (['preparation', 'countdown'].includes(transition.stage))
+        this.setMatchState('start')
     })
 
-    network.on(MSG_TYPE.GAME_RESET, (positions) => {
-      if (!this.currentGameKey) return
-      state.set('positions', positions)
-      this.renderer.clear()
-      this.setScreen('game')
-      this.setMatchState('start')
-      this.gameView.updatePlayerPositions(state.players, positions)
-      setTimeout(() => {
-        this.renderer.resetGrid()
-        network.send(MSG_TYPE.ARENA_READY)
-      }, 50)
+    network.on(MSG_TYPE.GAME_RESET, (reset) => {
+      this.prepareRound(reset)
     })
 
     network.on(MSG_TYPE.GAME_DRAW, (changes) => {
@@ -542,18 +579,87 @@ class AppCoordinator {
       this.renderer.draw(changes)
     })
 
-    network.on(MSG_TYPE.GAME_FINISH, (scores) => {
-      if (!this.currentGameKey) return
+    network.on(MSG_TYPE.GAME_FINISH, (result) => {
+      if (
+        !result ||
+        result.key !== this.currentGameKey ||
+        typeof result.startId !== 'string' ||
+        result.startId !== this.currentStartId
+      )
+        return
+      this.clearRoundCallbacks()
+      this.roundStage = 'finished'
       if (state.roundInfo)
-        state.roundInfo = { ...state.roundInfo, running: false }
-      state.set('scores', scores)
-      this.gameView.updateScores(scores, state.players)
+        state.roundInfo = {
+          ...state.roundInfo,
+          running: false,
+          round: { stage: 'finished', startId: result.startId },
+        }
+      state.set('scores', result.scores)
+      this.gameView.updateScores(result.scores, state.players)
       this.renderer.clear()
       this.setMatchState('scores')
-      setTimeout(() => {
+      const guard = this.roundCallbackGuard()
+      this.scoreTimer = setTimeout(() => {
+        if (!guard()) return
+        this.scoreTimer = null
         this.setMatchState('finished')
       }, 1000)
     })
+  }
+
+  clearRoundCallbacks() {
+    clearTimeout(this.resetTimer)
+    clearTimeout(this.scoreTimer)
+    this.resetTimer = null
+    this.scoreTimer = null
+    this.roundGeneration++
+  }
+
+  roundCallbackGuard() {
+    const key = this.currentGameKey
+    const startId = this.currentStartId
+    const socketGeneration = network.generation
+    const roundGeneration = this.roundGeneration
+    return () =>
+      key === this.currentGameKey &&
+      startId === this.currentStartId &&
+      socketGeneration === network.generation &&
+      roundGeneration === this.roundGeneration
+  }
+
+  prepareRound(round) {
+    if (
+      !round ||
+      round.key !== this.currentGameKey ||
+      typeof round.startId !== 'string' ||
+      !round.positions ||
+      typeof round.positions !== 'object'
+    )
+      return
+    if (this.currentStartId === round.startId) return
+    this.clearRoundCallbacks()
+    this.currentStartId = round.startId
+    this.roundStage = round.stage ?? 'preparation'
+    state.set('positions', round.positions)
+    this.renderer.clear()
+    this.setScreen('game')
+    this.setMatchState('start')
+    this.gameView.updatePlayerPositions(state.players, round.positions)
+    const guard = this.roundCallbackGuard()
+    this.resetTimer = setTimeout(() => {
+      if (!guard() || !['preparation', 'countdown'].includes(this.roundStage))
+        return
+      this.resetTimer = null
+      this.renderer.resetGrid()
+      if (
+        state.players.some(
+          (player) =>
+            player.connected !== false && state.isLocalPlayer(player.id),
+        )
+      )
+        network.arenaReady(round.startId)
+    }, 50)
   }
 
   setMatchState(matchState) {
@@ -567,6 +673,8 @@ class AppCoordinator {
   }
 
   joinGame(gameKey, explicit = true) {
+    this.clearRoundCallbacks()
+    this.currentStartId = null
     this.clearPendingRegistrations()
     this.localPlayersConfig.clear()
     state.clearOwnership()
@@ -606,6 +714,8 @@ class AppCoordinator {
   }
 
   leaveCurrentGame() {
+    this.clearRoundCallbacks()
+    this.currentStartId = null
     if (this.currentGameKey) {
       network.leaveGame()
     }

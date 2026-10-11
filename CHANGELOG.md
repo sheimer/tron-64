@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Room speed changes require the authenticated creator between rounds, accept integer intervals from 10 to 500 ms, and preserve the previous speed if saving fails. Duplicate pending starts and active-round starts are rejected without resetting or rescoring.
-- Matching client/server builds now use strict wire protocol version 3. Stale cached pages still receive reload guidance; older wire formats are not accepted.
-- Phase 1 establishes authority and durable first launch. Full cancellable preparation, strict persisted-room migration, and final permission feedback remain pending in the [implementation plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md); this intermediate phase is not launch-ready.
+- Matching client/server builds now use strict wire protocol version 4. Stale cached pages still receive reload guidance; older wire formats are not accepted.
+- Pending rounds now cancel safely on bike ownership/connection changes and initial creator loss, preserve scores and registration rules, and return clients to configuration or finished scores. Attempt-scoped events and guarded delayed callbacks prevent stale rounds from starting or changing a replacement screen.
+- Phases 1–2 establish authority, durable first launch and cancellable preparation/countdown. Strict persisted-room migration and final permission feedback remain pending in the [implementation plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md); this intermediate phase is not launch-ready.
 
 ---
 
