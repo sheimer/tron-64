@@ -1,4 +1,10 @@
 import assert from 'node:assert/strict'
+import { fork } from 'node:child_process'
+import { once } from 'node:events'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import RealWebSocket from 'ws'
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { renderFile } from 'pug'
@@ -133,6 +139,10 @@ const room = '11223344'
 const owner = { ownerClientId: 'a'.repeat(32), roomOwnerToken: 'A'.repeat(43) }
 let network
 let app
+let wireServer
+let wireSocket
+let wireDataDir
+let registrationWireInfo
 try {
   const elements = new Map(
     [...html.matchAll(/id="([^"]+)"/g)].map((match) => [
@@ -234,6 +244,7 @@ try {
   const socket = Socket.instances.at(-1)
   const el = (id) => elements.get(id)
   const info = (extra = {}) => ({
+    ...registrationWireInfo,
     key: room,
     name: 'Room',
     players: [
@@ -244,7 +255,6 @@ try {
     ownerStatus: 'present',
     firstRoundStarted: false,
     running: false,
-    acceptingPlayers: true,
     interval: 37,
     scores: { gamecount: 0, players: [], messages: [] },
     round: { stage: 'configuration', startId: null },
@@ -278,6 +288,159 @@ try {
   socket.dispatch('open')
   socket.receive(MSG_TYPE.LOBBY_LIST, [])
   app.setScreen('lobby')
+
+  // Actual server packets establish the registration contract. Do not invent
+  // acceptingPlayers in a client fixture: omission disabled every Chromium
+  // registration form despite successful private authentication.
+  wireDataDir = await mkdtemp(path.join(tmpdir(), 'room-controls-wire-'))
+  wireServer = fork(
+    new URL('./helpers/round-authority-server.js', import.meta.url),
+    {
+      env: { ...process.env, DATA_DIR: wireDataDir },
+      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+    },
+  )
+  const startup = await Promise.race([
+    once(wireServer, 'message'),
+    new Promise((resolve, reject) =>
+      setTimeout(() => reject(new Error('Wire fixture startup timeout')), 5000),
+    ),
+  ])
+  wireSocket = new RealWebSocket(`ws://127.0.0.1:${startup[0].port}/ws`)
+  const packets = []
+  wireSocket.on('message', (bytes, binary) => {
+    if (!binary) packets.push(JSON.parse(bytes.toString()))
+  })
+  await once(wireSocket, 'open')
+  const waitPacket = async (predicate, after = 0) => {
+    const expires = Date.now() + 5000
+    do {
+      const packet = packets.slice(after).find(predicate)
+      if (packet) return packet
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    } while (Date.now() < expires)
+    throw new Error('Actual wire packet deadline exceeded')
+  }
+  const replay = (packet) =>
+    socket.receive(packet.type, packet.payload, {
+      protocolVersion: packet.protocolVersion,
+      ...(packet.requestId ? { requestId: packet.requestId } : {}),
+      ...(packet.code ? { code: packet.code } : {}),
+    })
+  await waitPacket((packet) => packet.type === MSG_TYPE.LOBBY_LIST)
+  el('input-create-game').oninput({
+    target: { value: 'Real registration contract' },
+  })
+  el('form-create-game').onsubmit()
+  const createRequest = socket.messages(MSG_TYPE.CREATE_GAME).at(-1)
+  wireSocket.send(JSON.stringify(createRequest))
+  const created = await waitPacket(
+    (packet) =>
+      packet.type === MSG_TYPE.GAME_CREATED &&
+      packet.requestId === createRequest.requestId,
+  )
+  replay(created)
+  const wireRoomKey = created.payload.key
+  const joinRequest = currentRequest()
+  assert.equal(joinRequest.payload.key, wireRoomKey)
+  assert.deepEqual(joinRequest.payload.reconnect, [])
+  assert.equal(state.isJoinedRoom(), false)
+  assert.equal(el('input-add-player').disabled, true)
+  const joinPacketsFrom = packets.length
+  wireSocket.send(JSON.stringify(joinRequest))
+  const privateJoin = await waitPacket(
+    (packet) =>
+      packet.type === MSG_TYPE.JOIN_RESULT &&
+      packet.requestId === joinRequest.requestId,
+    joinPacketsFrom,
+  )
+  const firstSnapshot = await waitPacket(
+    (packet) =>
+      packet.type === MSG_TYPE.GAME_INFO && packet.payload.key === wireRoomKey,
+    joinPacketsFrom,
+  )
+  assert.ok(
+    packets.indexOf(privateJoin) < packets.indexOf(firstSnapshot),
+    'Actual server sends correlated private join before the authoritative room snapshot',
+  )
+  replay(privateJoin)
+  assert.equal(state.isJoinedRoom(), true)
+  assert.equal(state.isRoomOwner(), true)
+  assert.equal(
+    el('input-add-player').disabled,
+    true,
+    'Private proof alone cannot open registration before its room snapshot',
+  )
+  assert.equal(
+    Object.hasOwn(firstSnapshot.payload, 'acceptingPlayers'),
+    true,
+    'Actual current GAME_INFO must carry authoritative registration availability',
+  )
+  assert.equal(firstSnapshot.payload.acceptingPlayers, true)
+  registrationWireInfo = firstSnapshot.payload
+  replay(firstSnapshot)
+  assert.equal(state.screen, 'config')
+  assert.equal(el('input-add-player').disabled, false)
+  assert.equal(el('select-keycodes').disabled, false)
+  assert.match(
+    el('registration-permission-feedback').textContent,
+    /0 of six bike slots occupied/,
+  )
+  assert.equal(
+    el('btn-init-game').disabled,
+    true,
+    'An authenticated creator still needs two eligible bikes',
+  )
+  for (const [index, keys] of [
+    '66_78',
+    '89_88',
+    '75_76',
+    '81_87',
+    '40_39',
+    '98_99',
+  ].entries()) {
+    el('input-add-player').oninput({
+      target: { value: `Wire bike ${index + 1}` },
+    })
+    el('select-keycodes').onchange({ target: { value: keys } })
+    assert.equal(el('btn-add-player').disabled, false)
+    el('form-add-player').onsubmit()
+    const registration = socket.messages(MSG_TYPE.ADD_PLAYER).at(-1)
+    const registrationFrom = packets.length
+    wireSocket.send(JSON.stringify(registration))
+    const binding = await waitPacket(
+      (packet) =>
+        packet.type === MSG_TYPE.PLAYER_REGISTERED &&
+        packet.requestId === registration.requestId,
+      registrationFrom,
+    )
+    const snapshot = await waitPacket(
+      (packet) =>
+        packet.type === MSG_TYPE.GAME_INFO &&
+        packet.payload.key === wireRoomKey &&
+        packet.payload.players.length === index + 1,
+      registrationFrom,
+    )
+    replay(binding)
+    replay(snapshot)
+    assert.equal(state.players.length, index + 1)
+    assert.equal(state.ownedPlayerIds.size, index + 1)
+    assert.equal(snapshot.payload.acceptingPlayers, index < 5)
+    assert.equal(el('input-add-player').disabled, index === 5)
+    assert.equal(el('select-keycodes').disabled, index === 5)
+    assert.equal(el('btn-init-game').disabled, index === 0)
+  }
+  assert.match(
+    el('registration-permission-feedback').textContent,
+    /all six bike slots/i,
+  )
+  assert.equal(el('btn-add-player').disabled, true)
+  app.leaveCurrentGame()
+  state.removeConnectedGames([wireRoomKey])
+  console.log(
+    'Actual creation/private-join/room-snapshot wire order opens registration, registers six bikes through real acknowledgements, then disables the full form',
+  )
+
   const bytes = saved.get('connectedGames')
   const initialJoinCount = socket.messages(MSG_TYPE.JOIN_GAME).length
   socket.receive(MSG_TYPE.LOBBY_LIST, [])
@@ -573,6 +736,13 @@ try {
     'Client room controls: actual coordinator/network/state/settings/views, independent owner proof, complete stage/roster/socket gates, accurate custom intervals, no echoes, safe rejection rollback, saved private rows and shared keyboard bindings passed',
   )
 } finally {
+  wireSocket?.terminate()
+  if (wireServer?.exitCode === null && wireServer.signalCode === null) {
+    const exited = once(wireServer, 'exit')
+    wireServer.kill('SIGKILL')
+    await exited
+  }
+  if (wireDataDir) await rm(wireDataDir, { recursive: true, force: true })
   app?.clearRoundCallbacks()
   app?.clearPendingRegistrations()
   if (network) {
