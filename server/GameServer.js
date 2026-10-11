@@ -141,6 +141,7 @@ export class GameServer {
       ownerClientId: game.roomOwner.clientId,
       ownerStatus: game.roomOwner.status,
       firstRoundStarted: game.firstRoundStarted,
+      acceptingPlayers: game.acceptingPlayers,
       eligiblePlayerCount: game.eligiblePlayerCount,
       started:
         game.firstRoundStarted ||

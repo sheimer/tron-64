@@ -28,6 +28,11 @@ assert.strictEqual(game.interval, 40, 'Default interval should be 40ms')
 
 const info = gameServer.getGameInfo(key)
 assert.strictEqual(info.interval, 40, 'getGameInfo must include interval')
+assert.strictEqual(
+  info.acceptingPlayers,
+  true,
+  'Fresh GAME_INFO must project the authoritative registration gate',
+)
 
 // 2. Add players and verify setInterval updates and triggers persistence
 console.log('2. Verifying setInterval persistence and getGameInfo sync...')
@@ -38,7 +43,30 @@ game.setInterval(20)
 assert.strictEqual(game.interval, 20, 'Interval should be updated to 20ms')
 
 const updatedInfo = gameServer.getGameInfo(key)
-assert.strictEqual(updatedInfo.interval, 20, 'Updated interval must reflect in getGameInfo')
+assert.strictEqual(
+  updatedInfo.interval,
+  20,
+  'Updated interval must reflect in getGameInfo',
+)
+
+// The current public room snapshot closes registration at the sixth slot,
+// using the same authoritative value that guards server registration.
+for (let i = 3; i <= 6; i++) {
+  const result = game.addPlayer({
+    id: `p${i}`,
+    name: `Bike ${i}`,
+    color: 'leaf',
+    left: 65,
+    right: 68,
+  })
+  assert.strictEqual(result.ok, true)
+}
+assert.strictEqual(game.acceptingPlayers, false)
+assert.strictEqual(
+  gameServer.getGameInfo(key).acceptingPlayers,
+  false,
+  'Six-slot GAME_INFO must project closed registration',
+)
 
 // 3. Clean up
 game.destroy()
