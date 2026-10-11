@@ -269,7 +269,9 @@ export const setupWebSocketServer = (server) => {
                     ? 'SERVER_CAPACITY'
                     : 'PERSISTENCE_FAILED',
                 blocked
-                  ? 'The saved games format is unsupported. Back up the snapshot and use a compatible server version before creating rooms.'
+                  ? storage.loadError === 'INVALID_SNAPSHOT'
+                    ? 'The saved games snapshot is invalid and protected. Back it up and manually recover a valid snapshot before creating rooms or saving changes.'
+                    : 'The saved games format is unsupported. Back up the snapshot and use a compatible server version before creating rooms.'
                   : full
                     ? `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`
                     : 'Room creation could not be saved. Try again later.',

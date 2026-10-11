@@ -22,6 +22,7 @@ export class GameView {
     this.rightBtn = document.getElementById('btn-right')
 
     this.gameCounter = document.getElementById('gamecount')
+    this.roundResultsLabel = document.getElementById('round-results-label')
     this.gameMessages = document.getElementById('messages')
     this.bodyScoreTable = document.getElementById('body-scoretable')
 
@@ -173,9 +174,16 @@ export class GameView {
     if (this.gameCounter) {
       this.gameCounter.innerHTML = ''
       this.gameCounter.appendChild(
-        document.createTextNode(ordinalSuffixOf(scores.gamecount)),
+        document.createTextNode(
+          scores.gamecount === 0
+            ? 'No completed rounds'
+            : ordinalSuffixOf(scores.gamecount),
+        ),
       )
     }
+    if (this.roundResultsLabel)
+      this.roundResultsLabel.textContent =
+        scores.gamecount === 0 ? '' : " game's results..."
 
     if (this.gameMessages) {
       this.gameMessages.innerHTML = ''

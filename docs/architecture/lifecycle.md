@@ -75,7 +75,7 @@ After a whole successful admission/handover commits, any captured roster ownersh
 
 Cancellation clears both timers and retires its ID. A scoped cancellation event carries the retired ID; idle snapshots carry null. First cancellation returns clients to configuration and restores prior registration availability subject to six slots. Later cancellation returns even clients already on the game screen to finished scores, retaining the launch marker and closed registration. No cancellation scores a round or automatically restarts it. Reset/stop/destroy invalidate pending and physics callbacks; tick callbacks validate their generation, current timer and live room both before and after arena hooks, preventing old or reentrant callbacks from running/scheduling a replacement round.
 
-Creator-only speed mutations accept integer intervals from 10 to 500 ms between rounds and roll back on save failure. Trusted internal simulation/fixture methods are separate from guarded network admission. The strict cold-restore matrix and final creator/control presentation remain in Phases 3–4 of [the implementation plan](../plans/2026-10-11-registration-invariants-and-round-authority.md); this intermediate build is not launch-ready.
+Creator-only speed mutations accept integer intervals from 10 to 500 ms between rounds and roll back on save failure. Trusted internal simulation/fixture methods are separate from guarded network admission. Strict cold restore and independent creator recovery are implemented; final creator/control presentation remains in Phase 4 of [the implementation plan](../plans/2026-10-11-registration-invariants-and-round-authority.md). This intermediate build is not launch-ready.
 
 ---
 
@@ -117,9 +117,13 @@ At the start of a subsequent round, an offline player explodes at its starting p
 
 ### Authenticated reconnect
 
-The lobby labels its action “rejoin” when usable saved credentials exist, including independent owner-only credentials and bike credentials marked revoked for explicit reclaim. This action remains available when registration is closed; saved credentials only enable the attempt, and the server still authenticates every claim.
+The lobby labels its action “rejoin” when usable saved credentials exist, including independent owner-only credentials and bike credentials marked revoked for explicit reclaim. New spectators can also join after registration closes, subject to the existing server room-capacity checks. Direct room entry uses `/?room=<eight-character lowercase hexadecimal key>` and makes one explicit correlated join after protocol negotiation. The URL carries no credential; saved owner and bike proofs are submitted separately.
 
 A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback. A join without `reconnect` credentials admits a spectator and grants no player ownership.
+
+Independent creator recovery needs no bike claim or handle. Only the matching private owner result restores creator controls; public creator IDs do not. Creator revocation suppresses automatic reclaim while retaining the credential for explicit rejoin. Bike transfers never transfer the creator role, and closing a superseded creator socket cannot release its replacement. Invalid owner and bike claims remain independent, and rejected room/handle preflights change neither binding.
+
+Saved owner-only and bike records survive public lobby omission, invalid credentials, capacity errors, and connection loss. Only `GAME_NOT_FOUND` for the current explicit join request, key, and socket generation deletes that room's saved record and returns to the lobby. Automatic reconnect failure preserves it. There are no background existence probes.
 
 A player that disconnected mid-round becomes eligible for the next round after authentication. Reconnection does not resurrect its dead cycle in the current round.
 
@@ -181,7 +185,23 @@ Version 1 snapshots contain a `games` array with each room's metadata, roster, s
 
 ### Cold restore
 
-Cold restore preserves rosters, scores, creator verifier and the first-launch marker, marks every player disconnected, and starts with no bike owners, creator socket, pending start, or input handles. In-progress physics is discarded. Matching creator and bike credentials restore their separate bindings through authenticated reconnect. Strict malformed/contradictory launch-metadata validation remains pending in Phase 3; do not treat this intermediate build as a completed migration.
+Cold restore preserves actual rosters, scores, creator verifier and the first-launch marker, marks every player and score connection flag disconnected, and starts with no bike owners, creator socket, pending attempt, round timers, physics, or input handles. The ordinary unreferenced inactivity check still runs. Zero-player owner rooms are valid. Matching creator and bike credentials restore their separate bindings through authenticated reconnect.
+
+A committed first launch restores with registration closed, `started: true`, `running: false`, and idle `finished` stage, even if no round completed. Scores and completed-round count remain unchanged; no result is invented. The browser shows “No completed rounds” and explains that saved bikes must reconnect before a later round can start. Any joined client can request that round once at least two authenticated bikes are eligible, without the creator present.
+
+All rooms' launch metadata is validated before restoring any session. A present marker must be a boolean; a present completed-round count must be a nonnegative safe integer. Omitted counts normalize to zero. The additive version-1 migration matrix is:
+
+| `firstRoundStarted` | Valid completed-round count | Restore policy                                                                  |
+| ------------------- | --------------------------- | ------------------------------------------------------------------------------- |
+| `false`             | Zero or omitted             | Configuration; registration open subject to the ordinary roster/score slot cap. |
+| `true`              | Zero, omitted, or positive  | Idle finished; registration closed; actual scores preserved.                    |
+| Omitted             | Positive                    | Migrate marker to `true`; idle finished and closed registration.                |
+| Omitted             | Zero or omitted             | Migrate marker to `false`; configuration and ordinary registration cap.         |
+| `false`             | Positive                    | Reject the entire snapshot as `INVALID_SNAPSHOT`.                               |
+| Present nonboolean  | Any                         | Reject the entire snapshot as `INVALID_SNAPSHOT`.                               |
+| Any                 | Present invalid count       | Reject the entire snapshot as `INVALID_SNAPSHOT`.                               |
+
+Rejected snapshots restore no rooms, preserve original bytes, and block writes and room creation until a valid snapshot is recovered manually. Missing/malformed creator verifier data instead makes only creator recovery unavailable. Valid bike credentials and later-round permission remain usable. Losing the creator credential or restoring an unstarted legacy room cannot grant the initial start or speed controls to another client: create a new room when the creator cannot recover. There is no election, grace takeover, or manual role transfer. Already-played legacy history establishes later-round permission but never creator identity. Historical bikes from legacy array snapshots remain unclaimable; version-1 snapshots can retain valid bike verifiers when the launch marker is absent.
 
 ### Missing, legacy, and malformed data
 
@@ -190,6 +210,8 @@ Cold restore preserves rosters, scores, creator verifier and the first-launch ma
 | Missing file                                                               | Start with an empty room list.                                                                                                                                                          |
 | Legacy array format                                                        | Load disconnected historical rosters and scores without credentials, even if an unexpected private field appears. Those IDs cannot be reclaimed; create a new room to continue playing. |
 | Missing or malformed verifier in an otherwise valid room                   | Fail closed for that player; other valid credentials remain usable.                                                                                                                     |
+| Missing or malformed independent creator verifier                          | Creator recovery is unavailable; do not elect an owner. Valid bikes and later-round permission remain independent.                                                                      |
+| Malformed or contradictory launch metadata                                 | Restore no rooms, preserve original bytes, and block writes/creation with `INVALID_SNAPSHOT` until manual valid-snapshot recovery.                                                      |
 | Unknown future version, malformed file, or malformed room-record structure | Preserve the original file, block new writes and room creation, and emit a safe diagnostic until compatible software or a valid backup is restored.                                     |
 
 ---

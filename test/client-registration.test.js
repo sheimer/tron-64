@@ -36,7 +36,7 @@ try {
     getElementById: (id) =>
       id === 'connection-feedback' ? connectionFeedback : null,
   }
-  globalThis.window = { addEventListener: () => {} }
+  globalThis.window = { location: { search: '' }, addEventListener: () => {} }
   const listeners = new Map()
   const sends = []
   const handles = new Map()

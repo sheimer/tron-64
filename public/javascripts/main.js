@@ -33,6 +33,10 @@ const buildColorConfig = () => {
 
 class AppCoordinator {
   constructor() {
+    const entryKey = new URLSearchParams(window.location.search ?? '').get(
+      'room',
+    )
+    this.directRoomKey = /^[a-f0-9]{8}$/.test(entryKey) ? entryKey : null
     this.currentGameKey = null
     this.currentStartId = null
     this.roundStage = 'configuration'
@@ -287,6 +291,14 @@ class AppCoordinator {
 
   initNetworkListeners() {
     network.on('open', () => {
+      if (this.directRoomKey) {
+        const key = this.directRoomKey
+        this.directRoomKey = null
+        state.setCurrentGame(key, key)
+        this.setScreen('lobby')
+        this.joinGame(key)
+        return
+      }
       if (this.currentGameKey) {
         this.joinGame(this.currentGameKey, false)
         if (this.recoveryNotice) {
@@ -357,7 +369,7 @@ class AppCoordinator {
       const pending = this.pendingJoin
       if (
         !pending ||
-        msg.requestId !== pending.requestId ||
+        msg?.requestId !== pending.requestId ||
         pending.generation !== network.generation ||
         pending.key !== this.currentGameKey ||
         result?.key !== pending.key ||
@@ -366,16 +378,49 @@ class AppCoordinator {
       )
         return
       const accepted = result.accepted
-      const handles = new Set(accepted.map((binding) => binding.inputHandle))
+      const rejectedBindings = result.rejected
+      const validRecord = (binding) =>
+        binding !== null &&
+        typeof binding === 'object' &&
+        !Array.isArray(binding) &&
+        typeof binding.id === 'string' &&
+        pending.ids.has(binding.id)
+      // Validate the complete private reply before consuming the request or
+      // restoring either independent role. Credential rejection is a valid
+      // outcome; a malformed or partial response grants no live controls.
       if (
-        handles.size !== accepted.length ||
         accepted.some(
           (binding) =>
-            !pending.ids.has(binding.id) ||
+            !validRecord(binding) ||
             !Number.isInteger(binding.inputHandle) ||
             binding.inputHandle < 0 ||
             binding.inputHandle > 255,
+        ) ||
+        rejectedBindings.some(
+          (binding) =>
+            !validRecord(binding) || binding.code !== 'INVALID_CREDENTIAL',
         )
+      )
+        return
+      const handles = new Set(accepted.map((binding) => binding.inputHandle))
+      const allBindings = [...accepted, ...rejectedBindings]
+      const ids = new Set(allBindings.map((binding) => binding.id))
+      const owner = result.roomOwner
+      const validOwner = pending.roomOwner
+        ? owner !== null &&
+          typeof owner === 'object' &&
+          !Array.isArray(owner) &&
+          ((owner.accepted === true &&
+            owner.ownerClientId === pending.roomOwner.ownerClientId) ||
+            (owner.accepted === false &&
+              owner.code === 'INVALID_OWNER_CREDENTIAL'))
+        : owner === null
+      if (
+        !validOwner ||
+        ids.size !== allBindings.length ||
+        ids.size !== pending.ids.size ||
+        handles.size !== accepted.length ||
+        accepted.length > 6
       )
         return
       this.pendingJoin = null
@@ -392,7 +437,11 @@ class AppCoordinator {
         this.localPlayersConfig.set(binding.id, config)
       }
       const rejected = result.rejected.length
-      if (rejected) {
+      if (pending.roomOwner && !state.isRoomOwner()) {
+        this.showConnectionFeedback(
+          'Room creator credential could not be authenticated. Saved credentials were kept; rejoin explicitly to try again.',
+        )
+      } else if (rejected) {
         this.showConnectionFeedback(
           `${rejected} saved player${rejected === 1 ? '' : 's'} could not be restored. Check the saved credentials or join a new room.`,
         )
@@ -414,7 +463,11 @@ class AppCoordinator {
     })
 
     network.on(MSG_TYPE.ROOM_OWNER_REVOKED, (notice) => {
-      if (notice?.key !== this.currentGameKey) return
+      if (
+        notice?.key !== this.currentGameKey ||
+        notice.ownerClientId !== state.roomOwnerClientId
+      )
+        return
       state.revokeRoomOwner(notice.key)
       this.configView.updatePlayersTable(state.players)
       this.settingsView.setSpectatorMode(true)
@@ -449,8 +502,21 @@ class AppCoordinator {
         clearTimeout(pending.timer)
         this.pendingRegistrations.delete(msg.requestId)
       }
-      if (this.pendingJoin && msg?.requestId === this.pendingJoin.requestId)
+      const join = this.pendingJoin
+      if (
+        join &&
+        msg?.requestId === join.requestId &&
+        join.key === this.currentGameKey &&
+        join.generation === network.generation
+      ) {
         this.pendingJoin = null
+        if (msg.code === 'GAME_NOT_FOUND' && join.explicit) {
+          state.removeConnectedGames([join.key])
+          this.leaveCurrentGame()
+          this.showConnectionFeedback(message)
+          return
+        }
+      }
       if (this.currentGameKey) this.configView.showFeedback(message)
       if (msg?.code === 'INPUT_HANDLE_EXHAUSTED' && this.currentGameKey) {
         this.showConnectionFeedback(message, true)
@@ -528,6 +594,10 @@ class AppCoordinator {
         this.roundStage = round.stage
         this.setScreen('game')
         if (!revealing) this.setMatchState('finished')
+        if (info.firstRoundStarted && info.scores?.gamecount === 0)
+          this.showConnectionFeedback(
+            'The first round launch was saved, but no round completed. Registration is closed. Reconnect saved bikes to start the next round.',
+          )
       } else if (round.stage === 'running') {
         const prepared =
           this.currentStartId === round.startId &&
@@ -641,6 +711,7 @@ class AppCoordinator {
     this.clearRoundCallbacks()
     this.currentStartId = round.startId
     this.roundStage = round.stage ?? 'preparation'
+    this.showConnectionFeedback('')
     state.set('positions', round.positions)
     this.renderer.clear()
     this.setScreen('game')
@@ -687,6 +758,7 @@ class AppCoordinator {
       key: gameKey,
       generation: network.generation,
       requestId,
+      explicit,
       ids: new Set(reconnect.map((entry) => entry.id)),
       missing: state.getLocalPlayerIds(gameKey).length - reconnect.length,
       roomOwner: state.getRoomOwnerClaim(gameKey, explicit),

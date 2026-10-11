@@ -5,7 +5,19 @@ export const SNAPSHOT_VERSION = 1
 
 // Reject an incomplete room before restoration; a broken record must not be
 // treated as an empty registry and overwritten by the next save. Credential
-// fields are intentionally omitted here so invalid verifiers fail per player.
+// fields are intentionally omitted here so invalid verifiers fail independently.
+const validLaunchMetadata = (record) => {
+  const hasMarker = Object.hasOwn(record, 'firstRoundStarted')
+  const hasCount = Object.hasOwn(record.stats, 'gamecount')
+  const count = hasCount ? record.stats.gamecount : 0
+  return (
+    (!hasMarker || typeof record.firstRoundStarted === 'boolean') &&
+    Number.isSafeInteger(count) &&
+    count >= 0 &&
+    !(hasMarker && record.firstRoundStarted === false && count > 0)
+  )
+}
+
 const validRoomRecord = (record) =>
   record !== null &&
   typeof record === 'object' &&
@@ -19,6 +31,8 @@ const validRoomRecord = (record) =>
   ) &&
   record.stats !== null &&
   typeof record.stats === 'object' &&
+  !Array.isArray(record.stats) &&
+  validLaunchMetadata(record) &&
   Array.isArray(record.stats.players) &&
   record.stats.players.every(
     (player) =>
@@ -148,7 +162,15 @@ export class Storage {
           ? parsed.games
           : null
       // The versioned schema is the only format allowed to restore verifiers.
-      if (records && records.every(validRoomRecord)) return records
+      // Validate the entire snapshot before creating even one session. Only
+      // absent fields migrate; malformed present metadata protects the file.
+      if (records && records.every(validRoomRecord))
+        return records.map((record) => ({
+          ...record,
+          stats: { ...record.stats, gamecount: record.stats.gamecount ?? 0 },
+          firstRoundStarted:
+            record.firstRoundStarted ?? (record.stats.gamecount ?? 0) > 0,
+        }))
       this.readOnly = true
       this.loadError =
         parsed?.version === SNAPSHOT_VERSION || Array.isArray(parsed)

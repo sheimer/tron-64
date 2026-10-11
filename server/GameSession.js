@@ -42,11 +42,13 @@ export class GameSession {
     this.nextTickTime = null
     this.gameStarted = null
     this.running = false
-    this.stats = stats || {
-      gamecount: 0,
-      players: [],
-      messages: [],
-    }
+    this.stats = stats
+      ? { ...stats, gamecount: stats.gamecount ?? 0 }
+      : {
+          gamecount: 0,
+          players: [],
+          messages: [],
+        }
     this.ownership = new PlayerOwnership(key)
     this.roomOwner = new RoomOwnership(key, privateData?.roomOwner)
     this.firstRoundStarted =
@@ -75,13 +77,12 @@ export class GameSession {
       players.forEach((p) => {
         this.arena.addPlayer(new Player({ ...p, connected: false }))
       })
-      this.acceptingPlayers = this.stats.players.length < MAX_PLAYERS
       this.arena.init()
-    } else {
-      this.acceptingPlayers = true
     }
-
-    if (this.firstRoundStarted) this.acceptingPlayers = false
+    this.acceptingPlayers =
+      !this.firstRoundStarted &&
+      this.arena.players.length < MAX_PLAYERS &&
+      this.stats.players.length < MAX_PLAYERS
     this.clients = []
     this.allDisconnected = null
     this.statusTimer = null
@@ -487,6 +488,11 @@ export class GameSession {
       return players
     }, Object.create(null))
 
+    // A completed trusted/internal round also establishes launch history, so
+    // every saved snapshot respects the same marker/count invariant.
+    this.firstRoundStarted = true
+    this.acceptingPlayers = false
+    if (!this.running && !this.pendingStart) this.stage = 'finished'
     this.stats.gamecount++
     roundsPlayedCounter.inc()
     this.stats.messages = []

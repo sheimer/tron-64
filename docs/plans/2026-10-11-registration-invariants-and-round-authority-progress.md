@@ -13,8 +13,8 @@
 
 - Branch: `feat/registration-invariants-and-round-authority`; base `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`.
 - PR: #5, existing draft; no unmerged dependency.
-- Latest published implementation candidate and last verified branch head: `28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7` (Phase 1 plus reviewed fixture repairs).
-- Current phase: Phase 1 verified; Phase 2 implementation and independent tests frozen, final review completed without blockers; candidate CI pending.
+- Latest published implementation candidate and last verified branch head: `c242573cb88a679b3b510b4ea6e0e2f2d00b281b` (Phase 2).
+- Current phase: Phases 1–2 verified; Phase 3 implementation/testing frozen and final independent review completed without blockers; candidate CI pending.
 - Isolated full checkout preserves `AGENTS.md` as the `GEMINI.md` symlink. No user changes were present in this checkout; changes on the user's other machines are not visible.
 
 ## Evidence by phase
@@ -23,8 +23,8 @@
 | --------- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ----------- |
 | Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                                | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected                      | Verified    |
 | 1         | 28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed  | Push 38145291262 / PR 38145295223: both 26 passed / 0 failed, three real browser suites                                                                                        | Independent tests/review passed; two CI repairs verified            | Verified    |
-| 2         | Pending                                    | 25 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Pending                                                                                                                                                                        | Independent testing and final max review found no remaining blocker | CI pending  |
-| 3         | Pending                                    | Pending                                                                                | Pending                                                                                                                                                                        | Pending                                                             | Not started |
+| 2         | c242573cb88a679b3b510b4ea6e0e2f2d00b281b   | 25 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Push 38147260346 / PR 38147263738: both 28 passed / 0 failed; three browser suites actually executed                                                                           | Independent testing and final max review found no blocking findings | Verified    |
+| 3         | Pending                                    | 27 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Pending                                                                                                                                                                        | Independent testing and final review found no blocking findings     | CI pending  |
 | 4         | Pending                                    | Pending                                                                                | Pending                                                                                                                                                                        | Pending                                                             | Not started |
 
 Record administrative checkpoint commits in the next checkpoint; never embed this document's own commit hash. Verify exact-head CI before advancing.
@@ -37,7 +37,7 @@ First repair candidate `aeb8945ea0add6eebee3f2a09adc21425bd5d461` also failed Te
 
 ## Blockers and next action
 
-No product or access blocker. Publish the independently tested/reviewed Phase 2 candidate and require exact-candidate push/PR CI, including all three actual browser suites, before Phase 3. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
+No product or access blocker. Publish the tested/reviewed Phase 3 candidate and require exact-candidate push/PR CI before Phase 4. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
 
 Local Chromium launch failed because the Playwright executable is missing. One installation command failed with invalid/truncated archives on all of its internal download retries. This is an environment failure; local browser coverage is unavailable. Required browser checks will run in Actions, with assertions and prerequisite failures preserved.
 
@@ -182,6 +182,37 @@ At the user's status check on 2026-10-11 around 14:14 UTC (16:14 Berlin), both P
 - UTC window: 2026-10-11T14:19:42Z–14:24:48Z, 5m06s observed wall time including tools, not compute time.
 - Scope: final actual runtime/client/wire/doc diff and both new lifecycle suites against the approved Phase 2 contract, including fixes, transactional admission, attempt scoping, stale callbacks and privacy. All files read-only.
 - Outcome: final frozen diff, both untracked controlled lifecycle suites, real-socket acceptance additions and browser journey reviewed without blocking findings. Pre/post-arena-hook scheduler guards, transactional admission, public/persistence projections and strict version-4 wire checks were inspected. Independent local result confirmed from the tester's log; exact-candidate Actions browser verification remains required. No edits or repeated suites; no full/fixed-port test overlap with the independent tester.
+
+### Phase 2 verification checkpoint
+
+Candidate `c242573cb88a679b3b510b4ea6e0e2f2d00b281b` passed Tests push `38147260346` (job `114493123777`) and PR `38147263738` (job `114493133290`): both 28 passed / 0 failed. All three required browser suites actually executed without skips: smoke 11.957s / 12.241s, leak 39.562s / 39.741s, and expanded ownership flow 12.889s / 13.473s. Full durations were 77.377s / 80.715s. Logs verify the exact source head and PR synthetic merge with unchanged main base; job steps, final results and preserved manifest/symlink were inspected. No failed published Phase 2 candidate or unchanged CI retry. Strict recovery and final UI/acceptance remain Phases 3–4.
+
+### phase3_implement — Phase 3 / implementer
+
+- Requested model / effort: `gpt-6.1-sol` / `high`, fresh independent context accepted; actual settings/usage unavailable.
+- Start observation: 2026-10-11T14:31:59+00:00 UTC after delegation; precise spawn timestamp unavailable. Freeze/end: 2026-10-11T14:39:33Z; observed window from this post-delegation observation 7m34s, not total task or compute time. Implementer first sampled its own clock at 14:32:14 UTC.
+- Scope: strict launch-metadata snapshot validation/migration, independent creator and bike recovery, private owner-only records and correlated missing-room cleanup, closed-registration spectator admission, applicable existing regressions/docs. Tester-owned new suites and lead administrative files excluded; no commits/pushes.
+- Outcome: strict snapshot-wide launch/count validation/migration and no-partial-restore protection, idle committed-launch zero-result recovery, complete private owner/bike reply validation, explicit correlated missing-room pruning, ordinary closed-registration spectator entry and documented direct query entry. Existing current-binding handover/release behavior preserved. Applicable architecture/changelog updated.
+- Checks: twelve unique affected existing suites passed (initial report overcounted as thirteen); frozen full run exited 1 with 27 executed passes / two missing-Chromium failures / one optional leak skip, 26.041s (runner 28/2). Scoped ESLint/Prettier/diff checks passed; original unrelated testing-guide math text preserved. Exact candidate browser CI required.
+- Corrections: trusted internal completed stats now establish consistent durable history; direct fixture completion also reports finished stage. Lead flagged complete private reply validation and actionable invalid-snapshot guidance; both included and independently covered.
+
+### phase3_test — Phase 3 / independent tester
+
+- Requested model / effort: `gpt-6.1-sol` / `high`, fresh separate context accepted; actual settings/usage unavailable.
+- Start observation: 2026-10-11T14:31:59+00:00 UTC after delegation; precise spawn timestamp unavailable. End: 2026-10-11T14:41:16Z; 9m17s observed wall window including tools/waits, not compute time.
+- Write ownership: [round recovery suite](../../test/round-recovery.test.js) and [client owner recovery suite](../../test/client-owner-recovery.test.js); all runtime/existing tests/docs read-only. No commits/pushes.
+- Outcome: actual Storage/GameServer matrix covers ten valid populated and two zero-player cases, plus 32 invalid metadata variants across 96 standalone/mixed snapshots; no room restore/save/create and original bytes preserved. Real sockets and SIGKILL restart cover zero-player creator recovery, independent all-bike transfer, replacement owner/former close, durable launch with zero results and creator-absent later spectator start, and legacy missing/malformed owner proof. Actual network/coordinator/state/lobby/GameView cover complete correlated replies, independent valid rejection, revocation/explicit reclaim, retained private proof, explicit missing-room removal, direct entry and truthful zero-result headings. No blocking frozen-diff finding.
+- Checks: owned suites/scoped ESLint/Prettier/diff pass; final independent full run actual 27 executed passes / two required missing-Chromium failures / one optional leak skip, 22.148s (runner 28/2). Runtime and owned-file fingerprints remained unchanged. Required browser execution remains Actions.
+- Follow-up: one client fixture default-argument error was corrected without attributing it to runtime. Cold-crash test strengthened to assert the actual queued physics timer before SIGKILL and no restored timer; final targeted and full runs include that delta.
+
+### phase3_review — Phase 3 / independent reviewer
+
+- Requested model / effort: `gpt-6.1-sol` / `xhigh`, fresh independent context accepted; actual settings/usage unavailable.
+- Observed UTC review window: 2026-10-11T14:41:27Z–14:45:45.303Z, approximately 4m18s including tools; precise task start unavailable. Lead sampled the active review at 14:42:25 UTC.
+- Scope: actual final runtime/client/docs diff plus both new recovery suites against the strict matrix, independent private roles, correlation/retention and direct spectator entry; all files read-only. Final independent test log supplied; no overlapping full tests.
+- Outcome: final tracked diff and both complete new recovery suites reviewed, including actual queued physics timer and SIGKILL. Strict matrix, independent proofs, current-binding cleanup, complete correlated private replies, retention/explicit cleanup, closed spectator entry and zero-result presentation found no blocking issue. Existing mixed-proof/room-handle preflight/failed-save coverage audited; independent frozen log/fingerprints confirmed. No suites repeated; diff check passed.
+- Finding resolved: lifecycle wording initially conflated legacy arrays with version-1 omitted-marker records. Lead clarified valid version-1 bike verifiers remain recoverable; reviewer inspected the final documentation-only delta. No runtime/test change or repeated full run.
+- Scope boundary: a deliberately restored `MAX_SAFE_INTEGER` counter can overflow after the existing completed-round increment, making a later restore protected-invalid. Strict restore accepts no unsafe count; saturation or start rejection would add scoring policy outside this plan. No new policy introduced. Exact candidate browser CI remains required before Phase 4.
 
 ## Model-efficiency review
 

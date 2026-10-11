@@ -427,21 +427,21 @@ this phase alone is not launch-ready.
 
 ### Phase 2 — Cancellable preparation and countdown
 
-- [ ] Tie pending stages/attempts/timers to the room lifecycle, capture participant
+- [x] Tie pending stages/attempts/timers to the room lifecycle, capture participant
       readiness, and revalidate roster/initial creator binding at final launch.
-- [ ] Cancel on reset/stop/destroy and committed participant ownership/membership
+- [x] Cancel on reset/stop/destroy and committed participant ownership/membership
       changes, including late disconnected-bike admission. Loss/replacement of the
       initial creator binding cancels a first attempt even when the creator owns no
       bikes; spectator-only changes do not cancel later attempts.
-- [ ] Add attempt-scoped reset/readiness/stage/finish messages and pending snapshot
+- [x] Add attempt-scoped reset/readiness/stage/finish messages and pending snapshot
       positions; update server, client and affected fixtures together for the current contract.
-- [ ] Implement authoritative cancellation routing and delayed client callback
+- [x] Implement authoritative cancellation routing and delayed client callback
       generation guards here. A cancelled first attempt returns to configuration with
       its creator gate intact; a cancelled later attempt returns to finished scores.
-- [ ] Prove exactly-once launch and stale callback rejection under controlled time,
+- [x] Prove exactly-once launch and stale callback rejection under controlled time,
       plus browser cancellation/retry/switch/reconnect and spectator-initiated later
       start coverage. Preserve registration/scores on cancellation.
-- [ ] Update protocol/lifecycle/testing guides for these contracts.
+- [x] Update protocol/lifecycle/testing guides for these contracts.
 
 Dependencies: Phase 1. Exit: cancellation/wire regressions and existing required
 browser suites pass. Interim limitations: comprehensive creator recovery/migration
