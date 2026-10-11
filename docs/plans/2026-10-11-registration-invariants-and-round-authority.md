@@ -5,7 +5,7 @@
 - Roadmap section: [Milestone 1 — Registration invariants and round authority](../../ROADMAP.md#registration-invariants-and-round-authority)
 - Branch: `feat/registration-invariants-and-round-authority`
 - Base: `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`
-- Existing PR: none; create the implementation PR after approval
+- Existing PR: [draft #5](https://github.com/sheimer/tron-64/pull/5); reuse it for implementation after approval
 - Dependency: completed ownership/reconnection work, merged in PR #4 and included in this baseline
 
 ## Goal and scope
