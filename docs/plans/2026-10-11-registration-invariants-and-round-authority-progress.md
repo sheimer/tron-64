@@ -13,20 +13,19 @@
 
 - Branch: `feat/registration-invariants-and-round-authority`; base `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`.
 - PR: #5, existing draft; no unmerged dependency.
-- Latest published implementation candidate: `aeb8945ea0add6eebee3f2a09adc21425bd5d461`, failed exact-candidate CI; second repair independently tested/reviewed and ready to publish.
-- Last verified branch head: `f23e443dd09f40a403449a3495e2fa0e7767f844` (administrative approval checkpoint).
-- Current phase: Phase 1 CI repair; Phase 2 has not started.
+- Latest published implementation candidate and last verified branch head: `28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7` (Phase 1 plus reviewed fixture repairs).
+- Current phase: Phase 1 verified; Phase 2 implementation and independent tests frozen, final review completed without blockers; candidate CI pending.
 - Isolated full checkout preserves `AGENTS.md` as the `GEMINI.md` symlink. No user changes were present in this checkout; changes on the user's other machines are not visible.
 
 ## Evidence by phase
 
-| Phase     | Candidate commit                           | Local results                                                                         | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                           | Status      |
-| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----------- |
-| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                               | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected             | Verified    |
-| 1         | aeb8945ea0add6eebee3f2a09adc21425bd5d461   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed | Push 38144459426 / PR 38144462868: 24 passed / 2 browser failures                                                                                                              | First repair reviewed; second repair diagnosis in progress | CI repair   |
-| 2         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
-| 3         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
-| 4         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
+| Phase     | Candidate commit                           | Local results                                                                          | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                                    | Status      |
+| --------- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ----------- |
+| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                                | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected                      | Verified    |
+| 1         | 28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed  | Push 38145291262 / PR 38145295223: both 26 passed / 0 failed, three real browser suites                                                                                        | Independent tests/review passed; two CI repairs verified            | Verified    |
+| 2         | Pending                                    | 25 executed passes / 2 missing-Chromium failures / 1 optional skip; scoped checks pass | Pending                                                                                                                                                                        | Independent testing and final max review found no remaining blocker | CI pending  |
+| 3         | Pending                                    | Pending                                                                                | Pending                                                                                                                                                                        | Pending                                                             | Not started |
+| 4         | Pending                                    | Pending                                                                                | Pending                                                                                                                                                                        | Pending                                                             | Not started |
 
 Record administrative checkpoint commits in the next checkpoint; never embed this document's own commit hash. Verify exact-head CI before advancing.
 
@@ -38,7 +37,7 @@ First repair candidate `aeb8945ea0add6eebee3f2a09adc21425bd5d461` also failed Te
 
 ## Blockers and next action
 
-No product or access blocker. Phase 1's second browser repair has passed independent affected testing/re-review. Publish it and require new exact-candidate push/PR CI before advancement. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
+No product or access blocker. Publish the independently tested/reviewed Phase 2 candidate and require exact-candidate push/PR CI, including all three actual browser suites, before Phase 3. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
 
 Local Chromium launch failed because the Playwright executable is missing. One installation command failed with invalid/truncated archives on all of its internal download retries. This is an environment failure; local browser coverage is unavailable. Required browser checks will run in Actions, with assertions and prerequisite failures preserved.
 
@@ -147,6 +146,42 @@ Requested settings: Sol 6.1/high implementation and testing, Sol 6.1/xhigh revie
 - Outcome: final diff/helper and actual installed poller independently inspected/reproduced; no blocking findings. All 26 polling predicates are synchronous without Promise wrappers, current app singletons are exposed after every navigation/reload, and test-wide lint rejects async callbacks. Ownership/drawing/recovery/stale-control assertions, three leak cycles/two rounds and original thresholds remain intact. No runtime changes or credential diagnostics.
 - Checks: scoped ESLint, Prettier, in-memory guard checks and diff pass. Original math text preserved before publication. Exact-candidate Chromium CI remains required.
 - Correction: reviewer explicitly identified the earlier missed async-predicate cause. Second repair package re-reviewed; no unchanged CI retries.
+
+### Phase 1 verification checkpoint
+
+Candidate `28a6c9bfde7593e65ddd7bf28d413e7da3e0c5b7` passed Tests push `38145291262` (job `114487241923`) and PR `38145295223` (job `114487254520`): both 26 passed / 0 failed. Logs prove actual browser smoke (11.251s / 12.254s), client leak (39.828s / 39.318s) and independent-context ownership flow (2.341s / 2.357s) executed without skips. Final job steps, source head, PR base/head relationship and preserved symlink/tree were inspected. Full suite durations were 68.767s / 69.291s. This completes Phase 1 after two failed published candidates and two independently tested/reviewed repair packages; no unchanged CI retries. Phases 2–4 remain necessary for the final feature.
+
+### phase2_implement — Phase 2 / implementer
+
+- Requested model / effort: `gpt-6.1-sol` / `high`, fresh independent context accepted; actual settings/usage unavailable.
+- Scope: cancellable room attempts/timers/readiness, current protocol 4, scoped snapshots/events, client cancellation/race guards, existing regressions/browser coverage and applicable architecture/changelog.
+- Write ownership: required runtime and existing tests/docs; exclude tester's two new lifecycle suites and lead plan/progress/roadmap. No commits/pushes.
+- UTC window: 2026-10-11T14:02:03.918Z–14:18:43.912Z, 16m40s observed wall window including tools/waits and an interruption of unknown duration; not compute time.
+- Outcome: frozen room-owned attempt/readiness/countdown, full-roster cancellation and live-room launch revalidation, protocol 4 scoped wire/snapshots, client cancellation/race guards, current stage/started consistency, meaningful existing socket/browser tests and applicable docs/changelog. Scope stayed in Phase 2.
+- Checks: affected authority/ownership/client/lifecycle suites and changed JavaScript ESLint passed. Supported changed-file Prettier and diff passed; whole testing-guide formatting retains one pre-existing math-header warning to preserve its unrelated source. Full local actual 25 passes / two missing-Chromium failures / one optional leak skip, runner 26/2. Final reconnect snapshot fix passed affected checks, and independent tester subsequently ran the exact frozen full suite.
+- Corrections: independent stale/reentrant physics regressions drove pre/post-arena-hook generation/timer/live-room guards; tester flagged six-slot configuration `started` inconsistency and stale guide wording, both fixed. Actual browser cancellation/switch/spectator coverage awaits candidate Actions.
+
+### phase2_test — Phase 2 / independent tester
+
+- Requested model / effort: `gpt-6.1-sol` / `high`, fresh separate context accepted; actual settings/usage unavailable.
+- Scope: controlled-time server and actual client-handler adversarial lifecycle regressions, acceptance/browser audit and final frozen-diff verification.
+- Write ownership: [server lifecycle suite](../../test/round-lifecycle.test.js) and [client lifecycle suite](../../test/client-round-lifecycle.test.js); all other files read-only. No commits/pushes.
+- UTC window: 2026-10-11T14:02:35Z–14:20:37Z, 18m02s observed wall time including interruption/waits; interruption timestamp and duration unavailable. Full test runs coordinated to avoid fixed-port/data races.
+- Outcome: both independently authored suites pass; no remaining blocking runtime finding in the frozen diff. Actual scheduler and coordinator regressions cover readiness/fallback, both pending stages, cancellation, stale and reentrant physics/reset/score callbacks, persistence failure, immutable rejection and six-slot snapshots. Runtime diff remained unchanged after execution; existing socket/browser additions were audited.
+- Checks: frozen full suite exited 1 with 25 executed passes / two missing-Chromium failures / one optional leak skip in 20.976s (runner 26/2). Changed JavaScript ESLint, owned-file Prettier and diff checks passed. Browser verification remains required in Actions.
+
+Phase 2 independent controlled-time tests exposed a concrete queued-physics race: a cleared tick from an old round can execute after a replacement launch, run that new arena and schedule a second tick chain. The tester retained the failing actual-scheduler regression; implementation guards now pass it. Final review used the workflow's `max` escalation for this concurrency issue, with actual runtime settings/usage still unavailable. This is distinct from local Chromium unavailability.
+
+Lead integration also identified the need to revalidate after `arena.run`: a synchronous lifecycle hook can replace a round before the old callback resumes. The tester reproduced advancement/replacement of the new tick timer/deadline and retained that regression. Both pre/post-hook guards now pass the independent actual-scheduler cases, including removed live-room identity. The tester's frozen full suite returned 25 executed passes / two missing-Chromium failures / one optional leak skip in 20.976s (runner 26/2). Both environment failures and skipped coverage remain explicit; exact-candidate browser CI is still required.
+
+At the user's status check on 2026-10-11 around 14:14 UTC (16:14 Berlin), both Phase 2 contexts were marked interrupted. Uncommitted work remained intact; process inspection found no active Node/npm/lint process. The lead resumed the same contexts. The implementer reported its latest command had returned normally and no observed tool hang. Interruption start/duration and cause are unavailable; do not count that interval as compute time. Phase 2 was not yet frozen, committed, reviewed, or verified by CI.
+
+### phase2_review — Phase 2 / independent reviewer
+
+- Requested model / effort: `gpt-6.1-sol` / `max`, fresh independent context accepted. Escalation is grounded in the concrete queued/reentrant physics races above, per the workflow; actual settings/usage unavailable.
+- UTC window: 2026-10-11T14:19:42Z–14:24:48Z, 5m06s observed wall time including tools, not compute time.
+- Scope: final actual runtime/client/wire/doc diff and both new lifecycle suites against the approved Phase 2 contract, including fixes, transactional admission, attempt scoping, stale callbacks and privacy. All files read-only.
+- Outcome: final frozen diff, both untracked controlled lifecycle suites, real-socket acceptance additions and browser journey reviewed without blocking findings. Pre/post-arena-hook scheduler guards, transactional admission, public/persistence projections and strict version-4 wire checks were inspected. Independent local result confirmed from the tester's log; exact-candidate Actions browser verification remains required. No edits or repeated suites; no full/fixed-port test overlap with the independent tester.
 
 ## Model-efficiency review
 

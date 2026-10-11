@@ -58,6 +58,7 @@ const releaseOwnedPlayers = (ws, game) => {
       game.disconnectPlayer(id)
   }
   game?.roomOwner.release(ws)
+  game?.reconcilePendingStart()
   ws.playerIds.clear()
   ws.handlesById.clear()
   ws.idsByHandle.clear()
@@ -99,7 +100,7 @@ export const setupWebSocketServer = (server) => {
       ? message
       : typeof message === 'string'
         ? message
-        : JSON.stringify(message)
+        : JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION })
 
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN && client.gameKey === gameKey) {
@@ -391,6 +392,9 @@ export const setupWebSocketServer = (server) => {
               return
             }
 
+            // Admission/handle preflights above must finish before invalidation.
+            const rosterBefore = game.captureRoundRoster()
+            const creatorBefore = game.roomOwner.socket
             if (ws.gameKey && ws.gameKey !== gameKey) {
               const oldKey = ws.gameKey
               const oldGame = gameServer.getGame(oldKey)
@@ -416,16 +420,27 @@ export const setupWebSocketServer = (server) => {
                     broadcastToRoom(gameKey, buf)
                   }
                 },
-                onfinish: (stats) => {
+                onfinish: (result) => {
                   broadcastToRoom(gameKey, {
                     type: MSG_TYPE.GAME_FINISH,
-                    payload: stats,
+                    payload: result,
                   })
                 },
-                onreset: (positions) => {
+                onstate: (transition) => {
+                  if (gameServer.getGame(gameKey) !== game) return
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_STATE,
+                    payload: transition,
+                  })
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_INFO,
+                    payload: gameServer.getGameInfo(gameKey),
+                  })
+                },
+                onreset: (reset) => {
                   broadcastToRoom(gameKey, {
                     type: MSG_TYPE.GAME_RESET,
-                    payload: positions,
+                    payload: reset,
                   })
                 },
               })
@@ -469,6 +484,12 @@ export const setupWebSocketServer = (server) => {
               if (!previous) game.reconnectPlayer(id)
               return { id, inputHandle }
             })
+            // Compare after the whole successful claim set has committed.
+            if (
+              !game.sameRoundRoster(rosterBefore) ||
+              creatorBefore !== game.roomOwner.socket
+            )
+              game.reconcilePendingStart()
             for (const [previous, ids] of revoked) {
               previous.send(
                 JSON.stringify({
@@ -499,6 +520,7 @@ export const setupWebSocketServer = (server) => {
             ws.send(
               JSON.stringify({
                 type: MSG_TYPE.GAME_INFO,
+                protocolVersion: PROTOCOL_VERSION,
                 payload: gameInfo,
               }),
             )
@@ -645,73 +667,34 @@ export const setupWebSocketServer = (server) => {
           case MSG_TYPE.START_GAME: {
             const gameKey = ws.gameKey
             const game = gameServer.getGame(gameKey)
-            const result = game?.beginRound(ws) ?? {
-              ok: false,
-              code: 'NOT_IN_ROOM',
-            }
-            if (!result.ok) {
+            const result = game?.beginRound(ws, {
+              requestId: msg.requestId,
+              save: () => gameServer.saveToStorage(),
+              isCurrent: () => gameServer.getGame(gameKey) === game,
+              onError: (failure) => {
+                if (ws.readyState === WebSocket.OPEN)
+                  sendError(
+                    ws,
+                    failure.code,
+                    controlErrors[failure.code] ?? 'The round was cancelled.',
+                    msg.requestId,
+                  )
+              },
+            }) ?? { ok: false, code: 'NOT_IN_ROOM' }
+            if (!result.ok)
               sendError(
                 ws,
                 result.code,
                 controlErrors[result.code],
                 msg.requestId,
               )
-              return
-            }
-            const pending = result.pending
-            pending.requestId = msg.requestId
-            pending.expectedClients = new Set(
-              game.clients.filter((client) => game.isJoined(client)),
-            )
-            const isCurrent = () =>
-              gameServer.getGame(gameKey) === game &&
-              game.pendingStart === pending
-            const launchCountdown = () => {
-              if (!isCurrent() || pending.countdownStarted) return
-              pending.countdownStarted = true
-              clearTimeout(pending.fallbackTimer)
-              pending.fallbackTimer = null
-              broadcastToRoom(gameKey, {
-                type: MSG_TYPE.GAME_STATE,
-                payload: 'running',
-              })
-              pending.startTimer = setTimeout(() => {
-                if (!isCurrent()) return
-                const launched = game.launchRound(pending, () =>
-                  gameServer.saveToStorage(),
-                )
-                if (!launched.ok && ws.readyState === WebSocket.OPEN)
-                  sendError(
-                    ws,
-                    launched.code,
-                    controlErrors[launched.code],
-                    pending.requestId,
-                  )
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_INFO,
-                  payload: gameServer.getGameInfo(gameKey),
-                })
-              }, 1000)
-            }
-            pending.launchCountdown = launchCountdown
-            pending.fallbackTimer = setTimeout(launchCountdown, 2000)
-            if (pending.expectedClients.size === 0) launchCountdown()
             break
           }
 
           case MSG_TYPE.ARENA_READY: {
-            const game = gameServer.getGame(ws.gameKey)
-            const pending = game?.pendingStart
-            if (
-              pending &&
-              !pending.countdownStarted &&
-              pending.expectedClients.has(ws) &&
-              game.isJoined(ws)
-            ) {
-              pending.readyClients.add(ws)
-              if (pending.readyClients.size >= pending.expectedClients.size)
-                pending.launchCountdown()
-            }
+            gameServer
+              .getGame(ws.gameKey)
+              ?.acknowledgeReady(ws, payload?.startId)
             break
           }
 

@@ -268,6 +268,7 @@ try {
     key: 'room-r',
     started: true,
     running: false,
+    round: { stage: 'finished', startId: 'round-r' },
     players: [{ id: 'first' }, { id: 'second' }],
   }
   second.receive(MSG_TYPE.GAME_INFO, roomInfo)
@@ -277,18 +278,62 @@ try {
   // Recovery must keep waiting while a round is still in progress, then
   // resolve the waiting state when the room snapshot says it has finished.
   app.setMatchState('scoresWaiting')
-  second.receive(MSG_TYPE.GAME_INFO, { ...roomInfo, running: true })
+  second.receive(MSG_TYPE.GAME_INFO, {
+    ...roomInfo,
+    running: true,
+    round: { stage: 'running', startId: 'round-live' },
+  })
   assert.equal(state.matchState, 'scoresWaiting')
+  second.receive(MSG_TYPE.GAME_INFO, {
+    ...roomInfo,
+    running: true,
+    round: { stage: 'running', startId: 'round-live' },
+  })
+  assert.equal(
+    state.matchState,
+    'scoresWaiting',
+    'Repeated live snapshots cannot reveal an unprepared arena',
+  )
   second.receive(MSG_TYPE.GAME_INFO, roomInfo)
   assert.equal(state.matchState, 'finished')
 
   // Ordinary roster broadcasts must not interrupt active gameplay or the
   // score reveal between GAME_FINISH and the finished state.
-  for (const matchState of ['start', 'running', 'scores']) {
-    app.setMatchState(matchState)
-    second.receive(MSG_TYPE.GAME_INFO, roomInfo)
-    assert.equal(state.matchState, matchState)
-  }
+  second.receive(MSG_TYPE.GAME_RESET, {
+    key: 'room-r',
+    startId: 'round-active',
+    positions: { first: 0, second: 1 },
+  })
+  second.receive(MSG_TYPE.GAME_INFO, {
+    ...roomInfo,
+    round: {
+      stage: 'preparation',
+      startId: 'round-active',
+      positions: { first: 0, second: 1 },
+    },
+  })
+  assert.equal(state.matchState, 'start')
+  second.receive(MSG_TYPE.GAME_STATE, {
+    key: 'room-r',
+    startId: 'round-active',
+    stage: 'running',
+  })
+  second.receive(MSG_TYPE.GAME_INFO, {
+    ...roomInfo,
+    running: true,
+    round: { stage: 'running', startId: 'round-active' },
+  })
+  assert.equal(state.matchState, 'running')
+  second.receive(MSG_TYPE.GAME_FINISH, {
+    key: 'room-r',
+    startId: 'round-active',
+    scores: { gamecount: 1, players: [], messages: [] },
+  })
+  second.receive(MSG_TYPE.GAME_INFO, {
+    ...roomInfo,
+    round: { stage: 'finished', startId: 'round-active' },
+  })
+  assert.equal(state.matchState, 'scores')
   app.setMatchState('finished')
 
   app.joinGame('room-r')
@@ -345,6 +390,7 @@ try {
   assert.equal(network.inputHandles.size, 0)
   second.receive(MSG_TYPE.GAME_INFO, {
     key: 'room-owner',
+    round: { stage: 'running', startId: 'owner-round' },
     players: [{ id: 'remote-one' }, { id: 'remote-two' }],
     eligiblePlayerCount: 2,
     firstRoundStarted: true,
@@ -353,9 +399,9 @@ try {
   })
   assert.equal(state.canStartRound(), false)
   second.receive(MSG_TYPE.GAME_FINISH, {
-    gamecount: 1,
-    players: [],
-    messages: [],
+    key: 'room-owner',
+    startId: 'owner-round',
+    scores: { gamecount: 1, players: [], messages: [] },
   })
   assert.equal(
     state.canStartRound(),

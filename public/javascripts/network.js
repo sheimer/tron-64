@@ -291,6 +291,10 @@ class NetworkClient {
     return true
   }
 
+  arenaReady(startId) {
+    return this.send(MSG_TYPE.ARENA_READY, { startId })
+  }
+
   startGame() {
     this.send(MSG_TYPE.START_GAME)
   }

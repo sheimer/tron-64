@@ -340,11 +340,15 @@ async function acceptance() {
         protocolVersion: PROTOCOL_VERSION,
       }),
     )
-    await receive(replacement, (m) => m.type === MSG_TYPE.GAME_RESET)
+    const reset = await receive(
+      replacement,
+      (m) => m.type === MSG_TYPE.GAME_RESET,
+    )
     for (const ws of [replacement, spectator])
       ws.send(
         JSON.stringify({
           type: MSG_TYPE.ARENA_READY,
+          payload: { startId: reset.payload.startId },
           protocolVersion: PROTOCOL_VERSION,
         }),
       )

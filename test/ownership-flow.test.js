@@ -262,6 +262,290 @@ async function run() {
   assert.equal(newControls.result, true)
   assert.deepEqual(newControls.frames, [[2, newControls.handle, 0]])
 
+  // Hold participant acknowledgements to exercise authoritative cancellation
+  // and invoke captured real client callbacks after a replacement attempt.
+  for (const page of [owner, replacement, spectator]) {
+    await page.evaluate(async () => {
+      const { app, network, MSG_TYPE } = window.browserFixture
+      const probe = {
+        hold: true,
+        resets: 0,
+        ready: [],
+        callbacks: [],
+        scoreCallbacks: [],
+        cancellations: [],
+      }
+      window.roundProbe = probe
+      const resetGrid = app.renderer.resetGrid.bind(app.renderer)
+      app.renderer.resetGrid = (...args) => {
+        probe.resets++
+        return resetGrid(...args)
+      }
+      const ready = network.arenaReady.bind(network)
+      network.arenaReady = (startId) => {
+        probe.ready.push(startId)
+        if (!probe.hold) return ready(startId)
+      }
+      const schedule = window.setTimeout.bind(window)
+      window.setTimeout = (callback, delay, ...args) => {
+        if (delay === 50) probe.callbacks.push(callback)
+        if (delay === 1000) probe.scoreCallbacks.push(callback)
+        return schedule(callback, delay, ...args)
+      }
+      network.on(MSG_TYPE.GAME_STATE, (transition) => {
+        if (transition.reason) probe.cancellations.push(transition)
+      })
+    })
+  }
+  const start = async () => {
+    await owner.evaluate(() => window.browserFixture.network.startGame())
+    await owner.waitForFunction(
+      () =>
+        window.browserFixture.state.roundInfo?.round.stage === 'preparation',
+    )
+    return owner.evaluate(() => window.browserFixture.app.currentStartId)
+  }
+  const waitCancelled = async (page, stage, startId) => {
+    await page.waitForFunction(
+      ({ expectedStage, retired }) => {
+        const { app, state } = window.browserFixture
+        return (
+          state.roundInfo?.round.stage === expectedStage &&
+          app.currentStartId === null &&
+          window.roundProbe.cancellations.some(
+            (entry) => entry.startId === retired,
+          )
+        )
+      },
+      { expectedStage: stage, retired: startId },
+    )
+  }
+  const rejoinReplacement = async () => {
+    await replacement.evaluate(
+      (roomKey) => window.browserFixture.app.joinGame(roomKey),
+      key,
+    )
+    await replacement.waitForFunction(
+      (id) => window.browserFixture.state.isLocalPlayer(id),
+      transferredId,
+    )
+  }
+
+  const cancelledFirst = await start()
+  await spectator.waitForFunction(
+    () =>
+      window.browserFixture.state.positions &&
+      Object.keys(window.browserFixture.state.positions).length === 2,
+  )
+  assert.equal(
+    await spectator.evaluate(() => window.roundProbe.ready.length),
+    0,
+  )
+  // A spectator rejoin sees the pending positions, without readiness/control.
+  await spectator.evaluate(
+    (roomKey) => window.browserFixture.app.joinGame(roomKey),
+    key,
+  )
+  await spectator.waitForFunction(
+    () =>
+      window.browserFixture.state.roundInfo?.round.stage === 'preparation' &&
+      Object.keys(window.browserFixture.state.positions).length === 2,
+  )
+  assert.equal(
+    await spectator.evaluate(
+      () => window.browserFixture.network.inputHandles.size,
+    ),
+    0,
+  )
+  await owner.evaluate(
+    (roomKey) => window.browserFixture.app.joinGame(roomKey),
+    key,
+  )
+  await waitCancelled(spectator, 'configuration', cancelledFirst)
+  await spectator.evaluate(() => window.browserFixture.app.leaveCurrentGame())
+  await spectator.locator('#input-create-game').fill('Callback switch target')
+  await spectator.locator('#btn-create-game').click()
+  await spectator.locator('#playersconfig').waitFor({ state: 'visible' })
+  const switchKey = await spectator.locator('#gameId').textContent()
+  assert.notEqual(switchKey, key)
+  const switchReset = await spectator.evaluate(() => {
+    const { app, state } = window.browserFixture
+    const before = [
+      window.roundProbe.resets,
+      window.roundProbe.ready.length,
+      app.currentGameKey,
+      state.screen,
+      state.matchState,
+    ]
+    window.roundProbe.callbacks[0]()
+    return {
+      before,
+      after: [
+        window.roundProbe.resets,
+        window.roundProbe.ready.length,
+        app.currentGameKey,
+        state.screen,
+        state.matchState,
+      ],
+    }
+  })
+  assert.deepEqual(switchReset.after, switchReset.before)
+  await spectator.evaluate(
+    (roomKey) => window.browserFixture.app.joinGame(roomKey),
+    key,
+  )
+  await spectator.waitForFunction(
+    (roomKey) =>
+      window.browserFixture.state.roundInfo?.key === roomKey &&
+      window.browserFixture.state.roundInfo.round.stage === 'configuration',
+    key,
+  )
+  await owner.locator('#playersconfig').waitFor({ state: 'visible' })
+  assert.equal(
+    await owner.evaluate(
+      () => window.browserFixture.state.roundInfo.firstRoundStarted,
+    ),
+    false,
+  )
+  await rejoinReplacement()
+
+  const cancelledCountdown = await start()
+  for (const page of [owner, replacement]) {
+    await page.evaluate((startId) => {
+      const { network, MSG_TYPE } = window.browserFixture
+      network.send(MSG_TYPE.ARENA_READY, { startId })
+    }, cancelledCountdown)
+  }
+  await owner.waitForFunction(
+    () => window.browserFixture.state.roundInfo?.round.stage === 'countdown',
+  )
+  await replacement.evaluate(() => window.browserFixture.app.leaveCurrentGame())
+  await waitCancelled(owner, 'configuration', cancelledCountdown)
+  await rejoinReplacement()
+
+  const cancelledReconnect = await start()
+  await owner.evaluate(() => window.browserFixture.network.socket.close())
+  await waitCancelled(spectator, 'configuration', cancelledReconnect)
+  await owner.waitForFunction((id) => {
+    const { network, state } = window.browserFixture
+    return (
+      network.isConnected() && state.isRoomOwner() && state.isLocalPlayer(id)
+    )
+  }, retainedId)
+  const liveAttempt = await start()
+  assert.notEqual(liveAttempt, cancelledFirst)
+  const staleEffect = await owner.evaluate((oldId) => {
+    const { app, network, MSG_TYPE } = window.browserFixture
+    const before = [
+      window.roundProbe.resets,
+      window.roundProbe.ready.length,
+      app.currentStartId,
+    ]
+    window.roundProbe.callbacks[0]()
+    network.emit(MSG_TYPE.GAME_STATE, {
+      key: app.currentGameKey,
+      startId: oldId,
+      stage: 'configuration',
+      reason: 'OLD_CALLBACK',
+    })
+    return {
+      before,
+      after: [
+        window.roundProbe.resets,
+        window.roundProbe.ready.length,
+        app.currentStartId,
+      ],
+    }
+  }, cancelledFirst)
+  assert.deepEqual(staleEffect.after, staleEffect.before)
+  for (const page of [owner, replacement]) {
+    await page.evaluate((startId) => {
+      const { network, MSG_TYPE } = window.browserFixture
+      window.roundProbe.hold = false
+      network.send(MSG_TYPE.ARENA_READY, { startId })
+    }, liveAttempt)
+  }
+  await owner.waitForFunction(
+    () => window.browserFixture.state.roundInfo?.round.stage === 'running',
+  )
+  await spectator.waitForFunction(
+    () => window.browserFixture.state.matchState === 'scores',
+  )
+  await spectator.evaluate(
+    (roomKey) => window.browserFixture.app.joinGame(roomKey),
+    switchKey,
+  )
+  await spectator.waitForFunction(
+    (roomKey) =>
+      window.browserFixture.state.roundInfo?.key === roomKey &&
+      window.browserFixture.state.screen === 'config',
+    switchKey,
+  )
+  const switchScores = await spectator.evaluate(() => {
+    const { app, state } = window.browserFixture
+    const before = [app.currentGameKey, state.screen, state.matchState]
+    window.roundProbe.scoreCallbacks.at(-1)()
+    return {
+      before,
+      after: [app.currentGameKey, state.screen, state.matchState],
+    }
+  })
+  assert.deepEqual(switchScores.after, switchScores.before)
+  await spectator.evaluate(
+    (roomKey) => window.browserFixture.app.joinGame(roomKey),
+    key,
+  )
+  await spectator.waitForFunction(
+    (roomKey) =>
+      window.browserFixture.state.roundInfo?.key === roomKey &&
+      window.browserFixture.state.matchState === 'finished',
+    key,
+  )
+  await owner.waitForFunction(
+    () => window.browserFixture.state.matchState === 'finished',
+  )
+  const firstScores = await spectator.evaluate(
+    () => window.browserFixture.state.scores,
+  )
+  assert.equal(firstScores.gamecount, 1)
+
+  // A joined spectator requests the next round, and participant loss returns
+  // clients already on the game screen to the preserved finished scores.
+  await spectator.evaluate(() => window.browserFixture.network.startGame())
+  await owner.waitForFunction(
+    () => window.browserFixture.state.roundInfo?.round.stage === 'preparation',
+  )
+  const cancelledLater = await owner.evaluate(
+    () => window.browserFixture.app.currentStartId,
+  )
+  await replacement.evaluate(() => window.browserFixture.app.leaveCurrentGame())
+  await waitCancelled(owner, 'finished', cancelledLater)
+  assert.equal(
+    await owner.evaluate(() => window.browserFixture.state.matchState),
+    'finished',
+  )
+  const cancelledScores = await spectator.evaluate(
+    () => window.browserFixture.state.scores,
+  )
+  assert.equal(cancelledScores.gamecount, firstScores.gamecount)
+  assert.deepEqual(cancelledScores.messages, firstScores.messages)
+  const scoreValues = (scores) =>
+    scores.players.map(({ connected, ...score }) => {
+      void connected
+      return score
+    })
+  assert.deepEqual(scoreValues(cancelledScores), scoreValues(firstScores))
+  await rejoinReplacement()
+  await spectator.evaluate(() => window.browserFixture.network.startGame())
+  await spectator.waitForFunction(
+    () => window.browserFixture.state.roundInfo?.round.stage === 'running',
+  )
+
+  const replacementHandle = await replacement.evaluate(
+    (id) => window.browserFixture.network.inputHandles.get(id),
+    transferredId,
+  )
+
   // Observe the actual post-leave broadcast rather than sampling an already
   // connected value before the server has processed the former owner's leave.
   await replacement.evaluate(
@@ -299,7 +583,7 @@ async function run() {
   assert.deepEqual(afterClose, {
     connected: true,
     owns: true,
-    handle: newControls.handle,
+    handle: replacementHandle,
   })
   assert.equal(
     diagnostics.filter((line) => line.includes('PAGE ERROR:')).length,
@@ -307,7 +591,7 @@ async function run() {
     'No browser context may raise an uncaught exception',
   )
   console.log(
-    'Ownership flow: independent contexts, spectator rejection, reload, partial handover, and former-owner leave/close passed',
+    'Ownership flow: independent contexts, spectator rejection, reload, partial handover, cancellation/retry/reconnect/stale callbacks, spectator later starts, and former-owner leave/close passed',
   )
 }
 

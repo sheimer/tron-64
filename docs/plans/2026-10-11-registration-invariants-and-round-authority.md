@@ -396,29 +396,29 @@ spectator permission. All implementation checkboxes remain unchecked.
 
 ### Phase 1 — Creator-client identity and first/next-round admission
 
-- [ ] Create and durably acknowledge independent room-owner credentials with
+- [x] Create and durably acknowledge independent room-owner credentials with
       bounded correlated creation retries; authenticate owner claims on join without
       requiring a player registration. Update the single current wire contract,
       minimal client storage, creation/join handling, and affected fixtures together.
-- [ ] Retain shared version constants/fields, strict-current-version checks,
+- [x] Retain shared version constants/fields, strict-current-version checks,
       version readiness, and mismatch/reload feedback. Advance the shared version
       for the new wire contract and update both ends/fixtures together. Prove
       mismatch rejection before mutation/input while allowing only the current
       format; add no compatibility branches, adapters, or older-version handlers.
-- [ ] Preserve the independently stored owner credential through room-record
+- [x] Preserve the independently stored owner credential through room-record
       normalization from this phase onward; owner-only records have an empty bike map.
-- [ ] Gate the first start by verified creator-client binding and later starts by
+- [x] Gate the first start by verified creator-client binding and later starts by
       live room membership. Validate the eligible roster and save the first-launch
       marker only at successful launch; failed launch save preserves the initial gate.
-- [ ] Restrict interval mutations to the creator between rounds, including a
+- [x] Restrict interval mutations to the creator between rounds, including a
       creator with zero bikes; validate/save/rollback with stable/readable errors.
-- [ ] Add a minimal room-owned pending latch before scheduling preparation so
+- [x] Add a minimal room-owned pending latch before scheduling preparation so
       duplicate starts and speed changes are rejected before physics is running.
-- [ ] Add domain and real-socket regressions for creator-before-registration,
+- [x] Add domain and real-socket regressions for creator-before-registration,
       creator-without-bikes, forbidden noncreator first starts, spectator/player later
       starts, transactional failures, and separate owner/bike claims. Adapt affected
       baseline browser fixtures in this phase so they exercise the current contract.
-- [ ] Update protocol/lifecycle docs for landed behavior and permission distinctions.
+- [x] Update protocol/lifecycle docs for landed behavior and permission distinctions.
 
 Dependencies: merged ownership baseline. Exit: authority/marker/speed regressions
 and the full required CI suite pass. Interim limitations: complete cancellable
