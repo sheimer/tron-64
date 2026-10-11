@@ -38,12 +38,26 @@ const sendError = (ws, code, message, requestId) => {
   )
 }
 
+const controlErrors = {
+  NOT_IN_ROOM: 'Join this room before using its controls.',
+  CREATOR_REQUIRED:
+    'Only the authenticated room creator can perform this action.',
+  INSUFFICIENT_PLAYERS:
+    'At least two authenticated, connected bikes are required to start a round.',
+  ROUND_PENDING: 'A round is already being prepared. Wait for it to start.',
+  ROUND_RUNNING: 'Wait until the current round finishes.',
+  INVALID_INTERVAL:
+    'Game interval must be an integer between 10 and 500 milliseconds.',
+  PERSISTENCE_FAILED: 'The change could not be saved. Try again later.',
+}
+
 const releaseOwnedPlayers = (ws, game) => {
   // The room map is authoritative even if the socket index is stale.
   for (const [id, owner] of game?.ownership.owners ?? []) {
     if (owner === ws && game.ownership.release(id, ws))
       game.disconnectPlayer(id)
   }
+  game?.roomOwner.release(ws)
   ws.playerIds.clear()
   ws.handlesById.clear()
   ws.idsByHandle.clear()
@@ -117,8 +131,6 @@ export const setupWebSocketServer = (server) => {
     broadcastLobbyList()
   })
 
-  const pendingStarts = new Map()
-
   wss.on('connection', (ws) => {
     wsClientsGauge.set(wss.clients.size)
     ws.gameKey = null
@@ -127,6 +139,7 @@ export const setupWebSocketServer = (server) => {
     ws.idsByHandle = new Map()
     ws.nextInputHandle = 0
     ws.registrationRetries = new Map()
+    ws.creationRetries = new Map()
     ws.protocolReady = false
 
     // Send initial lobby list
@@ -199,11 +212,46 @@ export const setupWebSocketServer = (server) => {
           }
 
           case MSG_TYPE.CREATE_GAME: {
+            const requestId = msg.requestId
+            if (
+              typeof requestId !== 'string' ||
+              !requestIdPattern.test(requestId)
+            ) {
+              sendError(
+                ws,
+                'INVALID_CREATION',
+                'Send a valid creation requestId.',
+                requestId,
+              )
+              return
+            }
+            const fingerprint = createHash('sha256')
+              .update(JSON.stringify(payload) ?? 'undefined')
+              .digest('hex')
+            const cached = ws.creationRetries.get(requestId)
+            if (cached) {
+              if (
+                cached.fingerprint === fingerprint &&
+                gameServer.getGame(cached.response.payload.key) === cached.game
+              ) {
+                ws.send(JSON.stringify(cached.response))
+              } else {
+                sendError(
+                  ws,
+                  'REQUEST_ID_CONFLICT',
+                  'Use a new requestId for a different or expired room creation.',
+                  requestId,
+                )
+              }
+              return
+            }
             const name = sanitizeString(payload?.name, 32) || 'Tron Game'
             const interval = sanitizeInterval(payload?.interval)
             const isPublic = Boolean(payload?.isPublic ?? true)
 
+            const creator = {}
             const key = gameServer.createGame({
+              creator,
               name,
               size: GRID_SIZE,
               interval,
@@ -224,15 +272,24 @@ export const setupWebSocketServer = (server) => {
                   : full
                     ? `Server at full capacity (maximum ${MAX_ACTIVE_GAMES} concurrent games). Please join an existing match.`
                     : 'Room creation could not be saved. Try again later.',
+                requestId,
               )
               return
             }
-            ws.send(
-              JSON.stringify({
-                type: MSG_TYPE.GAME_CREATED,
-                payload: key,
-              }),
-            )
+            const response = {
+              type: MSG_TYPE.GAME_CREATED,
+              requestId,
+              protocolVersion: PROTOCOL_VERSION,
+              payload: { key, ...creator.credentials },
+            }
+            ws.creationRetries.set(requestId, {
+              fingerprint,
+              response,
+              game: gameServer.getGame(key),
+            })
+            if (ws.creationRetries.size > retryLimit)
+              ws.creationRetries.delete(ws.creationRetries.keys().next().value)
+            ws.send(JSON.stringify(response))
             broadcastLobbyList()
             break
           }
@@ -240,6 +297,20 @@ export const setupWebSocketServer = (server) => {
           case MSG_TYPE.JOIN_GAME: {
             const gameKey = sanitizeString(payload?.key, 16)
             const claims = payload?.reconnect ?? []
+            const ownerClaim = payload?.roomOwner
+            if (
+              ownerClaim !== undefined &&
+              (typeof msg.requestId !== 'string' ||
+                !requestIdPattern.test(msg.requestId))
+            ) {
+              sendError(
+                ws,
+                'INVALID_OWNER_CREDENTIAL',
+                'Owner authentication requires a valid requestId.',
+                msg.requestId,
+              )
+              return
+            }
             if (
               !Array.isArray(claims) ||
               claims.length > 6 ||
@@ -285,6 +356,14 @@ export const setupWebSocketServer = (server) => {
 
             // Check every claim independently, then preflight all new handles
             // before changing room membership or a single owner.
+            const ownerAccepted =
+              ownerClaim !== undefined && game.roomOwner.verify(ownerClaim)
+            const ownerResult =
+              ownerClaim === undefined
+                ? null
+                : ownerAccepted
+                  ? { accepted: true, ownerClientId: game.roomOwner.clientId }
+                  : { accepted: false, code: 'INVALID_OWNER_CREDENTIAL' }
             const accepted = []
             const rejected = []
             for (const claim of claims) {
@@ -352,6 +431,24 @@ export const setupWebSocketServer = (server) => {
               })
             }
 
+            if (ownerAccepted) {
+              const previous = game.roomOwner.bind(ws)
+              if (
+                previous &&
+                previous !== ws &&
+                previous.readyState === WebSocket.OPEN
+              )
+                previous.send(
+                  JSON.stringify({
+                    type: MSG_TYPE.ROOM_OWNER_REVOKED,
+                    protocolVersion: PROTOCOL_VERSION,
+                    payload: {
+                      key: gameKey,
+                      ownerClientId: game.roomOwner.clientId,
+                    },
+                  }),
+                )
+            }
             const revoked = new Map()
             const bindings = accepted.map((id) => {
               const previous = game.ownership.transfer(id, ws)
@@ -388,7 +485,12 @@ export const setupWebSocketServer = (server) => {
                   type: MSG_TYPE.JOIN_RESULT,
                   requestId: msg.requestId,
                   protocolVersion: PROTOCOL_VERSION,
-                  payload: { key: gameKey, accepted: bindings, rejected },
+                  payload: {
+                    key: gameKey,
+                    accepted: bindings,
+                    rejected,
+                    roomOwner: ownerResult,
+                  },
                 }),
               )
             }
@@ -400,7 +502,7 @@ export const setupWebSocketServer = (server) => {
                 payload: gameInfo,
               }),
             )
-            if (bindings.length)
+            if (bindings.length || ownerAccepted)
               broadcastToRoom(gameKey, {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(gameKey),
@@ -447,7 +549,7 @@ export const setupWebSocketServer = (server) => {
             const game = gameServer.getGame(ws.gameKey)
             if (game && payload) {
               const fingerprint = createHash('sha256')
-                .update(JSON.stringify(payload))
+                .update(JSON.stringify(payload) ?? 'undefined')
                 .digest('hex')
               const cached = ws.registrationRetries.get(requestId)
               if (cached) {
@@ -541,99 +643,97 @@ export const setupWebSocketServer = (server) => {
           }
 
           case MSG_TYPE.START_GAME: {
-            if (
-              !ws.gameKey ||
-              ![...ws.playerIds].some((id) =>
-                gameServer.getGame(ws.gameKey)?.ownership.owns(id, ws),
-              )
-            )
-              return
             const gameKey = ws.gameKey
             const game = gameServer.getGame(gameKey)
-            if (!game) return
-
-            // Clear any prior pending start in this room
-            const prevPending = pendingStarts.get(gameKey)
-            if (prevPending) {
-              clearTimeout(prevPending.fallbackTimer)
-              clearTimeout(prevPending.startTimer)
-              pendingStarts.delete(gameKey)
+            const result = game?.beginRound(ws) ?? {
+              ok: false,
+              code: 'NOT_IN_ROOM',
             }
-
-            game.reset()
-
-            const roomClients = Array.from(wss.clients).filter(
-              (c) => c.readyState === WebSocket.OPEN && c.gameKey === gameKey,
+            if (!result.ok) {
+              sendError(
+                ws,
+                result.code,
+                controlErrors[result.code],
+                msg.requestId,
+              )
+              return
+            }
+            const pending = result.pending
+            pending.requestId = msg.requestId
+            pending.expectedClients = new Set(
+              game.clients.filter((client) => game.isJoined(client)),
             )
-
-            const pending = {
-              readyClients: new Set(),
-              expectedCount: roomClients.length,
-              countdownStarted: false,
-              fallbackTimer: null,
-              startTimer: null,
-            }
-            pendingStarts.set(gameKey, pending)
-
+            const isCurrent = () =>
+              gameServer.getGame(gameKey) === game &&
+              game.pendingStart === pending
             const launchCountdown = () => {
-              if (pending.countdownStarted) return
+              if (!isCurrent() || pending.countdownStarted) return
               pending.countdownStarted = true
-              if (pending.fallbackTimer) {
-                clearTimeout(pending.fallbackTimer)
-                pending.fallbackTimer = null
-              }
-
+              clearTimeout(pending.fallbackTimer)
+              pending.fallbackTimer = null
               broadcastToRoom(gameKey, {
                 type: MSG_TYPE.GAME_STATE,
                 payload: 'running',
               })
-
               pending.startTimer = setTimeout(() => {
-                const g = gameServer.getGame(gameKey)
-                if (g) {
-                  g.start()
-                }
-                pendingStarts.delete(gameKey)
+                if (!isCurrent()) return
+                const launched = game.launchRound(pending, () =>
+                  gameServer.saveToStorage(),
+                )
+                if (!launched.ok && ws.readyState === WebSocket.OPEN)
+                  sendError(
+                    ws,
+                    launched.code,
+                    controlErrors[launched.code],
+                    pending.requestId,
+                  )
+                broadcastToRoom(gameKey, {
+                  type: MSG_TYPE.GAME_INFO,
+                  payload: gameServer.getGameInfo(gameKey),
+                })
               }, 1000)
             }
-
             pending.launchCountdown = launchCountdown
             pending.fallbackTimer = setTimeout(launchCountdown, 2000)
-
-            if (pending.expectedCount === 0) {
-              launchCountdown()
-            }
+            if (pending.expectedClients.size === 0) launchCountdown()
             break
           }
 
           case MSG_TYPE.ARENA_READY: {
-            if (!ws.gameKey) return
-            const pending = pendingStarts.get(ws.gameKey)
-            if (pending && !pending.countdownStarted) {
+            const game = gameServer.getGame(ws.gameKey)
+            const pending = game?.pendingStart
+            if (
+              pending &&
+              !pending.countdownStarted &&
+              pending.expectedClients.has(ws) &&
+              game.isJoined(ws)
+            ) {
               pending.readyClients.add(ws)
-              if (pending.readyClients.size >= pending.expectedCount) {
+              if (pending.readyClients.size >= pending.expectedClients.size)
                 pending.launchCountdown()
-              }
             }
             break
           }
 
           case MSG_TYPE.SET_INTERVAL: {
-            if (
-              !ws.gameKey ||
-              ![...ws.playerIds].some((id) =>
-                gameServer.getGame(ws.gameKey)?.ownership.owns(id, ws),
-              )
-            )
-              return
             const game = gameServer.getGame(ws.gameKey)
-            if (game) {
-              game.setInterval(sanitizeInterval(payload))
-              broadcastToRoom(ws.gameKey, {
-                type: MSG_TYPE.GAME_INFO,
-                payload: gameServer.getGameInfo(ws.gameKey),
-              })
+            const result = game?.changeInterval(ws, payload, () =>
+              gameServer.saveToStorage(),
+            ) ?? { ok: false, code: 'NOT_IN_ROOM' }
+            if (!result.ok) {
+              sendError(
+                ws,
+                result.code,
+                controlErrors[result.code],
+                msg.requestId,
+              )
+              return
             }
+            gameServer.changeHandler?.()
+            broadcastToRoom(ws.gameKey, {
+              type: MSG_TYPE.GAME_INFO,
+              payload: gameServer.getGameInfo(ws.gameKey),
+            })
             break
           }
 

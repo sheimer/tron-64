@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Independent room-creator credentials, saved before any bike registration, with private correlated creation acknowledgement and bounded retries. Creators can recover room controls without owning a bike.
+- Round admission requires at least two authenticated connected bikes. Only the creator starts the first round; after its durable launch, any joined client, including spectators, may start later rounds without the creator present.
+
+### Changed
+
+- Room speed changes require the authenticated creator between rounds, accept integer intervals from 10 to 500 ms, and preserve the previous speed if saving fails. Duplicate pending starts and active-round starts are rejected without resetting or rescoring.
+- Matching client/server builds now use strict wire protocol version 3. Stale cached pages still receive reload guidance; older wire formats are not accepted.
+- Phase 1 establishes authority and durable first launch. Full cancellable preparation, strict persisted-room migration, and final permission feedback remain pending in the [implementation plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md); this intermediate phase is not launch-ready.
+
 ---
 
 ## [1.4.1] - 2026-10-10

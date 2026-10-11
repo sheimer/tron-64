@@ -72,6 +72,7 @@ export class Storage {
         interval: game.interval,
         isPublic: game.isPublic,
         createdAt: game.createdAt,
+        firstRoundStarted: game.firstRoundStarted,
         stats: {
           gamecount: game.stats.gamecount,
           players: game.stats.players.map((player) => ({
@@ -98,7 +99,10 @@ export class Storage {
             left: p.left,
             right: p.right,
           })) || [],
-        private: { verifiers: game.ownership.serializeVerifiers() },
+        private: {
+          verifiers: game.ownership.serializeVerifiers(),
+          roomOwner: game.roomOwner.serialize(),
+        },
         savedAt: Date.now(),
       }))
 

@@ -227,8 +227,12 @@ class AppCoordinator {
     onThemeChange(updateColors)
     settings.addListener('coloredPlayers', updateColors)
     settings.addListener('speed', (speed) => {
-      const hasLocalPlayers = (state.players || []).some((p) => p.isLocal)
-      if (this.currentGameKey && hasLocalPlayers) {
+      if (
+        this.currentGameKey &&
+        state.isRoomOwner() &&
+        !state.roundInfo?.running &&
+        !['start', 'running', 'scores'].includes(state.matchState)
+      ) {
         network.setInterval(Math.round(1000 / speed))
       }
     })
@@ -340,7 +344,7 @@ class AppCoordinator {
         ),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(false)
+      this.settingsView.setSpectatorMode(!state.isRoomOwner())
     })
 
     network.on(MSG_TYPE.JOIN_RESULT, (result, msg) => {
@@ -369,6 +373,12 @@ class AppCoordinator {
       )
         return
       this.pendingJoin = null
+      if (
+        pending.roomOwner &&
+        result.roomOwner?.accepted === true &&
+        result.roomOwner.ownerClientId === pending.roomOwner.ownerClientId
+      )
+        state.acknowledgeRoomOwner(pending.key, result.roomOwner.ownerClientId)
       for (const binding of accepted) {
         const config = state.acknowledgeReconnect(binding.id, pending.key)
         if (!config) continue
@@ -394,7 +404,17 @@ class AppCoordinator {
         })),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.players.some((p) => p.isLocal))
+      this.settingsView.setSpectatorMode(!state.isRoomOwner())
+    })
+
+    network.on(MSG_TYPE.ROOM_OWNER_REVOKED, (notice) => {
+      if (notice?.key !== this.currentGameKey) return
+      state.revokeRoomOwner(notice.key)
+      this.configView.updatePlayersTable(state.players)
+      this.settingsView.setSpectatorMode(true)
+      this.showConnectionFeedback(
+        'Room creator controls moved to another connection. Rejoin explicitly to recover them.',
+      )
     })
 
     network.on(MSG_TYPE.OWNERSHIP_REVOKED, (notice) => {
@@ -411,7 +431,7 @@ class AppCoordinator {
         })),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.players.some((p) => p.isLocal))
+      this.settingsView.setSpectatorMode(!state.isRoomOwner())
       this.showConnectionFeedback(
         'Player control moved to another connection. Select the room again to reclaim it explicitly.',
       )
@@ -460,12 +480,14 @@ class AppCoordinator {
           isLocal,
         }
       })
+      state.roundInfo = info
       state.set('players', players)
       this.configView.updatePlayersTable(players)
 
-      const hasLocalPlayers = players.some((p) => p.isLocal)
       this.settingsView.setSpectatorMode(
-        !hasLocalPlayers && Boolean(this.currentGameKey),
+        !state.isRoomOwner() ||
+          info.running ||
+          ['start', 'running', 'scores'].includes(state.matchState),
       )
 
       if (info.interval) {
@@ -522,6 +544,8 @@ class AppCoordinator {
 
     network.on(MSG_TYPE.GAME_FINISH, (scores) => {
       if (!this.currentGameKey) return
+      if (state.roundInfo)
+        state.roundInfo = { ...state.roundInfo, running: false }
       state.set('scores', scores)
       this.gameView.updateScores(scores, state.players)
       this.renderer.clear()
@@ -535,6 +559,11 @@ class AppCoordinator {
   setMatchState(matchState) {
     state.set('matchState', matchState)
     this.gameView.updateState(matchState)
+    if (this.currentGameKey)
+      this.settingsView.setSpectatorMode(
+        !state.isRoomOwner() ||
+          ['start', 'running', 'scores'].includes(matchState),
+      )
   }
 
   joinGame(gameKey, explicit = true) {
@@ -552,8 +581,9 @@ class AppCoordinator {
       requestId,
       ids: new Set(reconnect.map((entry) => entry.id)),
       missing: state.getLocalPlayerIds(gameKey).length - reconnect.length,
+      roomOwner: state.getRoomOwnerClaim(gameKey, explicit),
     }
-    network.joinGame(gameKey, reconnect, requestId)
+    network.joinGame(gameKey, reconnect, requestId, this.pendingJoin.roomOwner)
     if (this.pendingJoin.missing) {
       this.configView.showFeedback(
         'Some saved players have missing or unusable credentials. They cannot be restored automatically.',

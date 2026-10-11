@@ -2,10 +2,12 @@ import WebSocket from 'ws'
 
 import { Arena } from './Arena.js'
 import { Player } from '../shared/Player.js'
+import { RoomOwnership } from './RoomOwnership.js'
 import { PlayerOwnership } from './PlayerOwnership.js'
 import {
   GRID_SIZE,
   MAX_PLAYERS,
+  MIN_PLAYERS,
   IDLE_ROOM_TIMEOUT_MS,
 } from '../shared/constants.js'
 import { roundsPlayedCounter, tickDurationSummary } from './metrics.js'
@@ -20,6 +22,7 @@ export class GameSession {
     stats,
     players,
     private: privateData,
+    firstRoundStarted,
     createdAt,
     onChange,
     onDestroy,
@@ -42,6 +45,10 @@ export class GameSession {
       messages: [],
     }
     this.ownership = new PlayerOwnership(key)
+    this.roomOwner = new RoomOwnership(key, privateData?.roomOwner)
+    this.firstRoundStarted =
+      firstRoundStarted === true || this.stats.gamecount > 0
+    this.pendingStart = null
     // Restored ownership always starts empty; only matching persisted
     // verifiers allow a new socket to reclaim an existing player.
     if (Array.isArray(players)) {
@@ -68,6 +75,7 @@ export class GameSession {
       this.acceptingPlayers = true
     }
 
+    if (this.firstRoundStarted) this.acceptingPlayers = false
     this.clients = []
     this.allDisconnected = null
     this.statusTimer = null
@@ -87,6 +95,7 @@ export class GameSession {
     this.onChange = null
     this.clients = []
     this.ownership.clear()
+    this.roomOwner.clear()
 
     if (typeof this.onDestroy === 'function') {
       this.onDestroy()
@@ -139,11 +148,115 @@ export class GameSession {
     })
   }
 
+  // Trusted internal/fixture setter. Network mutations use changeInterval.
   setInterval(interval) {
     this.interval = interval
     if (typeof this.onChange === 'function') {
       this.onChange()
     }
+  }
+
+  isJoined(client) {
+    return Boolean(
+      client?.readyState === WebSocket.OPEN &&
+      client.gameKey === this.key &&
+      this.clients.includes(client),
+    )
+  }
+
+  get eligiblePlayerCount() {
+    return (
+      this.arena?.players.filter((player) => {
+        const owner = this.ownership.owners.get(player.id)
+        return player.connected !== false && this.isJoined(owner)
+      }).length ?? 0
+    )
+  }
+
+  validateRound(client, { launching = false } = {}) {
+    if (!launching && !this.isJoined(client))
+      return { ok: false, code: 'NOT_IN_ROOM' }
+    if (
+      !this.firstRoundStarted &&
+      (!this.isJoined(client) || !this.roomOwner.owns(client))
+    )
+      return { ok: false, code: 'CREATOR_REQUIRED' }
+    if (this.running) return { ok: false, code: 'ROUND_RUNNING' }
+    if (!launching && this.pendingStart)
+      return { ok: false, code: 'ROUND_PENDING' }
+    if (
+      !this.arena ||
+      this.arena.players.length < MIN_PLAYERS ||
+      this.arena.players.length > MAX_PLAYERS ||
+      this.eligiblePlayerCount < MIN_PLAYERS
+    )
+      return { ok: false, code: 'INSUFFICIENT_PLAYERS' }
+    return { ok: true }
+  }
+
+  beginRound(client) {
+    const result = this.validateRound(client)
+    if (!result.ok) return result
+    // This latch is owned by the room before reset or any timer is scheduled.
+    // Full attempt-scoped cancellation and readiness are implemented in Phase 2.
+    const pending = {
+      requester: client,
+      acceptingPlayers: this.acceptingPlayers,
+      readyClients: new Set(),
+      countdownStarted: false,
+      fallbackTimer: null,
+      startTimer: null,
+    }
+    this.pendingStart = pending
+    this.acceptingPlayers = false
+    this.arena.reset({ finish: false })
+    return { ok: true, pending }
+  }
+
+  launchRound(pending, save) {
+    if (this.pendingStart !== pending)
+      return { ok: false, code: 'ROUND_PENDING' }
+    const result = this.validateRound(pending.requester, { launching: true })
+    if (!result.ok) {
+      this.cancelPendingStart()
+      return result
+    }
+    if (!this.firstRoundStarted) {
+      this.firstRoundStarted = true
+      if (!save()) {
+        this.firstRoundStarted = false
+        this.cancelPendingStart()
+        return { ok: false, code: 'PERSISTENCE_FAILED' }
+      }
+    }
+    this.start()
+    return { ok: true }
+  }
+
+  changeInterval(client, interval, save) {
+    if (!this.isJoined(client)) return { ok: false, code: 'NOT_IN_ROOM' }
+    if (!this.roomOwner.owns(client))
+      return { ok: false, code: 'CREATOR_REQUIRED' }
+    if (this.running) return { ok: false, code: 'ROUND_RUNNING' }
+    if (this.pendingStart) return { ok: false, code: 'ROUND_PENDING' }
+    if (!Number.isInteger(interval) || interval < 10 || interval > 500)
+      return { ok: false, code: 'INVALID_INTERVAL' }
+    const previous = this.interval
+    this.interval = interval
+    if (!save()) {
+      this.interval = previous
+      return { ok: false, code: 'PERSISTENCE_FAILED' }
+    }
+    return { ok: true }
+  }
+
+  cancelPendingStart() {
+    const pending = this.pendingStart
+    if (!pending) return
+    clearTimeout(pending.fallbackTimer)
+    clearTimeout(pending.startTimer)
+    this.pendingStart = null
+    this.acceptingPlayers = pending.acceptingPlayers && !this.firstRoundStarted
   }
 
   addPlayer(player, { deferChange = false } = {}) {
@@ -181,6 +294,7 @@ export class GameSession {
     if (
       !this.acceptingPlayers ||
       this.running ||
+      this.pendingStart ||
       this.gameStarted ||
       this.stats.gamecount > 0
     ) {
@@ -285,9 +399,11 @@ export class GameSession {
   }
 
   reset() {
+    this.cancelPendingStart()
     this.arena.reset({ finish: this.running })
   }
 
+  // Trusted simulation/fixture entry point. Network launches use launchRound.
   start() {
     if (this.acceptingPlayers) {
       this.acceptingPlayers = false
@@ -335,6 +451,7 @@ export class GameSession {
   }
 
   stop() {
+    this.cancelPendingStart()
     this.running = false
     if (this.timer !== null) {
       clearTimeout(this.timer)

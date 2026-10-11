@@ -187,13 +187,14 @@ async function parentTest() {
     ws.send(
       JSON.stringify({
         type: MSG_TYPE.CREATE_GAME,
+        requestId: nextId(),
         payload: { name: 'Credentials', interval: 40, isPublic: true },
         protocolVersion: PROTOCOL_VERSION,
       }),
     )
     return (
       await receive(ws, (message) => message.type === MSG_TYPE.GAME_CREATED)
-    ).payload
+    ).payload.key
   }
 
   async function join(ws, key, reconnect = []) {
@@ -469,6 +470,7 @@ async function parentTest() {
     futureClient.send(
       JSON.stringify({
         type: MSG_TYPE.CREATE_GAME,
+        requestId: nextId(),
         payload: { name: 'Blocked Future' },
         protocolVersion: PROTOCOL_VERSION,
       }),
@@ -522,6 +524,7 @@ async function parentTest() {
       malformedClient.send(
         JSON.stringify({
           type: MSG_TYPE.CREATE_GAME,
+          requestId: nextId(),
           payload: { name: 'Blocked Malformed' },
           protocolVersion: PROTOCOL_VERSION,
         }),

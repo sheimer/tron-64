@@ -65,10 +65,15 @@ function send(ws, type, payload, requestId) {
   )
 }
 async function create(ws) {
-  send(ws, MSG_TYPE.CREATE_GAME, { name: 'Reconnection' })
+  send(
+    ws,
+    MSG_TYPE.CREATE_GAME,
+    { name: 'Reconnection' },
+    `create-${keys.length}`,
+  )
   const reply = await receive(ws, (m) => m.type === MSG_TYPE.GAME_CREATED)
-  keys.push(reply.payload)
-  return reply.payload
+  keys.push(reply.payload.key)
+  return reply.payload.key
 }
 async function join(ws, key, reconnect = [], requestId = 'join') {
   send(ws, MSG_TYPE.JOIN_GAME, { key, reconnect }, requestId)
