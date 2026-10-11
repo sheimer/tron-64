@@ -11,7 +11,7 @@ This roadmap separates work required before wider community promotion from later
 | **v1.5.0**     | 1. Server correctness & hardening   | Ownership, registration, room lifecycle, scoring, resource controls        | Reliable multiplayer behavior          |
 | **v1.6.0**     | 2. Public launch preparation        | CI, media notices, onboarding, mobile checks, operational playtest         | **Ready for public launch**            |
 | **v1.7.0**     | 3. Showcase & palette extensibility | Scripted feature demos, recording pipeline, theme registry, C64 refinement | Richer presentation and easier theming |
-| **v1.8.0**     | 4. Room features & matchmaking      | Creation options, invitations, slot replacement, host continuity           | More flexible multiplayer sessions     |
+| **v1.8.0**     | 4. Room features & matchmaking      | Creation options, invitations, slot replacement, owner continuity          | More flexible multiplayer sessions     |
 | **v2.0.0**     | 5. Retro Arcade Edition             | Synthesized audio, practice bot, advanced mobile layout                    | Expanded arcade experience             |
 
 These are proposed release targets for the agreed scope, not fixed dates. Milestones may be delivered through smaller releases; document scope and version changes here as implementation progresses. For published versions, see [CHANGELOG.md](CHANGELOG.md).
@@ -42,10 +42,12 @@ Completed ownership and reconnection is recorded in [implemented milestones](#pl
 Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority remains open below.
 
 - [ ] Validate the minimum eligible roster before a round starts and return understandable registration/start errors.
-- [ ] Introduce server-verified room-host authority for round starts/resets and speed changes. A nonempty claimed player-ID set is insufficient.
+- [ ] Establish server-verified creator-client ownership independent of player/bike controls: restrict the first round's start/reset to the creator, then allow any joined room client, including spectators, to start subsequent rounds between rounds. Proposed speed authority remains with the creator client; claimed player IDs grant no room ownership.
 - [ ] Allow speed changes only between rounds; reject unauthorized or mid-round changes.
-- [ ] Define host disconnection/reconnection behavior so a room cannot be hijacked or left permanently unusable.
+- [ ] Authenticate recovery of the creator client independently of bike recovery. Explain initial-start recovery when the creator is absent, and keep subsequent starts available without the creator; do not silently transfer ownership to a joining or registering client.
 - [ ] Make pending start/countdown cleanup explicit on reset, room destruction, and membership changes.
+
+Plan: [Registration invariants and round authority](docs/plans/2026-10-11-registration-invariants-and-round-authority.md). Creator-client ownership and initial/subsequent start permissions were clarified during plan review; remaining policy choices still await approval.
 
 ### Accurate room membership and cleanup
 
@@ -76,7 +78,7 @@ Reference plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnec
 
 ### Acceptance criteria
 
-- [ ] Local WebSocket regressions prove that spectators cannot steer, claim, disconnect, reset, or change speed for other players.
+- [ ] Local WebSocket regressions prove that spectators cannot steer, claim, or disconnect other players, take creator-only first-start authority, or change owner-controlled speed; joined spectators may start subsequent eligible rounds between rounds.
 - [ ] Empty/duplicate IDs, over-capacity registration, and invalid round starts leave the room usable.
 - [ ] Repeated joins, room switches, reconnection handover, and open-socket leaves maintain correct capacity and eventually permit idle cleanup.
 - [ ] Multi-kill scoring credits every victim; collision and explosion regressions pass.
@@ -184,14 +186,14 @@ The existing `c64` palette and disabled `c64-original` prototype are different e
 
 ## Target v1.8.0 — Milestone 4: Room Features & Matchmaking
 
-Build on the verified ownership, host authority, and membership model from Milestone 1.
+Build on the verified creator-client ownership, round authority, and membership model from Milestone 1.
 
-- [ ] **Creation-time speed:** expose the initial speed in the lobby creation form; add a HUD indicator for non-normal speeds. Host-only, between-round changes are already required by Milestone 1.
+- [ ] **Creation-time speed:** expose the initial speed in the lobby creation form; add a HUD indicator for non-normal speeds. Creator-client-only, between-round changes are proposed in the Milestone 1 plan.
 - [ ] **Unlisted rooms and invitations:** expose `isPublic: false` in the UI, with join-by-ID and shareable room links. Backend visibility filtering already exists; document that unlisted is not access-controlled private play.
-- [ ] **Roster locks:** let hosts restrict new registration and define whether spectators remain permitted.
+- [ ] **Roster locks:** let owner clients restrict new registration and define whether spectators remain permitted.
 - [ ] **Slot relinquishing:** distinguish temporarily disconnected players from explicitly released slots; invalidate old credentials on relinquish or reassignment.
 - [ ] **Replacement players:** let newcomers acquire abandoned slots between rounds with a clear scoring policy. Defer active-round takeover until its gameplay and ownership semantics are explicitly defined.
-- [ ] **Host transfer:** provide deliberate handover or a documented fallback when the host leaves permanently, using the same authorization model as room controls.
+- [ ] **Owner transfer:** provide deliberate client handover or a documented fallback when the owner leaves permanently, using the same authorization model as room controls.
 
 ---
 
@@ -250,7 +252,7 @@ Reference: [Lobby loading state](docs/plans/2026-08-21-lobby-loading-state.md).
 - Configurable room-count limits and per-room client limits; accurate membership and broader traffic bounds remain open.
 - Versioned atomic JSON snapshots for room metadata, rosters, scores, and private credential verifiers. Restore starts disconnected. This does not restore in-progress physics or guarantee durability without file/directory fsync.
 - Server GC/lifecycle tests, browser memory-test tooling, and concurrency benchmark tooling. Publish measured results with environment and workload; distinguish skipped browser tests from executed verification.
-- Spectator UI restrictions and verified per-player ownership checks; host and round-control authorization remain open.
+- Spectator UI restrictions and verified per-player ownership checks; creator-client ownership and round-control authorization remain open.
 
 ### Welcome screen and project identity
 
