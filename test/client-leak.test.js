@@ -48,6 +48,7 @@ let browser
 let context
 let page
 let cdp
+let lifecycle = null
 
 try {
   try {
@@ -126,6 +127,7 @@ try {
       '#playersconfig:not([style*="display: none"]):not([style*="display:none"])',
     )
     const roomKey = await page.locator('#gameId').textContent()
+    lifecycle = { cycle, roomKey, round: null, step: 'registering' }
     for (const [name, keys] of [
       ['Alice', '66_78'],
       ['Bob', '89_88'],
@@ -154,6 +156,10 @@ try {
     })
 
     for (let round = 1; round <= 2; round++) {
+      lifecycle = { cycle, roomKey, round, step: 'requesting start' }
+      console.log(
+        `Cycle ${cycle} / ${TOTAL_CYCLES} | Round ${round} / 2: requesting start`,
+      )
       if (round === 1) {
         await page.waitForSelector('#btn-init-game:not([disabled])')
         await page.click('#btn-init-game')
@@ -163,20 +169,42 @@ try {
       }
 
       // Simulate both locally registered players steering during each round.
+      lifecycle.step = 'waiting for arena'
       await page.waitForSelector(
         '#arena:not([style*="display: none"]):not([style*="display:none"])',
       )
+      lifecycle.step = 'steering'
       for (let i = 0; i < 5; i++) {
         await page.keyboard.press('b')
         await page.keyboard.press('y')
         await page.waitForTimeout(50)
       }
+      lifecycle.step = 'waiting for scores'
       await page.waitForSelector(
         '#scores:not([style*="display: none"]):not([style*="display:none"])',
         { timeout: 15000 },
       )
+      // Scores appear before the delayed reveal finishes. Complete that actual
+      // round transition before starting another round or a fresh fixture room;
+      // full cross-room callback cancellation is implemented in Phase 2.
+      lifecycle.step = 'waiting for finished round'
+      await page.waitForFunction(
+        async ({ key, expectedRound }) => {
+          const { state } = await import('/javascripts/state.js')
+          return (
+            state.currentGame.key === key &&
+            state.scores.gamecount === expectedRound &&
+            state.matchState === 'finished'
+          )
+        },
+        { key: roomKey, expectedRound: round },
+      )
+      console.log(
+        `Cycle ${cycle} / ${TOTAL_CYCLES} | Round ${round} / 2: finished`,
+      )
     }
 
+    lifecycle.step = 'leaving and reaping'
     // Step F: Click Lobby button to return to Lobby
     await page.waitForSelector('#btn-header-lobby')
     await page.click('#btn-header-lobby')
@@ -269,6 +297,7 @@ try {
     )
 
     // Step H: Measure client metrics after GC
+    lifecycle.step = 'measuring lobby baseline'
     const current = await getClientMetrics()
     if (cycle === 1) {
       steadyBaseline = current
@@ -335,6 +364,35 @@ try {
   console.log(`======================================================\n`)
 } catch (err) {
   console.error(err)
+  console.error('Client leak lifecycle:', lifecycle)
+  if (page && !page.isClosed()) {
+    const client = await page
+      .evaluate(async () => {
+        const { state } = await import('/javascripts/state.js')
+        return {
+          key: state.currentGame.key,
+          screen: state.screen,
+          matchState: state.matchState,
+          eligiblePlayerCount: state.roundInfo?.eligiblePlayerCount,
+          firstRoundStarted: state.roundInfo?.firstRoundStarted,
+          creatorBound: state.isRoomOwner(),
+          ownedBikes: state.ownedPlayerIds.size,
+          completedRounds: state.scores.gamecount,
+          arenaDisplay: document.getElementById('arena')?.style.display,
+        }
+      })
+      .catch(() => null)
+    console.error('Client leak state:', client)
+  }
+  const room = gameServer.getGame(lifecycle?.roomKey)
+  if (room)
+    console.error('Client leak server state:', {
+      running: room.running,
+      pending: Boolean(room.pendingStart),
+      firstRoundStarted: room.firstRoundStarted,
+      eligiblePlayerCount: room.eligiblePlayerCount,
+      completedRounds: room.stats.gamecount,
+    })
   process.exitCode = 1
 } finally {
   if (cdp) await cdp.detach().catch(() => {})

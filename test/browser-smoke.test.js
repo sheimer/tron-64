@@ -205,9 +205,18 @@ async function smokeTest() {
     const { state } = await import('/javascripts/state.js')
     return state.screen === 'game' && state.matchState === 'running'
   })
-  // A reset can emit player dots before the canvas is cleared. The running
-  // announcement also precedes simulation startup by one second, so wait for
-  // real interior pixels after that countdown rather than sampling once.
+  // Reset already draws starting dots, and the running announcement signals
+  // countdown. Wait for the server's durable launch before accepting drawing
+  // evidence or transferring bikes; otherwise the fixture can cancel its first
+  // start without ever having run physics.
+  await page.waitForFunction(async (key) => {
+    const { state } = await import('/javascripts/state.js')
+    return (
+      state.currentGame.key === key &&
+      state.roundInfo?.firstRoundStarted === true &&
+      state.roundInfo?.running === true
+    )
+  }, roomKey)
   await page.waitForFunction(() => window.smokePlayerDrawReceived === true)
   const rendered = await page.waitForFunction(
     async () => {
@@ -368,6 +377,44 @@ async function smokeTest() {
     return network.isConnected() && state.ownedPlayerIds.size === 1
   })
   await page.locator('#scores-waiting').waitFor({ state: 'hidden' })
+  const retainedOnly = await page.evaluate(async () => {
+    const { state } = await import('/javascripts/state.js')
+    return {
+      screen: state.screen,
+      eligiblePlayerCount: state.roundInfo?.eligiblePlayerCount,
+      firstRoundStarted: state.roundInfo?.firstRoundStarted,
+    }
+  })
+  assert.deepEqual(retainedOnly, {
+    screen: 'game',
+    eligiblePlayerCount: 1,
+    firstRoundStarted: true,
+  })
+  assert.equal(
+    await page.locator('#btn-start-game').isDisabled(),
+    true,
+    'One recovered bike cannot satisfy the next-round minimum',
+  )
+
+  // Automatic reconnect preserves the earlier bike revocation. Explicitly
+  // rejoin this saved room to recover the disconnected bike as well, without
+  // reloading the page or weakening the previous stale-control assertions.
+  await page.locator('#btn-header-lobby').click()
+  await page
+    .locator('#body-gamelisttable tr')
+    .filter({ hasText: roomKey })
+    .getByRole('button', { name: 'rejoin', exact: true })
+    .click()
+  await page.waitForFunction(async () => {
+    const { state } = await import('/javascripts/state.js')
+    const { network } = await import('/javascripts/network.js')
+    return (
+      state.ownedPlayerIds.size === 2 &&
+      network.inputHandles.size === 2 &&
+      state.roundInfo?.eligiblePlayerCount === 2 &&
+      state.matchState === 'finished'
+    )
+  })
   await page.waitForFunction(
     () => !document.getElementById('btn-start-game').disabled,
   )
