@@ -1,7 +1,7 @@
 # Registration invariants and round authority — Implementation plan
 
 - Date: 2026-10-11
-- Status: Awaiting user review; implementation is not approved
+- Status: Approved for autonomous implementation on 2026-10-11; see [execution progress](2026-10-11-registration-invariants-and-round-authority-progress.md)
 - Roadmap section: [Milestone 1 — Registration invariants and round authority](../../ROADMAP.md#registration-invariants-and-round-authority)
 - Branch: `feat/registration-invariants-and-round-authority`
 - Base: `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`
@@ -20,8 +20,8 @@ review on 2026-10-11. Any joined client includes spectators; this is a settled
 requirement. Keep protocol version fields, an exact check against the single current
 version, and reload guidance for mismatched clients. The server supports only that
 version and its current message formats; no older-version compatibility branches
-or fallbacks. These are settled requirements. The complete revised plan still
-awaits implementation approval; other policies remain proposed defaults.
+or fallbacks. These are settled requirements. The complete revised plan
+has now received implementation approval, including its proposed defaults.
 
 Validate two-to-six registered slots and at least two eligible connected players
 before reset and again before launch. A requester need not control a bike.
@@ -29,7 +29,7 @@ Preserve shared-keyboard play, spectators, scores, authenticated bike recovery,
 and binary-only movement/drawing. Existing per-player credentials concern bike
 control and recovery; they grant no room ownership or special round-start role.
 
-Speed changes remain a proposed creator-client permission, only between rounds.
+Speed changes are a creator-client permission, only between rounds.
 A client may create and own a room without registering any local players. Any
 open client joined to the room, including spectators, qualifies for later starts;
 a lobby client or a client in another room cannot operate this room.
@@ -354,8 +354,7 @@ remains a later [room feature](../../ROADMAP.md#target-v180--milestone-4-room-fe
 Client ownership, first/subsequent start permissions, inclusion of joined
 spectators, and strict checking of a single current wire version with mismatch
 reload guidance are settled user requirements.
-The other rows describe proposed policies. Implementation of the whole plan still
-awaits approval.
+The other rows describe policies approved with the complete plan on 2026-10-11.
 
 | Decision                    | Contract                                                                                                                                                                                                                                |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -575,10 +574,13 @@ planning approval.
 
 ## Approval gate
 
-Await user review and explicit approval of this plan revision and its autonomous
-implementation/commit/push/CI policy. The current request authorizes only branch
-preparation, model-guidance changes, and planning/unchecked-roadmap revisions. Agent plan review
-is advisory; it cannot approve the product decisions or implementation.
+The user approved revision `302a9859b77ecca890254b24a3ca381c9e66ac49` and its
+autonomous implementation/commit/push/CI policy on 2026-10-11: “very well :)
+you can go on orchestrating the implementation :)”. The immutable revision,
+approval source, task records, and verification evidence are recorded in
+[execution progress](2026-10-11-registration-invariants-and-round-authority-progress.md).
+Material scope changes require renewed review; merge, release, and deployment
+remain outside this approval. Agent plan review is advisory.
 
 ### Advisory plan review
 
@@ -619,5 +621,5 @@ The user's subsequent clarification supersedes that interpretation: retain versi
 fields, exact-current-version checking, and reload guidance, while accepting only
 one version and adding no backward-compatibility handlers. This revision corrects
 the plan to that clarified intent and preserves the already implemented strict
-version guard. Snapshot recovery remains a separate policy. Implementation remains
-unapproved.
+version guard. Snapshot recovery remains a separate policy. The subsequent user
+approval is recorded above and in the companion progress document.
