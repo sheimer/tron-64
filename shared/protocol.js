@@ -10,6 +10,7 @@ export const MSG_TYPE = {
   JOIN_GAME: 'JOIN_GAME',
   JOIN_RESULT: 'JOIN_RESULT',
   OWNERSHIP_REVOKED: 'OWNERSHIP_REVOKED',
+  ROOM_OWNER_REVOKED: 'ROOM_OWNER_REVOKED',
   LEAVE_GAME: 'LEAVE_GAME',
 
   // Match configuration & lifecycle
@@ -30,7 +31,7 @@ export const MSG_TYPE = {
 
 // All client messages carry this version. Binary input is enabled only after
 // a versioned room join, preventing old clients from treating handles as IDs.
-export const PROTOCOL_VERSION = 2
+export const PROTOCOL_VERSION = 3
 
 export const BINARY_OPCODE = {
   DRAW: 0x01,

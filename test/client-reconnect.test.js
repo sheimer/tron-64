@@ -190,10 +190,17 @@ try {
   })
   assert.equal(state.players[0].isLocal, false)
 
-  const ack = (socket, requestId, key, accepted, rejected = []) =>
+  const ack = (
+    socket,
+    requestId,
+    key,
+    accepted,
+    rejected = [],
+    roomOwner = null,
+  ) =>
     socket.receive(
       MSG_TYPE.JOIN_RESULT,
-      { key, accepted, rejected },
+      { key, accepted, rejected, roomOwner },
       { requestId },
     )
   ack(first, 'unrelated', 'room-r', [{ id: 'first', inputHandle: 5 }])
@@ -316,6 +323,62 @@ try {
   assert.equal(second.readyState, FakeSocket.OPEN)
   assert.equal(state.isLocalPlayer('first'), true)
   assert.equal(state.getReconnectEntries('room-r').length, 2)
+
+  // Room creator recovery is independent of bike bindings, and only the
+  // current private correlated result may restore its live permission.
+  const ownerOnly = {
+    ownerClientId: 'a'.repeat(32),
+    roomOwnerToken: 'C'.repeat(43),
+  }
+  state.setCurrentGame('room-owner', 'Owner only')
+  state.saveRoomOwner('room-owner', ownerOnly)
+  app.joinGame('room-owner')
+  const ownerJoin = second.joins().at(-1)
+  assert.deepEqual(ownerJoin.payload.reconnect, [])
+  assert.deepEqual(ownerJoin.payload.roomOwner, ownerOnly)
+  assert.equal(state.isRoomOwner(), false)
+  const ownerResult = { accepted: true, ownerClientId: ownerOnly.ownerClientId }
+  ack(second, 'unrelated', 'room-owner', [], [], ownerResult)
+  assert.equal(state.isRoomOwner(), false)
+  ack(second, ownerJoin.requestId, 'room-owner', [], [], ownerResult)
+  assert.equal(state.isRoomOwner(), true)
+  assert.equal(network.inputHandles.size, 0)
+  second.receive(MSG_TYPE.GAME_INFO, {
+    key: 'room-owner',
+    players: [{ id: 'remote-one' }, { id: 'remote-two' }],
+    eligiblePlayerCount: 2,
+    firstRoundStarted: true,
+    started: true,
+    running: true,
+  })
+  assert.equal(state.canStartRound(), false)
+  second.receive(MSG_TYPE.GAME_FINISH, {
+    gamecount: 1,
+    players: [],
+    messages: [],
+  })
+  assert.equal(
+    state.canStartRound(),
+    true,
+    'Finishing clears the last running snapshot',
+  )
+  second.receive(MSG_TYPE.ROOM_OWNER_REVOKED, {
+    key: 'room-owner',
+    ownerClientId: ownerOnly.ownerClientId,
+  })
+  assert.equal(state.isRoomOwner(), false)
+  assert.equal(
+    state.canStartRound(),
+    true,
+    'Later starts are independent of the creator role',
+  )
+  app.joinGame('room-owner', false)
+  assert.equal(second.joins().at(-1).payload.roomOwner, undefined)
+  app.joinGame('room-owner', true)
+  assert.deepEqual(second.joins().at(-1).payload.roomOwner, ownerOnly)
+  app.leaveCurrentGame()
+  assert.equal(state.isRoomOwner(), false)
+  assert.ok(state.getRoomOwnerClaim('room-owner', true))
 
   network.stopPing()
   console.log(

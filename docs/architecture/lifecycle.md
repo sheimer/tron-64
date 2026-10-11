@@ -63,6 +63,18 @@ Game sessions transition through the following states (`shared/constants.js`):
 
 ---
 
+### Creator-client and first/next-round authority
+
+Creating a room durably establishes a logical creator client independently of any bike. The private correlated creation result saves an independent `roomOwner` credential alongside an empty `localPlayers` map in the room's `sessionStorage` record. Normalization preserves this owner-only record. Saved proof grants no live controls until a matching current join acknowledgement authenticates it; closing, leaving, switching rooms, or creator revocation clears live permission. Explicit rejoin can recover the creator without claiming bikes. Bike registration/handover never elects or transfers the creator role, and an old socket's cleanup cannot release a replacement creator binding.
+
+Only the current authenticated creator starts the initial round. After the durable `firstRoundStarted` launch decision, any open joined room client, including a spectator, can request a later round between rounds. Two to six registered slots and at least two authenticated connected bikes are required before reset and again at launch. Two local bikes on one client qualify; the requesting creator may control none. There is no automatic creator takeover. Creator absence blocks only the initial start and creator-only speed changes; it does not block later starts.
+
+The room owns its minimal pending-start latch and timers. Preparation freezes registration and rejects duplicate starts/speed changes; physics rejects starts/speed changes too. First-launch persistence succeeds before physics; failed writes keep the marker false, cancel the latch, and return `PERSISTENCE_FAILED`. Creator-only speed mutations accept integer intervals from 10 to 500 ms between rounds and roll back on save failure. Trusted internal simulation/fixture methods are separate from guarded network admission.
+
+Phase 1 retains the existing reset/readiness/countdown wire shapes. Full participant/creator-change cancellation, attempt-scoped messages, pending snapshots and client cancellation routing belong to Phase 2; the strict cold-restore matrix and final creator/control presentation belong to Phases 3–4. See [the implementation plan](../plans/2026-10-11-registration-invariants-and-round-authority.md). This intermediate build is not launch-ready.
+
+---
+
 ## 3. Player Registration and Ownership
 
 Public player IDs identify players; they do not authorize control. Each registered player has an independent secret credential, and the room tracks the socket that currently owns that player. One connection may own multiple local players.
@@ -101,7 +113,7 @@ At the start of a subsequent round, an offline player explodes at its starting p
 
 ### Authenticated reconnect
 
-The lobby labels its action “rejoin” when usable saved credentials exist, including credentials marked revoked for explicit reclaim. This action remains available when registration is closed; saved credentials only enable the attempt, and the server still authenticates every claim.
+The lobby labels its action “rejoin” when usable saved credentials exist, including independent owner-only credentials and bike credentials marked revoked for explicit reclaim. This action remains available when registration is closed; saved credentials only enable the attempt, and the server still authenticates every claim.
 
 A reconnect submits the saved room/player credentials. The browser restores controls only for IDs accepted in a private `JOIN_RESULT` matching the current socket, room, and pending request. Invalid or missing credentials remain unbound and produce feedback. A join without `reconnect` credentials admits a spectator and grants no player ownership.
 
@@ -110,8 +122,8 @@ A player that disconnected mid-round becomes eligible for the next round after a
 The browser shows the scoreboard in `scoresWaiting` while disconnected. The
 rejoined room's `GAME_INFO` snapshot resolves that waiting state even when the
 game screen is already visible: ongoing rounds keep the waiting overlay, while
-finished rounds clear it and enable the next-round button for authenticated local
-players. Ordinary roster updates preserve active gameplay and the score reveal.
+finished rounds clear it and enable the next-round button for any joined client
+when at least two authenticated connected bikes are eligible. Ordinary roster updates preserve active gameplay and the score reveal.
 
 After an ownership-revoked notice, the browser stops automatically reclaiming the transferred player. Explicitly selecting the room may authenticate that player again.
 
@@ -145,11 +157,11 @@ When a player clicks the “← Lobby” header button (`#btn-header-lobby`):
 2. The server releases only IDs still owned by that socket, invalidates their handles, clears room membership, and broadcasts updated `GAME_INFO` to remaining room members. The leaving socket stops receiving room packets that could pull it back into the match screen.
 3. The client clears its local match state (`players`, `scores`, `positions`), switches to the lobby screen, and requests the latest `LOBBY_LIST`.
 
-Leaving releases current ownership, not the saved credential. Later re-entry requires authenticated reconnect.
+Leaving releases current bike and creator socket bindings, not saved credentials. Later re-entry requires authenticated reconnect.
 
 ### Switch to another room
 
-The server validates target-room admission and required handle capacity before releasing ownership in the old room. Once admitted, it releases only players still owned by the switching socket, clears the old-room indexes and membership, and joins the target room. Old-room handles remain invalid and are not reused.
+The server validates target-room admission and required handle capacity before releasing bike and creator bindings in the old room. Once admitted, it releases only players still owned by the switching socket, clears the old-room indexes and membership, and joins the target room. Old-room handles remain invalid and are not reused.
 
 A failed admission leaves existing server-side ownership intact. Release of a live player follows the same disconnect and trail behavior described above.
 
@@ -159,13 +171,13 @@ A failed admission leaves existing server-side ownership intact. Release of a li
 
 ### Snapshot contents and write guarantees
 
-Version 1 snapshots contain a `games` array with each room's metadata, roster, scores, and a dedicated `private.verifiers` map of lowercase SHA-256 hex digests. Raw tokens, sockets, handles, and active owner maps never enter the snapshot.
+Version 1 snapshots contain a `games` array with each room's metadata, roster, scores, and a dedicated `private.verifiers` map of lowercase SHA-256 hex digests, independent `private.roomOwner` creator ID/verifier, and public `firstRoundStarted` launch marker. Raw tokens, sockets, handles, and active owner maps never enter the snapshot.
 
-`Storage` writes a temporary file and atomically renames it before acknowledging registration. It does not `fsync` the file or directory: this supports ordinary process restart recovery and avoids partially replacing the snapshot, but does not guarantee a flush through sudden power loss.
+`Storage` writes a temporary file and atomically renames it before acknowledging creation, registration, first launch, or a speed mutation. It does not `fsync` the file or directory: this supports ordinary process restart recovery and avoids partially replacing the snapshot, but does not guarantee a flush through sudden power loss.
 
 ### Cold restore
 
-Cold restore preserves rosters and scores, marks every player disconnected, and starts with no owners or input handles. In-progress physics is discarded. Matching room/player credentials can restore ownership through authenticated reconnect.
+Cold restore preserves rosters, scores, creator verifier and the first-launch marker, marks every player disconnected, and starts with no bike owners, creator socket, pending start, or input handles. In-progress physics is discarded. Matching creator and bike credentials restore their separate bindings through authenticated reconnect. Strict malformed/contradictory launch-metadata validation remains pending in Phase 3; do not treat this intermediate build as a completed migration.
 
 ### Missing, legacy, and malformed data
 

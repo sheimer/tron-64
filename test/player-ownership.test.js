@@ -81,15 +81,19 @@ function registration(id, index = 0) {
 }
 
 async function create(ws) {
-  send(ws, MSG_TYPE.CREATE_GAME, {
-    name: 'Ownership',
-    isPublic: true,
-    interval: 40,
-  })
-  const { payload: key } = await receive(
+  send(
     ws,
-    (m) => m.type === MSG_TYPE.GAME_CREATED,
+    MSG_TYPE.CREATE_GAME,
+    {
+      name: 'Ownership',
+      isPublic: true,
+      interval: 40,
+    },
+    { requestId: `create-${createdKeys.length}` },
   )
+  const {
+    payload: { key },
+  } = await receive(ws, (m) => m.type === MSG_TYPE.GAME_CREATED)
   createdKeys.push(key)
   return key
 }

@@ -126,7 +126,7 @@ export class SettingsView {
     if (this.elements.speed) {
       this.elements.speed.disabled = isSpectator
       this.elements.speed.title = isSpectator
-        ? 'Spectators cannot change game speed'
+        ? 'Only the room creator can change speed between rounds'
         : ''
     }
   }
@@ -134,9 +134,7 @@ export class SettingsView {
   initVisibilityListeners() {
     const updateGamestats = (show) => {
       if (this.elements.pingDiv) {
-        this.elements.pingDiv.style.visibility = show
-          ? 'visible'
-          : 'hidden'
+        this.elements.pingDiv.style.visibility = show ? 'visible' : 'hidden'
       }
     }
     updateGamestats(settings.showGamestats)

@@ -42,12 +42,12 @@ Completed ownership and reconnection is recorded in [implemented milestones](#pl
 Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority remains open below.
 
 - [ ] Validate the minimum eligible roster before a round starts and return understandable registration/start errors.
-- [ ] Establish server-verified creator-client ownership independent of player/bike controls: restrict the first round's start/reset to the creator, then allow any joined room client, including spectators, to start subsequent rounds between rounds. Proposed speed authority remains with the creator client; claimed player IDs grant no room ownership.
+- [ ] Establish server-verified creator-client ownership independent of player/bike controls: restrict the first round's start/reset to the creator, then allow any joined room client, including spectators, to start subsequent rounds between rounds. Speed authority remains with the creator client; claimed player IDs grant no room ownership.
 - [ ] Allow speed changes only between rounds; reject unauthorized or mid-round changes.
 - [ ] Authenticate recovery of the creator client independently of bike recovery. Explain initial-start recovery when the creator is absent, and keep subsequent starts available without the creator; do not silently transfer ownership to a joining or registering client.
 - [ ] Make pending start/countdown cleanup explicit on reset, room destruction, and membership changes.
 
-Plan: [Registration invariants and round authority](docs/plans/2026-10-11-registration-invariants-and-round-authority.md). Creator-client ownership and initial/subsequent start permissions were clarified during plan review; remaining policy choices still await approval.
+Approved plan: [Registration invariants and round authority](docs/plans/2026-10-11-registration-invariants-and-round-authority.md). Creator-client ownership, initial/subsequent start permissions and the plan's policies are approved for autonomous implementation; verified outcomes are recorded in [execution progress](docs/plans/2026-10-11-registration-invariants-and-round-authority-progress.md).
 
 ### Accurate room membership and cleanup
 

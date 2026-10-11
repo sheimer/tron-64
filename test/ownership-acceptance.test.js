@@ -175,6 +175,7 @@ async function acceptance() {
     ws.send(
       JSON.stringify({
         type: MSG_TYPE.CREATE_GAME,
+        requestId: nextId(),
         payload: { name: 'Acceptance' },
         protocolVersion: PROTOCOL_VERSION,
       }),
@@ -213,7 +214,8 @@ async function acceptance() {
     const old = await connect(url)
     const replacement = await connect(url)
     const spectator = await connect(url)
-    const key = await create(old)
+    const created = await create(old)
+    const { key, ...roomOwner } = created
     for (const ws of [old, replacement, spectator])
       assert.equal(
         (await send(ws, MSG_TYPE.JOIN_GAME, { key })).type,
@@ -320,6 +322,18 @@ async function acceptance() {
       }),
     )
     await receive(spectator, (m) => m.type === MSG_TYPE.PONG)
+    // Recover the independent creator role and the disconnected second bike;
+    // the earlier bike-only transfer granted no initial-start authority.
+    const recovered = await send(replacement, MSG_TYPE.JOIN_GAME, {
+      key,
+      roomOwner,
+      reconnect: [claim(second)],
+    })
+    assert.equal(recovered.payload.roomOwner.accepted, true)
+    assert.deepEqual(
+      recovered.payload.accepted.map((binding) => binding.id),
+      [second.id],
+    )
     replacement.send(
       JSON.stringify({
         type: MSG_TYPE.START_GAME,
@@ -335,6 +349,10 @@ async function acceptance() {
         }),
       )
     await receive(replacement, (m) => m.type === MSG_TYPE.GAME_STATE)
+    await receive(
+      replacement,
+      (m) => m.type === MSG_TYPE.GAME_INFO && m.payload.running === true,
+    )
     assert.equal(await rpc(running, 'drawAndFinish', key), true)
     await receive(replacement, (m) => m.type === MSG_TYPE.GAME_FINISH)
     assert.ok(frames.some((f) => f.binary && f.data[0] === BINARY_OPCODE.DRAW))

@@ -268,6 +268,8 @@ async function smokeTest() {
   // tab keeps its other binding, and the transfer cannot mark Alice offline.
   const saved = await page.evaluate((key) => {
     const records = JSON.parse(sessionStorage.getItem('connectedGames'))
+    // This fixture transfers a bike only; creator controls stay on the first tab.
+    delete records[key].roomOwner
     const players = records[key].localPlayers
     const first = Object.keys(players)[0]
     records[key].localPlayers = { [first]: players[first] }

@@ -29,6 +29,7 @@ export class GameServer {
           stats: record.stats,
           players: record.players,
           private: record.private,
+          firstRoundStarted: record.firstRoundStarted,
           createdAt: record.createdAt,
           onChange: () => {
             this.saveToStorage()
@@ -59,7 +60,7 @@ export class GameServer {
     return storage.saveGames(this.games)
   }
 
-  createGame({ name, size, interval, isPublic }) {
+  createGame({ name, size, interval, isPublic, creator }) {
     if (storage.readOnly || this.games.length >= MAX_ACTIVE_GAMES) {
       return null
     }
@@ -86,10 +87,14 @@ export class GameServer {
       }),
     )
 
+    if (creator) {
+      creator.credentials = this.games.at(-1).roomOwner.create()
+    }
     if (!this.saveToStorage()) {
       const game = this.games.pop()
       game.onDestroy = null
       game.destroy()
+      if (creator) creator.credentials = null
       return null
     }
     return key
@@ -133,7 +138,13 @@ export class GameServer {
         right: player.right,
         connected: player.connected,
       })),
+      ownerClientId: game.roomOwner.clientId,
+      ownerStatus: game.roomOwner.status,
+      firstRoundStarted: game.firstRoundStarted,
+      eligiblePlayerCount: game.eligiblePlayerCount,
       started:
+        game.firstRoundStarted ||
+        Boolean(game.pendingStart) ||
         Boolean(game.gameStarted) ||
         game.stats.gamecount > 0 ||
         !game.acceptingPlayers,

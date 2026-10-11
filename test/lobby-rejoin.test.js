@@ -73,6 +73,21 @@ try {
     true,
     'Legacy IDs alone cannot enable recovery',
   )
+  state.saveRoomOwner('room', {
+    ownerClientId: 'a'.repeat(32),
+    roomOwnerToken: 'B'.repeat(43),
+  })
+  assert.equal(
+    button(false).disabled,
+    false,
+    'Owner-only recovery requires no bikes',
+  )
+  assert.equal(button(false).children[0].text.trim(), 'rejoin')
+  assert.equal(
+    state.isRoomOwner(),
+    false,
+    'Saved owner proof grants no live permission',
+  )
   console.log(
     'Lobby rejoin: credentials enable explicit recovery without granting ownership',
   )

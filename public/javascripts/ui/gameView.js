@@ -4,8 +4,7 @@ import { PLAYER_COLOR_KEYS } from '/shared/constants.js'
 import { ordinalSuffixOf, sortScoreboardPlayers } from '/shared/utils.js'
 
 const canHover =
-  typeof window !== 'undefined' &&
-  window.matchMedia('(hover: hover)').matches
+  typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
 export class GameView {
   constructor({ onStartGame, onLeaveGame }) {
@@ -105,9 +104,8 @@ export class GameView {
 
     // Start button readiness
     if (this.startBtn) {
-      const hasLocalPlayers = (appState.players || []).some((p) => p.isLocal)
       const isReady =
-        (state === 'ready' || state === 'finished') && hasLocalPlayers
+        (state === 'ready' || state === 'finished') && appState.canStartRound()
       const setFocus = isReady && this.startBtn.disabled
       this.startBtn.disabled = !isReady
       if (setFocus) {
@@ -237,9 +235,7 @@ export class GameView {
 
       const isLocal = playerInfo ? Boolean(playerInfo.isLocal) : false
       const tr = document.createElement('tr')
-      tr.className = isLocal
-        ? `fg-${playerColor}`
-        : `fg-${playerColor}-muted`
+      tr.className = isLocal ? `fg-${playerColor}` : `fg-${playerColor}-muted`
       if (!isConnected) {
         tr.style.opacity = '0.6'
       }

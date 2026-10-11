@@ -23,6 +23,8 @@ class State {
     )
       this.connectedGames = {}
     this.ownedPlayerIds = new Set()
+    this.roomOwnerClientId = null
+    this.roundInfo = null
 
     this.gamesList = []
     this.matchState = 'initializing'
@@ -81,7 +83,9 @@ class State {
       typeof this.connectedGames[key].localPlayers !== 'object' ||
       Array.isArray(this.connectedGames[key].localPlayers)
     ) {
+      const roomOwner = this.connectedGames[key]?.roomOwner
       this.connectedGames[key] = { localPlayers: Object.create(null) }
+      if (roomOwner) this.connectedGames[key].roomOwner = roomOwner
       this.saveConnectedGames()
     } else if (
       Object.getPrototypeOf(this.connectedGames[key].localPlayers) !== null
@@ -160,6 +164,55 @@ class State {
 
   clearOwnership() {
     this.ownedPlayerIds.clear()
+    this.roomOwnerClientId = null
+    this.roundInfo = null
+  }
+
+  saveRoomOwner(key, credential) {
+    this.addConnectedGame(key)
+    this.connectedGames[key].roomOwner = { ...credential, revoked: false }
+    this.saveConnectedGames()
+  }
+
+  getRoomOwnerClaim(key = this.currentGame.key, explicit = false) {
+    const owner = this.connectedGames[key]?.roomOwner
+    return /^[a-f0-9]{32}$/.test(owner?.ownerClientId) &&
+      /^[A-Za-z0-9_-]{43}$/.test(owner?.roomOwnerToken) &&
+      (explicit || !owner.revoked)
+      ? {
+          ownerClientId: owner.ownerClientId,
+          roomOwnerToken: owner.roomOwnerToken,
+        }
+      : undefined
+  }
+
+  acknowledgeRoomOwner(key, ownerClientId) {
+    const owner = this.connectedGames[key]?.roomOwner
+    if (owner?.ownerClientId !== ownerClientId) return false
+    owner.revoked = false
+    this.roomOwnerClientId = ownerClientId
+    this.saveConnectedGames()
+    return true
+  }
+
+  revokeRoomOwner(key) {
+    this.roomOwnerClientId = null
+    const owner = this.connectedGames[key]?.roomOwner
+    if (owner) owner.revoked = true
+    this.saveConnectedGames()
+  }
+
+  isRoomOwner() {
+    return Boolean(this.roomOwnerClientId)
+  }
+
+  canStartRound() {
+    return Boolean(
+      this.roundInfo &&
+      !this.roundInfo.running &&
+      this.roundInfo.eligiblePlayerCount >= 2 &&
+      (this.roundInfo.firstRoundStarted || this.isRoomOwner()),
+    )
   }
 
   removeConnectedGames(keys) {

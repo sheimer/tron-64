@@ -134,7 +134,11 @@ class NetworkClient {
         }
 
         if (
-          type === MSG_TYPE.PLAYER_REGISTERED &&
+          [
+            MSG_TYPE.PLAYER_REGISTERED,
+            MSG_TYPE.GAME_CREATED,
+            MSG_TYPE.JOIN_RESULT,
+          ].includes(type) &&
           msg.protocolVersion !== PROTOCOL_VERSION
         ) {
           this.emit(
@@ -253,13 +257,17 @@ class NetworkClient {
     this.send(MSG_TYPE.LOBBY_LIST)
   }
 
-  createGame({ name, size, interval, isPublic = true }) {
-    this.send(MSG_TYPE.CREATE_GAME, { name, size, interval, isPublic })
+  createGame({ name, size, interval, isPublic = true }, requestId) {
+    return this.send(
+      MSG_TYPE.CREATE_GAME,
+      { name, size, interval, isPublic },
+      { requestId },
+    )
   }
 
-  joinGame(key, reconnect = [], requestId) {
+  joinGame(key, reconnect = [], requestId, roomOwner) {
     this.inputHandles.clear()
-    this.send(MSG_TYPE.JOIN_GAME, { key, reconnect }, { requestId })
+    this.send(MSG_TYPE.JOIN_GAME, { key, reconnect, roomOwner }, { requestId })
   }
 
   revokePlayers(ids) {

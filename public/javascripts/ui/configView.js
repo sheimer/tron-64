@@ -1,3 +1,4 @@
+import { state } from '../state.js'
 import { settings } from '../settings.js'
 import { PLAYER_COLOR_KEYS } from '/shared/constants.js'
 
@@ -179,9 +180,8 @@ export class ConfigView {
       this.bodyPlayersTable.appendChild(tr)
     }
 
-    const hasLocalPlayers = players.some((p) => p.isLocal)
     if (this.btnInitGame) {
-      this.btnInitGame.disabled = !hasLocalPlayers || players.length < 2
+      this.btnInitGame.disabled = !state.canStartRound()
     }
 
     if (players.length >= 6) {

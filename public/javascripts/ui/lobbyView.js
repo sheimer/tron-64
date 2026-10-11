@@ -8,6 +8,7 @@ export class LobbyView {
   constructor({ onSelectGame }) {
     this.onSelectGame = onSelectGame
     this.unsubscribers = []
+    this.pendingCreation = null
 
     this.container = document.getElementById('lobby')
     this.footer = document.getElementById('footer-lobby')
@@ -32,7 +33,7 @@ export class LobbyView {
       if (this.formCreateGame) {
         this.formCreateGame.onsubmit = () => {
           if (!this.btnCreateGame.disabled) {
-            network.createGame({
+            this.createGame({
               name: gameName,
               size: GRID_SIZE,
               interval: Math.round(1000 / settings.speed),
@@ -43,6 +44,46 @@ export class LobbyView {
         }
       }
     }
+  }
+
+  createGame(payload) {
+    if (this.pendingCreation) return
+    const requestId = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map((value) => value.toString(16).padStart(2, '0'))
+      .join('')
+    const pending = {
+      requestId,
+      generation: network.generation,
+      payload,
+      attempts: 0,
+      timer: null,
+    }
+    this.pendingCreation = pending
+    const retry = () => {
+      if (
+        this.pendingCreation !== pending ||
+        pending.generation !== network.generation
+      )
+        return
+      if (pending.attempts >= 3) {
+        this.clearPendingCreation()
+        if (this.lobbyError) {
+          this.lobbyError.textContent =
+            'Room creation acknowledgement was lost. Try again or reload before creating another room.'
+          this.lobbyError.style.display = 'block'
+        }
+        return
+      }
+      pending.attempts++
+      network.createGame(payload, requestId)
+      pending.timer = setTimeout(retry, 2000)
+    }
+    retry()
+  }
+
+  clearPendingCreation() {
+    clearTimeout(this.pendingCreation?.timer)
+    this.pendingCreation = null
   }
 
   renderStatusRow(message, extraClass = 'fg-fg-muted') {
@@ -106,7 +147,9 @@ export class LobbyView {
       // Action / Join button
       const tdAction = document.createElement('td')
       const joinButton = document.createElement('button')
-      const canRejoin = state.getReconnectEntries(item.key, true).length > 0
+      const canRejoin =
+        state.getReconnectEntries(item.key, true).length > 0 ||
+        Boolean(state.getRoomOwnerClaim(item.key, true))
       joinButton.appendChild(
         document.createTextNode(canRejoin ? ' rejoin ' : ' join '),
       )
@@ -143,6 +186,7 @@ export class LobbyView {
 
     this.unsubscribers.push(
       network.on('close', () => {
+        this.clearPendingCreation()
         this.renderStatusRow(
           'Connection lost. Reconnecting to server...',
           'fg-rose-muted',
@@ -160,30 +204,37 @@ export class LobbyView {
     this.unsubscribers.push(
       network.on(MSG_TYPE.LOBBY_LIST, (list) => {
         if (!Array.isArray(list)) return
-        // Clean up stale connected games from sessionStorage
-        const localGameKeys = Object.keys(state.connectedGames)
-        const staleKeys = localGameKeys.filter(
-          (key) => !list.some((serverGame) => serverGame.key === key),
-        )
-        if (staleKeys.length) {
-          state.removeConnectedGames(staleKeys)
-        }
+        // A public-only listing cannot establish that a saved private room is gone.
         state.set('gamesList', list)
         this.updateGamelistTable(list)
       }),
     )
 
     this.unsubscribers.push(
-      network.on(MSG_TYPE.GAME_CREATED, (gameId) => {
-        const gameName = this.inputGameName
-          ? this.inputGameName.value.trim()
-          : ''
-        this.onSelectGame(gameId, gameName)
+      network.on(MSG_TYPE.GAME_CREATED, (created, msg) => {
+        const pending = this.pendingCreation
+        if (
+          !pending ||
+          msg?.requestId !== pending.requestId ||
+          pending.generation !== network.generation ||
+          !/^[a-f0-9]{8}$/.test(created?.key) ||
+          !/^[a-f0-9]{32}$/.test(created.ownerClientId) ||
+          !/^[A-Za-z0-9_-]{43}$/.test(created.roomOwnerToken)
+        )
+          return
+        this.clearPendingCreation()
+        state.saveRoomOwner(created.key, {
+          ownerClientId: created.ownerClientId,
+          roomOwnerToken: created.roomOwnerToken,
+        })
+        this.onSelectGame(created.key, pending.payload.name)
       }),
     )
 
     this.unsubscribers.push(
-      network.on(MSG_TYPE.ERROR, (errorMessage) => {
+      network.on(MSG_TYPE.ERROR, (errorMessage, msg) => {
+        if (msg?.requestId === this.pendingCreation?.requestId)
+          this.clearPendingCreation()
         if (this.lobbyError) {
           this.lobbyError.textContent = `[!] ${errorMessage}`
           this.lobbyError.style.display = 'block'
@@ -200,6 +251,7 @@ export class LobbyView {
   }
 
   hide() {
+    this.clearPendingCreation()
     if (this.container) this.container.style.display = 'none'
     if (this.footer) this.footer.style.display = 'none'
 
