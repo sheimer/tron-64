@@ -13,20 +13,20 @@
 
 - Branch: `feat/registration-invariants-and-round-authority`; base `main` at `8f89e08235cf042abb1df346399a0343f1ae0666`.
 - PR: #5, existing draft; no unmerged dependency.
-- Latest published implementation candidate: `2390d3737ac5c7e3e1ab7529c4226d415e5d4ecb`, failed exact-candidate CI; follow-up fix independently tested/reviewed and ready to publish.
+- Latest published implementation candidate: `aeb8945ea0add6eebee3f2a09adc21425bd5d461`, failed exact-candidate CI; second repair independently tested/reviewed and ready to publish.
 - Last verified branch head: `f23e443dd09f40a403449a3495e2fa0e7767f844` (administrative approval checkpoint).
 - Current phase: Phase 1 CI repair; Phase 2 has not started.
 - Isolated full checkout preserves `AGENTS.md` as the `GEMINI.md` symlink. No user changes were present in this checkout; changes on the user's other machines are not visible.
 
 ## Evidence by phase
 
-| Phase     | Candidate commit                           | Local results                                                                         | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                             | Status      |
-| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ----------- |
-| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                               | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected               | Verified    |
-| 1         | 2390d3737ac5c7e3e1ab7529c4226d415e5d4ecb   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed | Push 38143434216 / PR 38143437972: 24 passed / 2 browser failures                                                                                                              | Initial review passed; CI repair requires affected re-review | CI repair   |
-| 2         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                      | Not started |
-| 3         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                      | Not started |
-| 4         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                      | Not started |
+| Phase     | Candidate commit                           | Local results                                                                         | CI workflow / run IDs / results                                                                                                                                                | Agent review / resolved findings                           | Status      |
+| --------- | ------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----------- |
+| Readiness | `302a9859b77ecca890254b24a3ca381c9e66ac49` | Node 24.19.0; locked `npm ci` succeeded                                               | Tests push `38140410169`, job `114472954882`; PR `38140413340`, job `114472964133`: both 23 passed / 0 failed, browser-smoke, ownership-flow and client-leak actually executed | Current branch/PR heads and job logs inspected             | Verified    |
+| 1         | aeb8945ea0add6eebee3f2a09adc21425bd5d461   | 23 executed local passes / 2 missing-Chromium failures / 1 skip; scoped checks passed | Push 38144459426 / PR 38144462868: 24 passed / 2 browser failures                                                                                                              | First repair reviewed; second repair diagnosis in progress | CI repair   |
+| 2         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
+| 3         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
+| 4         | Pending                                    | Pending                                                                               | Pending                                                                                                                                                                        | Pending                                                    | Not started |
 
 Record administrative checkpoint commits in the next checkpoint; never embed this document's own commit hash. Verify exact-head CI before advancing.
 
@@ -34,9 +34,11 @@ Approval checkpoint `f23e443dd09f40a403449a3495e2fa0e7767f844` passed Tests push
 
 Phase 1 candidate `2390d3737ac5c7e3e1ab7529c4226d415e5d4ecb` preserved all unrelated tree entries and the `AGENTS.md` symlink, and failed Tests push `38143434216` (job `114481782494`) and PR `38143437972` (job `114481792797`): both 24 passed / 2 failed with real Chromium. Browser smoke accepted reset dots as gameplay before the one-second durable launch, then changed bindings/closed the creator during countdown. Cancellation left the first-round configuration intact; its later scoreboard-start wait was invalid. The repair now requires committed `firstRoundStarted` and server `running` before transfer, then proves retained-only reconnect has one eligible bike and disabled later start before explicitly recovering both bikes. Client-leak completed its first metric cycle, then its second arena wait timed out. Independent controlled-time callback diagnosis reproduced an old score reveal hiding the new room's arena; the fixture now completes each matching finished round before teardown, while full generation guards remain Phase 2. Assertions, cycles and metric thresholds are preserved. One failed published candidate, no unchanged CI retries. Diagnostics artifact `11704156274`, smoke trace and job logs were inspected.
 
+First repair candidate `aeb8945ea0add6eebee3f2a09adc21425bd5d461` also failed Tests push `38144459426` (job `114484790058`) and PR `38144462868` (job `114484800457`): both 24 passed / 2 failed with real Chromium. The durable-launch predicate returned in milliseconds, and leak cycle 2's first round appeared finished in 321 ms. Independent inspection and execution of the installed Playwright poller showed the common cause: `waitForFunction` treats an async predicate's Promise as immediately truthy, even when it resolves false. The first repair's added async predicates therefore did not poll. The second package will await module setup, use synchronous predicates across all three existing browser suites (including previously passing ownership coverage), and guard against async predicates. Earlier source diagnoses were incomplete; full callback cancellation still remains Phase 2. Two failed published candidates; no unchanged CI retries. New diagnostics artifact `11703748866` and both job logs were inspected.
+
 ## Blockers and next action
 
-No product or access blocker. Phase 1 browser fixes have passed independent affected testing/re-review; publish the follow-up and require a new exact-candidate push/PR run before advancement. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
+No product or access blocker. Phase 1's second browser repair has passed independent affected testing/re-review. Publish it and require new exact-candidate push/PR CI before advancement. Keep minimum-roster assertions and all leak thresholds. Preserve strict protocol version checks and reload guidance throughout.
 
 Local Chromium launch failed because the Playwright executable is missing. One installation command failed with invalid/truncated archives on all of its internal download retries. This is an environment failure; local browser coverage is unavailable. Required browser checks will run in Actions, with assertions and prerequisite failures preserved.
 
@@ -122,6 +124,29 @@ Requested settings: Sol 6.1/high implementation and testing, Sol 6.1/xhigh revie
 - Outcome: final repair diff and trace inspected; no blocking findings. Durable-launch and explicit recovery assertions preserve drawing/input/revocation coverage; three leak cycles with two rounds each and all thresholds remain intact. Safe diagnostics contain no credentials. No runtime edits.
 - Checks: scoped ESLint, JavaScript Prettier and diff pass. The unrelated baseline math escape was reverted before publication. Exact-candidate real-Chromium CI remains required.
 - Follow-up: first CI repair package independently re-reviewed; Phase 2 must retain adversarial callback/cancellation coverage.
+
+### phase1_implement.3 — Second CI-repair package
+
+- Requested model / effort: Sol 6.1/high; actual settings/usage unavailable.
+- UTC window: 2026-10-11T13:47:54Z–13:53:57Z, 6m03s observed wall time.
+- Scope/outcome: converted 21 async browser waits across smoke/leak/ownership suites into synchronous predicates, awaiting module exposure after every navigation/reload through a shared test helper. All 26 direct gates preserve Playwright polling. A test-scoped ESLint restriction rejects async wait predicates, including future browser suites. Leak verifies a fresh key/name and zero-score/empty-roster server state. No runtime edits or relaxed assertions/cycles/thresholds.
+- Checks: all test JavaScript ESLint plus config pass; scoped Prettier/diff pass. Nine-case ESLint check rejects async arrows/functions and accepts synchronous false in all three suites. Full local actual 23 passes / two missing-Chromium failures / one leak skip, 19.329s (aggregator 24/2).
+- Difficulty/correction: read installed Playwright source and trace; first repair's Promise-returning waits had bypassed state conditions. Second package after two failed published candidates; no unchanged retries. Independent affected verification/re-review and new exact CI pending.
+
+### phase1_test.3 — Independent second-repair verification
+
+- Requested model / effort: Sol 6.1/high; actual settings/usage unavailable.
+- UTC window: 2026-10-11T13:48:13Z–13:54:45Z, 6m32s observed wall time including handoff/checks.
+- Outcome: independently reproduced the actual installed poller's async-false behavior with zero repolls, and synchronous-false remaining pending until a later true condition. Verified every navigation/reload exposes current modules and all 26 direct predicates are synchronous, including pixels and ownership. Fresh-room assertions, full stale-control journeys and all three leak cycles/two rounds/thresholds are preserved. No runtime edits; no tester writes.
+- Checks: nine-case ESLint contract, all test JavaScript/config ESLint, scoped Prettier and diff pass. Full local actual 23 passes / two missing-Chromium failures / one leak skip, 19.708s (aggregator 24/2); reserved acceptance passes. Recommend exact-candidate CI with all three actual browser suites; no local browser coverage claimed.
+
+### phase1_review.3 — Independent second-repair review
+
+- Requested model / effort: Sol 6.1/xhigh; actual settings/usage unavailable.
+- UTC window: 2026-10-11T13:54:20Z–13:57:03Z, 2m43s observed wall time.
+- Outcome: final diff/helper and actual installed poller independently inspected/reproduced; no blocking findings. All 26 polling predicates are synchronous without Promise wrappers, current app singletons are exposed after every navigation/reload, and test-wide lint rejects async callbacks. Ownership/drawing/recovery/stale-control assertions, three leak cycles/two rounds and original thresholds remain intact. No runtime changes or credential diagnostics.
+- Checks: scoped ESLint, Prettier, in-memory guard checks and diff pass. Original math text preserved before publication. Exact-candidate Chromium CI remains required.
+- Correction: reviewer explicitly identified the earlier missed async-predicate cause. Second repair package re-reviewed; no unchanged CI retries.
 
 ## Model-efficiency review
 
