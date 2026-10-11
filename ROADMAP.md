@@ -35,19 +35,7 @@ Use one current, explicitly versioned client/server wire protocol throughout cod
 
 Complete this work before a larger influx of unfamiliar players. Keep account-free local multiplayer and cross-device play.
 
-Completed ownership and reconnection is recorded in [implemented milestones](#player-ownership-and-reconnection).
-
-### Registration invariants and round authority
-
-Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority remains open below.
-
-- [ ] Validate the minimum eligible roster before a round starts and return understandable registration/start errors.
-- [ ] Establish server-verified creator-client ownership independent of player/bike controls: restrict the first round's start/reset to the creator, then allow any joined room client, including spectators, to start subsequent rounds between rounds. Speed authority remains with the creator client; claimed player IDs grant no room ownership.
-- [ ] Allow speed changes only between rounds; reject unauthorized or mid-round changes.
-- [ ] Authenticate recovery of the creator client independently of bike recovery. Explain initial-start recovery when the creator is absent, and keep subsequent starts available without the creator; do not silently transfer ownership to a joining or registering client.
-- [ ] Make pending start/countdown cleanup explicit on reset, room destruction, and membership changes.
-
-Approved plan: [Registration invariants and round authority](docs/plans/2026-10-11-registration-invariants-and-round-authority.md). Creator-client ownership, initial/subsequent start permissions and the plan's policies are approved for autonomous implementation; verified outcomes are recorded in [execution progress](docs/plans/2026-10-11-registration-invariants-and-round-authority-progress.md).
+Completed [ownership and reconnection](#player-ownership-and-reconnection) and [registration invariants and round authority](#registration-invariants-and-round-authority) are recorded in the implemented milestones below.
 
 ### Accurate room membership and cleanup
 
@@ -188,7 +176,7 @@ The existing `c64` palette and disabled `c64-original` prototype are different e
 
 Build on the verified creator-client ownership, round authority, and membership model from Milestone 1.
 
-- [ ] **Creation-time speed:** expose the initial speed in the lobby creation form; add a HUD indicator for non-normal speeds. Creator-client-only, between-round changes are proposed in the Milestone 1 plan.
+- [ ] **Creation-time speed:** expose the initial speed in the lobby creation form; add a HUD indicator for non-normal speeds. Creator-client-only between-round changes are implemented in the [registration and authority foundation](#registration-invariants-and-round-authority).
 - [ ] **Unlisted rooms and invitations:** expose `isPublic: false` in the UI, with join-by-ID and shareable room links. Backend visibility filtering already exists; document that unlisted is not access-controlled private play.
 - [ ] **Roster locks:** let owner clients restrict new registration and define whether spectators remain permitted.
 - [ ] **Slot relinquishing:** distinguish temporarily disconnected players from explicitly released slots; invalidate old credentials on relinquish or reassignment.
@@ -224,6 +212,18 @@ Plan: [Mobile landscape layout](docs/plans/2026-08-17-mobile-landscape-layout.md
 ## Implemented Foundation & Historical Milestones
 
 These features exist or were recorded as completed in the previous roadmap. They describe the foundation, not blanket verification of security, deployment, accessibility, or every supported device. Open work above takes precedence where it strengthens or corrects an existing feature.
+
+### Registration invariants and round authority
+
+Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority is now verified under the client ownership policy below.
+
+- [x] Validate the minimum eligible roster before a round starts and return understandable registration/start errors.
+- [x] Establish server-verified creator-client ownership independent of player/bike controls: restrict the first round's start/reset to the creator, then allow any joined room client, including spectators, to start subsequent rounds between rounds. Speed authority remains with the creator client; claimed player IDs grant no room ownership.
+- [x] Allow speed changes only between rounds; reject unauthorized or mid-round changes.
+- [x] Authenticate recovery of the creator client independently of bike recovery. Explain initial-start recovery when the creator is absent, and keep subsequent starts available without the creator; do not silently transfer ownership to a joining or registering client.
+- [x] Make pending start/countdown cleanup explicit on reset, room destruction, and membership changes.
+
+Verified in all four phases: [implementation plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md), [acceptance and CI evidence](docs/plans/2026-10-11-registration-invariants-and-round-authority-progress.md), and [Unreleased notes](CHANGELOG.md#unreleased). This completes these five items; broader membership/reaping, scoring, metrics, network limits and launch milestones remain open above.
 
 ### Player ownership and reconnection
 

@@ -371,7 +371,8 @@ The other rows describe policies approved with the complete plan on 2026-10-11.
 
 The [roadmap](../../ROADMAP.md#registration-invariants-and-round-authority) is
 updated to describe these planned permissions, including the deliberate later-round
-spectator permission. All implementation checkboxes remain unchecked.
+spectator permission. At the reviewed planning revision, all implementation
+checkboxes were unchecked; the checklist below now records verified completion.
 
 ## Acceptance matrix
 
@@ -476,24 +477,24 @@ transfer and general membership cleanup remain excluded.
 
 ### Phase 4 — Client permission UI, integrated acceptance, and closure
 
-- [ ] Add client-owner/status/control feedback in Pug and update configuration,
+- [x] Add client-owner/status/control feedback in Pug and update configuration,
       game, settings, and lobby from verified owner binding, launch flag, stage, and
       global eligible roster; never attach the owner role to a chosen player row.
-- [ ] Present owner-only initial start, any-joined-client next starts, and proposed
+- [x] Present owner-only initial start, any-joined-client next starts, and proposed
       owner-only speed distinctly. Preserve preferences and authoritative values on
       rejection, clear stale permission, and support owner-only rejoin records.
-- [ ] Add a required independent-context real-Chromium journey covering creator
+- [x] Add a required independent-context real-Chromium journey covering creator
       without bikes, other registered client, spectator, and replacement owner. Cover
       initial rejection, spectator-initiated later start, ownership-independent bike
       controls, recovery, cancellation, and shared-keyboard play.
-- [ ] Include a late spectator joining a registration-closed room, owner-only
+- [x] Include a late spectator joining a registration-closed room, owner-only
       rejoin, private-room credential preservation through lobby refresh, and a
       restart after committed first launch with zero completed scores.
-- [ ] Retain binary, bike-ownership, leak, and browser coverage. Required new browser
+- [x] Retain binary, bike-ownership, leak, and browser coverage. Required new browser
       checks fail when Chromium is missing, preserve diagnostics, and join CI lint.
-- [ ] Audit the matrix, update CHANGELOG under Unreleased, close only the five
+- [x] Audit the matrix, update CHANGELOG under Unreleased, close only the five
       proven roadmap items under the clarified client policy, and update architecture.
-- [ ] Obtain final independent testing/review and exact-head push/PR CI; deliver
+- [x] Obtain final independent testing/review and exact-head push/PR CI; deliver
       the feature PR for user review with migration notes and remaining limitations.
 
 Dependencies: Phase 3. Exit: every acceptance row has actual evidence and required

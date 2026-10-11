@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Room controls now explain creator present/away/unrecoverable status, initial creator-only starts, later spectator starts, global bike eligibility, six slots and pending/running stages. Creator controls refresh immediately after private authentication, revocation or reconnection without changing screens; bike rows retain independent keyboard controls.
 - Settings show the exact acknowledged room interval, including custom speeds, preserve personal new-room preferences, and restore the current room value with clear feedback on rejection. Saved private and owner-only rooms offer explicit rejoin even when absent from the public lobby.
 
+Implementation and executed acceptance evidence: [approved plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md) and [four-phase progress](docs/plans/2026-10-11-registration-invariants-and-round-authority-progress.md).
+
 ---
 
 ## [1.4.1] - 2026-10-10
