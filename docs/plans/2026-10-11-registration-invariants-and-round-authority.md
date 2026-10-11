@@ -10,23 +10,33 @@
 
 ## Goal and scope
 
-Give each room one server-verified host. Only the socket currently owning that
-host's player may start a round, cause its reset, or change the room speed.
-Validate the eligible roster before any reset and again before physics starts.
-Make pending preparation/countdown work cancellable and ensure a disconnected
-host cannot permanently block a room that still has authenticated players.
+Establish server-verified ownership of a room by its creator client. Only that
+client may start the first round; after the first round has successfully begun,
+any open client joined to the room may start the next round between rounds.
+Room ownership is independent of which players/bikes a client controls.
 
-Keep account-free play, two-to-six registered players, multiple players on one
-keyboard/socket, spectators, existing scores, authenticated per-player recovery,
-and binary-only movement/drawing. Registration ID/control/capacity validation and
-private acknowledgement already landed; preserve and reuse those contracts.
+The user specified these two rules during review on 2026-10-11. They replace the
+original player-based host proposal. The complete revised plan still awaits
+approval; other policy choices below remain proposed defaults.
 
-Excluded: broader membership/capacity/reaping work, heartbeat and slow-client
-limits, scoring changes, metrics security, active-round slot replacement,
-creation-form speed options, manual host-transfer UI, accounts, and deployment.
-Touch membership hooks only where they affect host authority or pending starts.
-Automatic host fallback is necessary here; deliberate handover remains a later
-[room-feature item](../../ROADMAP.md#target-v180--milestone-4-room-features--matchmaking).
+Validate two-to-six registered slots and at least two eligible connected players
+before reset and again before launch. A requester need not control a bike.
+Preserve shared-keyboard play, spectators, scores, authenticated bike recovery,
+and binary-only movement/drawing. Existing per-player credentials concern bike
+control and recovery; they grant no room ownership or special round-start role.
+
+Speed changes remain a proposed creator-client permission, only between rounds.
+A client may create and own a room without registering any local players. Treat
+'any client' literally as any joined room client, including spectators; a lobby
+client or a client in another room cannot operate this room.
+
+Excluded: broader membership/capacity/reaping, network limits, scoring and metrics
+changes, active-round slot replacement, creation-form speed options, manual
+ownership transfer, accounts, deployment, and replacing existing bike credentials.
+Touch membership only where it affects room-owner binding and pending starts.
+Automatic ownership election/takeover is excluded: it would let another client
+perform a first start reserved to the creator. Deliberate ownership transfer
+remains a later [room feature](../../ROADMAP.md#target-v180--milestone-4-room-features--matchmaking).
 
 ## Current behavior and proposed contract
 
@@ -36,6 +46,9 @@ Automatic host fallback is necessary here; deliberate handover remains a later
   `SET_INTERVAL` when the caller owns any room player. There is no host role.
   A start resets the arena, replacing an earlier pending start, even if a round
   is already running. Unauthorized controls are silently ignored.
+- `CREATE_GAME` privately returns a room key but records no creating-client
+  ownership or recovery credential. A new room-owner acknowledgement and join
+  proof are needed; existing bike credentials cannot establish who created it.
 - [GameSession](../../server/GameSession.js) validates registration but does not
   enforce `MIN_PLAYERS` at start. Disconnected roster entries still count in the
   configuration button's readiness. `setInterval` accepts mutations during play.
@@ -50,62 +63,95 @@ Automatic host fallback is necessary here; deliberate handover remains a later
 - [ConfigView](../../public/javascripts/ui/configView.js),
   [GameView](../../public/javascripts/ui/gameView.js), and
   [SettingsView](../../public/javascripts/ui/settingsView.js) gate controls on
-  having a local player rather than being host. The speed listener in
+  having a local player rather than creator/first-launch permissions. The speed listener in
   [main.js](../../public/javascripts/main.js) has the same limitation.
 - [The speed suite](../../test/spectator-speed.test.js) currently checks interval
   storage/public information, not real-socket spectator/host authorization.
   Existing ownership suites provide the foundation for rejection/handover tests.
+- [LobbyView](../../public/javascripts/ui/lobbyView.js) disables ordinary joining
+  when bike registration is closed and recognizes saved bike claims alone as
+  rejoin evidence. It also deletes saved room records absent from the public-only
+  lobby list, which cannot establish that a private room has been destroyed.
 
-### Host identity and authorization
+### Creator-client identity and room ownership
 
-1. In a new room, the first successfully registered player becomes `hostPlayerId`. Room creation
-   and spectator joins alone grant no host authority. Host selection is part of
-   the existing registration snapshot transaction; a failed save rolls it back
-   together with the roster, verifier, and owner without consuming a handle.
-2. The role belongs to that player identity, not to its original socket. Authorize
-   through the room's authoritative ownership map, live socket state, and matching
-   room membership on every operation. Claimed IDs, socket-side caches, saved
-   client state, and public host metadata grant no authority.
-3. A socket with several local players can operate room controls if it currently
-   owns the host player. Transferring the host player by authenticated handover
-   transfers those permissions immediately; leaving or closing the old socket
-   cannot revoke the new owner's role or disconnect its players.
-4. Publish only public role/status fields: `hostPlayerId`, `hostStatus`
-   (`active`, `recovering`, `vacant`, or `blocked`), `hostGraceExpiresAt` where
-   applicable, a safe `hostError` code if reassignment cannot be saved, and
-   `eligiblePlayerCount`. Never expose tokens or verifiers. Role changes must
-   reach remaining room members without relying on lobby-list broadcasts alone.
+1. `CREATE_GAME` establishes a room-scoped creator-client identity and a private
+   recovery credential before any player registration. Persist its verifier with
+   the new room; on save failure, remove the entire room and acknowledge no
+   creation/ownership success. Successful player registration never elects or
+   replaces a room owner.
+2. Return `{ key, ownerClientId, roomOwnerToken }` only in a private correlated
+   `GAME_CREATED` acknowledgement. Require a valid creation `requestId`, match it
+   to the current connection/request, then store the owner credential in the
+   existing room-scoped `sessionStorage` record independently of bike records.
+   Keep creation retries bounded/idempotent on the same socket/request so a lost
+   acknowledgement cannot create another room for each retry. A different payload
+   with the same request ID conflicts; only a live matching room may be replayed.
+3. A logical creator client survives socket replacement by authenticating its
+   saved room credential in `JOIN_GAME`. The server then binds that room-owner
+   identity to the admitted socket. A public ID, IP address, arbitrary player IDs,
+   or owning any bike cannot establish that binding. The current owner binding
+   and live membership are authoritative on each restricted operation.
+4. Keep owner recovery separate from the existing per-bike reconnect array.
+   Authenticate each claim independently, preflight room admission and all bike
+   handle allocations before any membership/owner mutation, then return separate
+   correlated owner and bike results. An invalid owner claim grants no creator
+   controls even if bike claims succeed; owner authentication without bike claims
+   can succeed without allocating input handles. Resource-preflight failure leaves
+   all prior owner/bike bindings untouched.
+5. Transferring one or all bike controls does not transfer room ownership. Owner
+   authentication on a replacement socket replaces only the room-owner binding
+   unless bike credentials are also claimed. Revoke the old socket's room controls
+   immediately; its later leave/close cannot release the replacement owner.
+   Do not use a designated 'host player' or infer creator authority from a roster.
+6. Public room info may include `ownerClientId`, `ownerStatus` (`present`, `away`,
+   or `unrecoverable`), `firstRoundStarted`, and `eligiblePlayerCount`. Presence
+   means an authenticated owner socket is open and joined to this room. Publish no
+   token or verifier. Public metadata describes authority; it cannot grant it.
 
-### Round and speed controls
+### First/next-round and speed permissions
 
 - An eligible player is a registered roster player marked connected whose
-  current authoritative owner is an open socket in this room. Require at least
+  authoritative bike owner is an open socket in this room. Require at least
   `MIN_PLAYERS` (two) eligible players and at most `MAX_PLAYERS` registered slots.
-  Two players on one owner socket count as two players. Do not require survivors
-  of the previous round to be alive: reset prepares the next round.
-- `START_GAME` starts the first or next round only between rounds. It is the
-  existing wire action that authorizes the associated arena reset; introduce no
-  separate reset button/message or mid-round abort policy in this section.
-  A request during preparation/countdown or active physics is rejected without
-  resetting, finishing, rescoring, or replacing a timer.
-- Check host and roster before mutation. Check eligibility again at the final
-  launch boundary. A rejected start preserves registration availability,
-  positions, scores, speed, timers, and existing ownership bindings.
-- `SET_INTERVAL` is host-only in configuration or after a round finishes.
-  Reject it throughout preparation, countdown, and active physics. Accept only
-  integer intervals in the existing 10–500 ms range; malformed/out-of-range
-  mutation payloads produce an error instead of silently changing speed.
-  Creation-time interval normalization is outside this section.
-- Successful speed changes are saved before acknowledgement/broadcast; a save
-  failure restores the previous interval and reports `PERSISTENCE_FAILED`.
-  Room authority and eligibility checks belong in a shared domain operation,
-  with explicit trusted internal paths for fixtures; do not rely only on DOM
-  disabling or one WebSocket branch.
-- Return stable `ERROR` codes with understandable messages: `NOT_IN_ROOM`,
-  `HOST_REQUIRED`, `INSUFFICIENT_PLAYERS`, `ROUND_PENDING`, `ROUND_RUNNING`,
-  `INVALID_INTERVAL`, and `PERSISTENCE_FAILED`. Preserve any supplied valid
-  `requestId` for correlation. Keep existing registration errors, improving
-  their human-readable explanation without changing rollback or retry behavior.
+  Two local players on one socket qualify. Do not require survivors of the
+  previous round to be alive; reset prepares the next round.
+- Persist `firstRoundStarted` independently of completed scores. It starts false.
+  While false, only the currently authenticated creator client may request
+  `START_GAME`, even if that client controls zero bikes. Never infer creator
+  authority from being the first player to register.
+- After a round has been successfully committed for launch, any open joined
+  room client may request a later `START_GAME`, including a spectator or a client
+  without local bike bindings. The creator's presence is not required for later
+  rounds. Global roster eligibility and the between-round gate still apply.
+- The first-start permission is not consumed by rejection, reset, preparation,
+  countdown, cancellation, or a failed snapshot write. At the final launch
+  boundary revalidate the initial creator binding, room attempt, and roster, then
+  durably set `firstRoundStarted` before starting physics. For subsequent rounds,
+  requester membership is checked at admission; a spectator requester leaving
+  afterwards does not cancel an otherwise unchanged attempt.
+  If that write fails, keep it false, cancel the attempt, and report
+  `PERSISTENCE_FAILED`. A crash after the launch flag commits but before the first
+  tick restores the committed launch decision; it does not restore physics.
+- `START_GAME` authorizes the existing reset needed for a first/next round.
+  Introduce no separate reset message/button or mid-round abort policy. Reject
+  duplicate starts during preparation/countdown and all starts during physics
+  without resetting, finishing, rescoring, or replacing a timer. Creator-only
+  first starts and any-client later starts use the same domain admission operation.
+- `SET_INTERVAL` is a proposed creator-client-only operation in configuration or
+  after a round finishes. Reject it during preparation, countdown, and physics;
+  granting a next-round start does not grant speed permission. A creator with no
+  bikes can change speed. Accept only integer intervals in the existing 10–500 ms
+  range. Creation-time interval normalization remains outside this section.
+- Check membership, relevant creator authority, stage, and roster before mutation.
+  Rejected starts preserve registration availability, positions, scores, speed,
+  timers, launch marker, and all bindings. Save a speed change before success
+  broadcast; on failure restore the previous interval. Use explicit trusted
+  internal fixture paths rather than exposing a network bypass.
+- Return stable/readable `ERROR` codes: `NOT_IN_ROOM`, `CREATOR_REQUIRED`,
+  `INSUFFICIENT_PLAYERS`, `ROUND_PENDING`, `ROUND_RUNNING`, `INVALID_INTERVAL`,
+  `INVALID_OWNER_CREDENTIAL`, and `PERSISTENCE_FAILED`. Preserve supplied valid
+  request IDs. Keep existing registration errors and their rollback/retry behavior.
 
 ### Pending starts and cancellation
 
@@ -130,16 +176,19 @@ Automatic host fallback is necessary here; deliberate handover remains a later
 - Freeze registration during preparation/countdown. Cancel the attempt whenever
   any roster player's connected eligibility or authoritative owner changes after
   capture, including a previously disconnected player's authenticated admission,
-  participant leave/close/switch, and ownership handover. Host role changes also
-  cancel. Spectator-only arrival/departure has no effect. Compare the complete
+  participant leave/close/switch, and bike ownership handover. Before the first
+  launch, loss or replacement of the creator-client binding also cancels, even
+  when it controls no bike. After the first launch, creator binding changes alone
+  do not cancel if it is not a bike participant. Spectator-only arrival/departure
+  otherwise has no effect. Compare the complete
   before/after roster ownership after a whole admission/handover commits, not
   individual claims; preserve the existing handle-capacity preflight contract.
 - Cancellation clears both timers, retires the attempt, and broadcasts a
   consistent idle/finished state and explanation. A cancelled preparation before
   the room's first actual round restores its prior registration availability,
   subject to the six-slot limit. It does not reopen registration in an already
-  played room, add a result, or alter accumulated scores. The host starts again
-  explicitly; there is no automatic restart/reclaim loop.
+  played room, add a result, or alter accumulated scores. An authorized client
+  starts again explicitly; there is no automatic restart/reclaim loop.
 - Finish/stop/reset/destroy cannot leave a callback that starts physics later.
   After destruction no callback may touch the arena or broadcast a stale reset.
   Avoid timing-sensitive sleeps in lifecycle regressions: control the clock or
@@ -154,201 +203,267 @@ Automatic host fallback is necessary here; deliberate handover remains a later
   callbacks using the room, socket generation, and attempt identity. Old callbacks
   may not clear a replacement arena, acknowledge another attempt, or replace its
   screen/state. Pending spectator snapshots display the same prepared positions
-  without granting readiness/controls. Host labels and final control presentation
+  without granting readiness or bike controls. Spectators retain permission to
+  request subsequent starts when idle. Owner labels and final control presentation
   may wait for Phase 4; correct cancellation/wire behavior cannot.
 
-### Host recovery, fallback, and persisted rooms
+### Creator recovery and persisted rooms
 
-- An unexpected host socket close reserves the role for 60 seconds. Show recovery
-  status and a deadline; nobody can use host controls without owning that player.
-  Authentication of the same host player before expiry restores the role. Other
-  players and any active round continue under existing disconnect rules.
-- An explicit host leave/room switch skips that grace period. Transfer the role
-  immediately to the earliest registered eligible player in roster order.
-  Spectators, unauthenticated claims, and disconnected players cannot be selected.
-- At grace expiry select the earliest registered eligible player. If none is
-  available, show `vacant`; the next successful authenticated admission or new
-  registration that produces an eligible player elects a host. An expired absent
-  role must not indefinitely block later admissions. The returning former host
-  remains a normal player once somebody else has durably received the role.
-- A successful fresh registration counts as authenticated admission because it
-  creates a verified current owner. It may trigger election only where existing
-  registration rules allow it, including restored rooms with spare open slots.
-  Elect only when host metadata is missing/invalid, the role is vacant, or an
-  expired/blocked reassignment needs reconciliation. Preserve a valid saved host's
-  unexpired recovery reservation: registration during that grace adds the player
-  without replacing the host. When election is permitted, choose the earliest
-  eligible roster player after adding the new owner, not necessarily the newcomer.
-  Persist that choice inside the registration transaction; a failed save rolls
-  back both player and role.
-- A live handover of the host player is not a disconnect and does not create a
-  grace period. If a countdown is pending it still cancels because its expected
-  owner socket changed. Handle whole multi-player release/admission transitions
-  atomically enough to avoid electing another player on the same departing socket.
-- Persist `hostPlayerId` as an additive version-1 room field. Validate it against
-  the restored roster and a usable verifier. Socket ownership, deadlines, timer
-  handles, and pending starts are transient. After restart all owners are empty,
-  no round/countdown resumes, and a valid saved host gets a fresh 60-second
-  recovery window. A version-1 record with no valid host elects only after a
-  successful authenticated reconnect or permitted fresh registration. Legacy
-  arrays retain their existing
-  disconnected/unclaimable policy; unsupported/malformed snapshots remain
-  protected from overwrite.
-- Persist role assignment/fallback before publishing a new host. On write failure
-  retain the last durable identity, grant no candidate privileges, publish
-  `hostStatus: blocked`, `hostError: PERSISTENCE_FAILED`, and no active recovery
-  deadline. Accepted reconnect claims/ownership stay accepted; a failed role save
-  does not undo their acknowledgement or the completed departure of another
-  socket. A new registration's combined save failure instead rolls back that
-  registration, as required above.
-- After storage is repaired, an explicit authenticated `JOIN_GAME`/rejoin
-  (including an idempotent rejoin on the same socket) retries reconciliation
-  exactly once. At least one accepted claim or a permitted new registration is
-  required; spectator/all-invalid joins cannot trigger election. Explain that the
-  existing lobby rejoin action is the retry route. If no replacement was durably
-  assigned, authenticated recovery of the retained host player can restore its
-  active role without granting privileges to a failed fallback candidate; this
-  does not restart the expired grace clock. Once a replacement is durably assigned,
-  the former host cannot recover the role by rejoining.
-- Do not silently write-loop. Cancel host recovery timers when the host recovers,
-  is replaced, or the room is destroyed; repeated events cannot extend one grace
-  period indefinitely.
+- Keep ownership with the creator's logical client while the room exists. Leaving,
+  switching rooms, or closing releases its current socket binding, not the durable
+  owner identity/credential. A saved valid owner credential can authenticate the
+  creator again on a new or existing admitted socket without registering a bike.
+  There is no automatic election, expiry, or 60-second takeover window.
+- Before the first launch, an absent creator blocks the initial start. Other
+  clients may join/register under existing rules and wait for creator recovery;
+  show why start is unavailable. Without a recoverable creator credential, users
+  create a new room. This is an explicit limitation of creator-only first starts,
+  not a promise that another client can take over. General stale-room reaping
+  remains the next roadmap section.
+- After the first launch, owner absence cannot block later round starts by joined
+  clients with a valid eligible roster. Under the proposed speed policy, speed
+  remains unchanged until the creator authenticates again. Deliberate ownership
+  transfer can be planned separately; ordinary joining/player registration cannot
+  seize ownership or bypass the initial-start gate.
+- Owner recovery has its own private result. Restore local creator controls only
+  after a matching acknowledgement for the current room, socket generation, and
+  request. On owner-binding revocation stop automatic reclaim; explicit saved-room
+  rejoin may authenticate again. Keep ordinary network reconnect bounded and do
+  not introduce an ownership reclaim loop.
+- Persist the creator client ID and credential verifier under a private room-owner
+  field alongside existing private bike verifiers, plus public
+  `firstRoundStarted`, as additive snapshot-version-1 fields. Never persist a raw
+  room token, live socket, input handle, pending attempt, or timer. Validate the
+  creator metadata independently of roster entries; a room can validly have zero
+  registered players.
+- On cold restore all bikes and the room-owner socket start disconnected. Preserve
+  the durable creator proof and launch marker; no pending/in-progress round resumes.
+  Successful owner authentication restores room permissions independently of which
+  bike claims were accepted. Owner handover plus old-owner close must not revoke
+  either the replacement room binding or replacement-owned bikes.
+- A valid restored `firstRoundStarted: true` closes new bike registration and
+  restores `started: true`, `running: false`, and a finished/idle next-round stage,
+  even when no round completed before a crash (`gamecount: 0`). Preserve actual
+  scores; show that the interrupted round produced no result, without inventing a
+  score or restoring an attempt. After bike recovery, any joined client may start
+  the next round. A false marker restores configuration and normal slot-capacity
+  registration rules. Legacy completed history likewise closes registration.
+- For an older version-1 record without the launch marker, positive completed-round
+  history can establish that the initial round already happened. Without that
+  evidence retain the first-start restriction. Missing/invalid creator metadata
+  never elects the first registered/reconnecting client: mark owner recovery
+  unavailable. A legacy already-played room can allow later starts by joined
+  clients; an unstarted room without creator proof requires a new room. Legacy
+  array bike credentials retain their disconnected/unclaimable behavior.
+- Validate launch restoration with the matrix below. Only an omitted marker is a
+  legacy marker; a present marker must be a strict boolean. Completed-round
+  evidence must be a nonnegative safe integer; an omitted count means no completed
+  evidence and normalizes to zero. Do not coerce strings, null, or other values.
+  Protected-invalid launch data follows existing `INVALID_SNAPSHOT` behavior:
+  restore no rooms, mark storage read-only, preserve the original file, and require
+  manual recovery from a valid snapshot before writes/creation can succeed.
+- Malformed/missing creator proof is independent of launch validity: it grants no
+  creator controls and sets owner recovery unavailable, but valid bike recovery
+  and legitimate later-start permission remain intact. Invalid launch data grants
+  no initial-start bypass. Preserve future/malformed-snapshot protection and bike
+  verifiers, and cover each matrix row plus malformed creator proof separately.
+  Snapshot I/O failure returns an actionable error without assigning a new owner
+  or silently retrying writes. Restart migration/recovery decisions are part of
+  user review because old snapshots did not identify the creating client.
+
+| Launch marker      | Completed-round history                              | Restored behavior                                                                                     |
+| ------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `false`            | Zero or omitted                                      | Creator-only initial start; configuration; normal slot-capacity registration.                         |
+| `true`             | Valid zero, omitted, or positive count               | Any joined client may start later rounds; registration closed; finished/idle with actual scores only. |
+| Omitted            | Strictly validated positive count                    | Migrate to `true`; later-round behavior above.                                                        |
+| Omitted            | Zero or omitted                                      | Migrate to `false`; initial-round behavior above.                                                     |
+| `false`            | Positive count                                       | Contradictory; protected-invalid snapshot.                                                            |
+| Present nonboolean | Any                                                  | Malformed; protected-invalid snapshot.                                                                |
+| Any                | Present count that is not a nonnegative safe integer | Malformed; protected-invalid snapshot.                                                                |
 
 ### Client behavior and compatibility
 
-- Show the host beside the roster and a short recovery/vacancy status. Derive
-  local host permission from server role metadata plus privately acknowledged
-  local ownership. Clear it on disconnect, leave, revocation, or room switch.
-  Host/eligibility/stage updates must refresh buttons even when no screen changes.
-- Enable first/next-round start only for the host with two eligible players in an
-  allowed stage. Enable speed changes only for the host between rounds. Preserve
-  local speed preferences outside rooms and display the acknowledged room speed
-  inside a room without sending feedback mutations. Rejections restore that
-  value and display a readable explanation; avoid optimistic permission changes.
-- Put permanent host/control feedback markup in the existing Pug templates, per
+- Display room ownership as a client role, such as 'You created this room' and
+  creator present/away/recovery-unavailable status. Do not mark any player row as
+  host or require a chosen bike for room controls. Local creator permission needs
+  an accepted private owner result and the matching current server binding.
+- Enable the initial start only for that creator client with two eligible players
+  in an allowed stage. After the durable first-launch marker, enable later starts
+  for any joined client, including spectators, under the same roster/stage gate.
+  Refresh on ownership, stage, roster, and launch-marker changes without needing a
+  screen transition. Clear live creator permission on close/leave/switch/revocation.
+- Enable room speed changes only for the creator between rounds under the proposed
+  default. Preserve outside-room preferences; display acknowledged room speed
+  inside a room without reflected mutation feedback. Rejecting an operation
+  restores its authoritative value and shows an understandable message.
+- Saved room rejoin must be available with an owner credential alone, even when
+  there are no saved local bike credentials and player registration is closed.
+  Update lobby rejoin detection and storage validation accordingly. Ordinary joins
+  without a creator proof confer no owner privilege. Keep bike control restoration
+  and ownership-revoked behavior unchanged except for the separate room-owner result.
+- Separate room admission from bike registration in the lobby and direct-room
+  entry: a new spectator may join a room with registration closed, subject to
+  existing server admission/capacity checks. An owner-only saved record must retain
+  its credential through normalization with an empty local-bike map.
+- Absence from the filtered public lobby list must not delete a saved room-owner
+  or bike credential. Clear a missing-room record only after a correlated
+  `GAME_NOT_FOUND` response to an explicit join of that room, with matching current
+  connection/request. Invalid credentials, capacity errors, or connection loss
+  preserve records for explicit recovery; do not add background existence probes.
+- Put permanent owner/control feedback in the existing Pug templates, per
   [UI markup guidance](../architecture/rendering.md#5-ui-markup-pug-templates-and-javascript).
-  Use text nodes/textContent for names and runtime messages. Keep keyboard and
-  shared-keyboard play working; disabled controls explain their state.
-- Bump the shared protocol version from 2 to 3 when attempt-scoped reset/readiness
-  payloads land. Upgrade server, client wire handling, and affected fixtures in
-  the same phase. Stale clients receive reload guidance, never a compatibility
-  fallback. Preserve binary-only movement/drawing and existing credential and
-  input-handle lifetime rules.
+  Use text nodes/textContent for names and messages. Preserve keyboard/shared
+  keyboard operation and explain disabled controls.
+- Introduce shared protocol version 3 in Phase 1 with correlated creation and
+  owner authentication/result payloads. Update server, client storage/wire handling,
+  and affected fixtures together so every phase can pass the full suite. Phase 2
+  adds attempt-scoped reset/readiness/stage handling to this unreleased version,
+  again updating both ends/fixtures together. Coordinate final client/server
+  upgrade; stale protocol-2 clients receive reload guidance. Preserve binary-only
+  movement/drawing and existing credential/input-handle lifetimes.
 
 ## Decisions for user review
 
-These are proposed defaults. Approval of this plan accepts them; none is already
-an implemented product decision.
+The user clarified the first two rows. The whole plan still awaits implementation
+approval; the remaining rows describe proposals and explicit assumptions.
 
-| Decision       | Proposed default and consequence                                                                                     |
-| -------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Initial host   | First successfully registered player; an empty room creator has no separate lasting privilege.                       |
-| Role lifetime  | Attached to a player, so authenticated ownership handover also moves room controls.                                  |
-| Host loss      | 60-second grace after unexpected close; immediate fallback after explicit leave/switch.                              |
-| Fallback       | Earliest registered eligible player; former host cannot automatically retake an assigned role.                       |
-| Minimum roster | Two currently authenticated/connected players; two local players on one socket qualify.                              |
-| Restarting     | No active-round restart; repeated start while pending/running is rejected rather than replacing the current attempt. |
-| Speed          | Host-only between rounds; pending countdowns already count as locked.                                                |
-| Compatibility  | Coordinated protocol-3 upgrade; additive host metadata in snapshot version 1; restart cancels starts.                |
+| Decision                    | Revised contract                                                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Initial versus later starts | Creator client alone starts the first round; any joined room client may start subsequent rounds between rounds. User-specified.                                    |
+| Room ownership              | Belongs to the client that creates the room, independently of its local players/bikes. User-specified.                                                             |
+| Meaning of any client       | Includes joined spectators and clients with no local bikes; excludes lobby/other-room/disconnected clients. Literal reading for review.                            |
+| Recovery                    | A private room credential restores the same logical creator on a replacement socket; bike handover does not transfer room ownership.                               |
+| Owner loss                  | No automatic takeover. Before the first launch wait for creator recovery or create a new room; later starts remain available without the creator.                  |
+| Minimum roster              | Two authenticated/connected bikes; two on one shared client qualify, and the requester need not own either.                                                        |
+| Restarting                  | No active-round restart; repeated start while pending/running is rejected. Cancellation does not consume the creator-only initial start.                           |
+| Speed                       | Creator-client-only between rounds; unrestricted later starts do not imply permission to change speed. Proposed default.                                           |
+| Compatibility               | Protocol 3; additive private creator proof and durable first-launch marker in snapshot version 1; legacy unstarted rooms without creator proof require a new room. |
+
+The [roadmap](../../ROADMAP.md#registration-invariants-and-round-authority) is
+updated to describe these planned permissions, including the deliberate later-round
+spectator permission. All implementation checkboxes remain unchecked.
 
 ## Acceptance matrix
 
-| Requirement              | Observable proof                                                                                                                                                                     | Phase |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
-| Host is server verified  | Real sockets: spectator and ordinary owner rejected; claimed IDs and stale indexes do not authorize; shared socket owning host accepted.                                             | 1     |
-| Atomic initial role      | Registration save failure leaves no host, player, verifier, score row, or consumed handle; retry succeeds once.                                                                      | 1     |
-| Valid eligible roster    | Zero/one connected owner, disconnected slots, or stale owner rejected before reset; two local players and separate owners accepted.                                                  | 1, 2  |
-| Control safety           | Unauthorized/pending/running requests change no positions, scores, interval, pending attempt, or timers; invalid interval and save failure preserve speed.                           | 1, 2  |
-| Attempt-scoped readiness | Old, duplicate, spectator, and wrong-room acknowledgements cannot advance a new attempt; fallback launches exactly once.                                                             | 2     |
-| Cleanup                  | Controlled-time reset/destroy/participant leave/switch/close/handover cases clear both pending timers and prevent stale physics/broadcasts.                                          | 2, 3  |
-| Recovery and fallback    | Grace recovery, exact expiry, immediate voluntary-exit fallback, vacant recovery, no spectator promotion, and old-owner close are verified with real sockets and controlled time.    | 3     |
-| Durable roles/restart    | Saved host restores disconnected; missing/invalid host, save failures, legacy data, and unsupported versions preserve defined recovery and private verifiers.                        | 1, 3  |
-| Clear client controls    | Independent-context browser host, ordinary owner, replacement, and spectator see correct buttons, statuses, speed, and actionable errors; one keyboard with two players still works. | 4     |
-| Compatibility/privacy    | Protocol-2 client rejected; binary drawing/input and original ownership suites pass; public role/status messages contain no credentials/verifiers.                                   | 2, 4  |
-| Complete section         | Five open roadmap items linked to verified evidence; full suite and required browser checks pass for final branch and applicable PR candidate.                                       | 4     |
+| Requirement                | Observable proof                                                                                                                                                                                                                                                                                                                | Phase   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Creator-client identity    | Creation before player registration grants recoverable room authority only via private correlated proof; arbitrary client/player IDs do not authorize.                                                                                                                                                                          | 1       |
+| Atomic creation            | Failed save leaves no room/owner; same-request retry returns one room and the same private result without additional allocations.                                                                                                                                                                                               | 1       |
+| First versus later starts  | Creator with zero bikes can start a two-bike initial round; another player client/spectator cannot. After committed first launch both can start a later round; lobby/other-room clients cannot.                                                                                                                                 | 1, 4    |
+| Durable first-launch gate  | Rejection, countdown cancellation, and failed launch save keep the initial restriction; completed/committed launch and cold restore preserve later-round permission.                                                                                                                                                            | 1, 2, 3 |
+| Valid eligible roster      | Disconnected/stale-owner slots do not meet the minimum; two local bikes and separate bike-owner clients do; requester bike count is irrelevant.                                                                                                                                                                                 | 1, 2    |
+| Control safety             | Pending/running starts and unauthorized speed changes mutate no positions, scores, interval, attempt, or timers; invalid interval/save failure preserve speed.                                                                                                                                                                  | 1, 2    |
+| Attempt-scoped readiness   | Duplicate/stale/spectator/wrong-room acknowledgements cannot launch; readiness and preparation timeout each launch at most once. A spectator may request a later start without acknowledging readiness.                                                                                                                         | 2       |
+| Cleanup                    | Controlled-time reset/destroy/participant leave/switch/close/handover and initial-creator binding loss clear pending timers and prevent stale physics/broadcasts.                                                                                                                                                               | 2, 3    |
+| Independent owner recovery | Owner-only rejoin works with zero saved bikes; transferring bike controls does not transfer room authority; mixed owner/bike claims and resource preflight preserve correct independent results.                                                                                                                                | 1, 3    |
+| Durable identity/restart   | Zero-player creator recovery, lost/invalid proof, old already-played/unstarted rooms, invalid marker, save failures, and cold restore follow the documented policy without new ownership election; committed launch with zero completed rounds restores closed registration and later-start permission without invented scores. | 3       |
+| Room entry and saved proof | New spectators can join registration-closed rooms; owner-only records survive normalization; omission of a live private room from the public list preserves saved credentials, while a matching explicit missing-room response can clear its record.                                                                            | 3, 4    |
+| Clear client controls      | Independent browser contexts for creator, ordinary bike client, owner replacement, and spectator show creator-only initial controls, any-client later starts, speed/status/errors, and shared-keyboard play.                                                                                                                    | 4       |
+| Compatibility/privacy      | Protocol-2 rejected; binary/ownership suites pass; public room/status/draw packets and logs never expose creator tokens/verifiers or bike secrets.                                                                                                                                                                              | 1, 4    |
+| Complete section           | Five open roadmap items linked to evidence under the clarified policy; full suite and required browser checks pass for final branch/applicable PR candidate.                                                                                                                                                                    | 4       |
 
 ## Phases
 
-### Phase 1 — Verified host identity and control admission
+### Phase 1 — Creator-client identity and first/next-round admission
 
-- [ ] Add initial host selection, authoritative per-operation host checking, and
-      eligible-roster validation before reset/start side effects.
-- [ ] Persist/restore the additive host field, include safe role/eligibility
-      metadata in public room info, and cover registration rollback of initial host.
-- [ ] Restrict start and interval operations by host and allowed current state;
-      validate interval mutations and save/rollback them without optimistic success.
-- [ ] Add a minimal room-owned pending-admission latch before scheduling a start;
-      shared start/speed guards consult it to reject duplicate starts and speed changes
-      during preparation/countdown. Phase 2 replaces it with the full stage/attempt
-      lifecycle; `running` alone cannot satisfy this Phase 1 guarantee.
-- [ ] Return stable/readable control and registration errors. Add meaningful
-      domain and real-socket tests; adapt affected existing fixtures in this phase.
-- [ ] Update protocol/lifecycle documentation for landed behavior.
+- [ ] Create and durably acknowledge independent room-owner credentials with
+      bounded correlated creation retries; authenticate owner claims on join without
+      requiring a player registration. Upgrade protocol 3 and minimal client storage,
+      creation/join handling, and affected fixtures together.
+- [ ] Preserve the independently stored owner credential through room-record
+      normalization from this phase onward; owner-only records have an empty bike map.
+- [ ] Gate the first start by verified creator-client binding and later starts by
+      live room membership. Validate the eligible roster and save the first-launch
+      marker only at successful launch; failed launch save preserves the initial gate.
+- [ ] Restrict interval mutations to the creator between rounds, including a
+      creator with zero bikes; validate/save/rollback with stable/readable errors.
+- [ ] Add a minimal room-owned pending latch before scheduling preparation so
+      duplicate starts and speed changes are rejected before physics is running.
+- [ ] Add domain and real-socket regressions for creator-before-registration,
+      creator-without-bikes, forbidden noncreator first starts, spectator/player later
+      starts, transactional failures, and separate owner/bike claims. Adapt affected
+      baseline browser fixtures in this phase rather than postponing CI compatibility.
+- [ ] Update protocol/lifecycle docs for landed behavior and permission distinctions.
 
-Dependencies: merged ownership baseline. Exit: host/roster/speed guard regressions
-and the full required CI suite pass. Interim limitations: dedicated pending-stage
-cleanup and automatic host recovery/fallback are not complete; client controls
-may still expose actions the server rejects. This phase alone is not launch-ready.
+Dependencies: merged ownership baseline. Exit: authority/marker/speed regressions
+and the full required CI suite pass. Interim limitations: complete cancellable
+attempt/client routing and cold-restore/owner-revocation acceptance are pending;
+this phase alone is not launch-ready.
 
 ### Phase 2 — Cancellable preparation and countdown
 
-- [ ] Tie pending start/timers to the room lifecycle with explicit stages,
-      attempt identity, participant readiness, and final-launch validation.
+- [ ] Tie pending stages/attempts/timers to the room lifecycle, capture participant
+      readiness, and revalidate roster/initial creator binding at final launch.
 - [ ] Cancel on reset/stop/destroy and committed participant ownership/membership
-      transitions; preserve registration/score behavior on cancelled first starts.
-- [ ] Introduce protocol-3 reset/readiness payloads and update client wire handling
-      plus every affected fixture together; retain existing binary and ownership rules.
-- [ ] Implement authoritative cancellation screen/state routing, pending snapshot
-      positions, and generation guards/cancellation for delayed client callbacks in
-      this phase. Add browser coverage for immediate retry, switch, and reconnect;
-      cover late authenticated roster admission and spectator-only joins separately.
-- [ ] Prove exactly-once launch and stale-callback rejection with controlled time,
-      including both the readiness path and preparation timeout fallback.
+      changes, including late disconnected-bike admission. Loss/replacement of the
+      initial creator binding cancels a first attempt even when the creator owns no
+      bikes; spectator-only changes do not cancel later attempts.
+- [ ] Add attempt-scoped reset/readiness/stage/finish messages and pending snapshot
+      positions; update server, client and affected fixtures together under protocol 3.
+- [ ] Implement authoritative cancellation routing and delayed client callback
+      generation guards here. A cancelled first attempt returns to configuration with
+      its creator gate intact; a cancelled later attempt returns to finished scores.
+- [ ] Prove exactly-once launch and stale callback rejection under controlled time,
+      plus browser cancellation/retry/switch/reconnect and spectator-initiated later
+      start coverage. Preserve registration/scores on cancellation.
 - [ ] Update protocol/lifecycle/testing guides for these contracts.
 
-Dependencies: Phase 1. Exit: cancellation and wire regressions plus existing real
-browser suites pass. Interim limitations: host vacancy/fallback policy and final
-host-aware UI have not landed; pending cleanup does not complete general reaping.
+Dependencies: Phase 1. Exit: cancellation/wire regressions and existing required
+browser suites pass. Interim limitations: comprehensive creator recovery/migration
+and final permission presentation are pending; broader room reaping is excluded.
 
-### Phase 3 — Host recovery and deterministic fallback
+### Phase 3 — Independent creator recovery and persisted-room migration
 
-- [ ] Implement 60-second unexpected-close recovery, immediate leave/switch
-      fallback, deterministic eligible-player selection, and vacancy recovery.
-- [ ] Integrate atomic multi-player release/handover, role-change persistence,
-      timer cancellation, and broadcasts; failed writes grant no new role.
-- [ ] Restore valid saved host identity with disconnected owners and fresh grace;
-      migrate missing/invalid host metadata through authenticated reconnect or
-      permitted fresh registration, with election included in registration rollback.
-- [ ] Test before/at/after deadline, no eligible candidates, shared-socket exit,
-      partial handover, former-owner close, failed persistence followed by explicit
-      authenticated rejoin retry, fresh registration during restored-host grace
-      without replacement, and cold restart.
-- [ ] Document recovery, role loss, and restart behavior without phase labels in
-      the living architecture guide.
+- [ ] Restore creator verifier/identity and the durable launch flag with no live
+      owners or pending round. Handle zero-player rooms and legacy missing/invalid data
+      without electing a player or joining client as owner.
+- [ ] Restore committed-launch rooms as registration-closed/idle even when no
+      result completed; preserve scores and show interrupted-round recovery without
+      fabricating a result. Cover public stage/started fields and next-round admission.
+- [ ] Finish owner-only saved-room rejoin and private result validation, plus
+      current-socket-only revocation/release on owner proof handover, leave, switch,
+      and close. Preserve independent bike claims/bindings and preflight rollback.
+- [ ] Preserve owner-only records and credentials for rooms absent from the public
+      lobby list; remove missing-room records only on matching explicit join failure.
+      Make registration-closed room admission available to new spectators and owners.
+- [ ] Test creator credential recovery with no bikes, transfer of all creator bikes
+      without transfer of the room role, replacement-owner versus former-socket close,
+      mixed valid/invalid owner/bike claims, handle/room-capacity rejection, and restart.
+- [ ] Verify absent creator blocks only initial start and owner-only speed changes,
+      while later eligible rounds remain startable by any joined client. Test legacy
+      already-played versus unstarted recovery policy and failed first-launch writes.
+- [ ] Document credential loss, creator absence, restart/migration limitations and
+      the absence of automatic ownership transfer in the living lifecycle guide.
 
-Dependencies: Phase 2. Exit: all host lifecycle/persistence regressions and required
-CI pass. Interim limitations: server contract complete, final UI/acceptance audit
-pending; intentional manual handover and broader room cleanup remain excluded.
+Dependencies: Phase 2. Exit: creator recovery/persistence regressions and required
+CI pass. Interim limitations: final UI/acceptance audit pending; manual ownership
+transfer and general membership cleanup remain excluded.
 
-### Phase 4 — Host-aware UI, integrated acceptance, and closure
+### Phase 4 — Client permission UI, integrated acceptance, and closure
 
-- [ ] Add host/recovery/control feedback in Pug and update configuration, game,
-      and settings views from acknowledged role, roster, and stage changes.
-- [ ] Preserve outside-room speed preference, avoid reflected speed feedback,
-      and restore authoritative UI values after rejected operations.
-- [ ] Add a required independent-context real-Chromium authority journey with
-      host, ordinary player, spectator, and replacement; keep shared-keyboard,
-      reconnection, leak, and binary protocol acceptance intact.
-- [ ] Make any new browser suite fail on unavailable Chromium in CI and local
-      required coverage, include diagnostics, and lint it in the existing workflow.
+- [ ] Add client-owner/status/control feedback in Pug and update configuration,
+      game, settings, and lobby from verified owner binding, launch flag, stage, and
+      global eligible roster; never attach the owner role to a chosen player row.
+- [ ] Present owner-only initial start, any-joined-client next starts, and proposed
+      owner-only speed distinctly. Preserve preferences and authoritative values on
+      rejection, clear stale permission, and support owner-only rejoin records.
+- [ ] Add a required independent-context real-Chromium journey covering creator
+      without bikes, other registered client, spectator, and replacement owner. Cover
+      initial rejection, spectator-initiated later start, ownership-independent bike
+      controls, recovery, cancellation, and shared-keyboard play.
+- [ ] Include a late spectator joining a registration-closed room, owner-only
+      rejoin, private-room credential preservation through lobby refresh, and a
+      restart after committed first launch with zero completed scores.
+- [ ] Retain binary, bike-ownership, leak, and browser coverage. Required new browser
+      checks fail when Chromium is missing, preserve diagnostics, and join CI lint.
 - [ ] Audit the matrix, update CHANGELOG under Unreleased, close only the five
-      proven roadmap items with plan/progress links, and update architecture guides.
+      proven roadmap items under the clarified client policy, and update architecture.
 - [ ] Obtain final independent testing/review and exact-head push/PR CI; deliver
-      the feature PR for user review with remaining limitations and migration notes.
+      the feature PR for user review with migration notes and remaining limitations.
 
-Dependencies: Phase 3. Exit: all acceptance rows have actual evidence and final
-required CI passes. General membership/reaping, scoring, resource limits, and
-public-launch work remain open.
+Dependencies: Phase 3. Exit: every acceptance row has actual evidence and required
+CI passes. General membership/reaping, scoring, network limits and launch work stay
+open.
 
 ## Verification and execution policy
 
@@ -399,43 +514,58 @@ public-launch work remain open.
 
 ## Migration and rollback
 
-Coordinate the protocol-3 server/client upgrade; users with stale pages must reload.
-Saved player credentials remain valid. New role fields do not grant ownership;
-version-1 snapshots without them retain verifier-based authenticated recovery.
-Malformed/future snapshots keep the existing protected behavior. Restart never
-resumes pending timers or an in-progress round.
+Coordinate protocol-3 server/client upgrade; stale pages reload. Existing bike
+credentials remain valid under their existing room/roster rules. New creator
+credentials are stored independently and never derived from a player ID/token.
 
-Back up `games.json` before upgrade. Rolling back requires matching prior client
-and server code; prior code ignores new host metadata and restores its older
-any-owner control policy. Restore the pre-upgrade snapshot for an exact data
-rollback, accepting loss of changes since that backup. Preserve existing atomic
-rename durability limitations; adding fsync or a new persistence backend is out
-of scope. No merge, release, or deployment is authorized by planning approval.
+Add private creator metadata and the durable first-launch marker to version-1
+snapshots. Older records have no reliable creator identity: completed-round
+history can establish later-start eligibility, but it cannot authorize speed or
+identify an owner. An unstarted legacy room without creator proof needs a new
+room; do not grant the initial start to whoever first reconnects/registers.
+Explain lost-creator-credential recovery limits. Future/malformed snapshots retain
+protection, and restart never resumes pending timers or physics. Malformed or
+contradictory launch metadata uses existing snapshot-wide read-only protection;
+recover a valid snapshot manually rather than overwrite the protected file.
+
+Back up `games.json` before upgrade. Rollback requires matching prior server/client
+code; old code ignores creator metadata and restores its old any-bike-owner control
+policy. Restore the backup for an exact data rollback, accepting changes lost
+since it. Preserve existing atomic-rename durability limits; fsync/new persistence
+backends are outside scope. No merge, release, or deployment is authorized by
+planning approval.
 
 ## Approval gate
 
 Await user review and explicit approval of this plan revision and its autonomous
 implementation/commit/push/CI policy. The current request authorizes only branch
-preparation, model-guidance changes, and this planning document. Agent plan review
+preparation, model-guidance changes, and planning/unchecked-roadmap revisions. Agent plan review
 is advisory; it cannot approve the product decisions or implementation.
 
 ### Advisory plan review
 
-Read-only task `round_authority_plan_review` requested Sol 6.1/xhigh in a separate
-context. The spawning tool accepted those requested settings; actual model/effort
-and token/usage telemetry were not independently exposed in the task. Observed
-review windows were 2026-10-11 06:45:54.532–06:48:18.342 UTC and
-06:51:35.017–06:51:58.059 UTC; these are wall-time observations, not compute time.
+The initial draft at `098546debdf93682dc08abec9ae2a6f0e0339517` received read-only
+Sol 6.1/xhigh task `round_authority_plan_review` and two follow-ups. The spawning
+tool accepted the requested settings; actual model/effort and usage telemetry
+were not independently exposed in that context. Observed UTC review windows were
+06:45:54.532–06:48:18.342, 06:51:35.017–06:51:58.059, and
+06:53:56.351–06:53:56.992 on 2026-10-11. Wall time is not compute time.
 
-The review found late authenticated admission missing from cancellation, an
-undefined failed-fallback retry, delayed client callback/state routing gaps,
-Phase 1's missing pending latch, and inconsistent restored-room registration
-election. The revised contracts address all five. The follow-up additionally
-required preserving a valid restored host's grace during fresh registration;
-that condition and its regression are now explicit. This is plan review only,
-not independent implementation verification or user approval.
+That review resolved attempt/admission, failed-fallback, client callback, phase
+sequencing, and restored-host-grace issues for the earlier player-host proposal.
+The user's later creator-client and subsequent-round clarifications supersede its
+host identity/election policy. Its old review verdict is not evidence for the
+revised ownership/permission contract.
 
-A final narrow read-only check at 2026-10-11 06:53:56.351–06:53:56.992 UTC
-confirmed that the grace correction resolves the last finding. No reported plan
-review findings remain open; implementation and its product choices still await
-user approval.
+The revised client-based draft received a new read-only review and a follow-up by
+the same requested Sol 6.1/xhigh reviewer. Reported UTC windows on 2026-10-11 were
+07:44:54.337–07:46:55.033 (2m 0.696s) and 07:48:53.916–07:49:06.767 (12.851s).
+Actual model/effort and usage telemetry remained unavailable; wall time is not
+compute time. No application tests or runtime changes were performed by the reviewer.
+
+Four gaps were corrected: spectator admission when bike registration is closed,
+private-room and owner-only credential retention, restored committed launch with
+zero completed scores, and strict malformed/contradictory launch metadata policy.
+The follow-up found all four resolved and no remaining substantive issue in the
+reviewed fixes. This is advisory consistency evidence, not product approval or
+proof that the planned feature is implemented/tested.
