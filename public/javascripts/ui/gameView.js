@@ -17,6 +17,7 @@ export class GameView {
     this.scoresWaiting = document.getElementById('scores-waiting')
     this.footer = document.getElementById('footer-game')
     this.startBtn = document.getElementById('btn-start-game')
+    this.startFeedback = document.getElementById('game-start-feedback')
     this.leaveBtn = document.getElementById('btn-leave-game')
     this.leftBtn = document.getElementById('btn-left')
     this.rightBtn = document.getElementById('btn-right')
@@ -103,31 +104,8 @@ export class GameView {
       }
     }
 
-    // Start button readiness
-    if (this.startBtn) {
-      const isReady =
-        (state === 'ready' || state === 'finished') && appState.canStartRound()
-      const setFocus = isReady && this.startBtn.disabled
-      this.startBtn.disabled = !isReady
-      if (setFocus) {
-        this.startBtn.focus()
-      }
-    }
-
-    // Touch control buttons
-    if (this.leftBtn && this.rightBtn) {
-      if (
-        !canHover &&
-        appState.ownedPlayerIds.size > 0 &&
-        (state === 'start' || state === 'running')
-      ) {
-        this.leftBtn.style.display = ''
-        this.rightBtn.style.display = ''
-      } else {
-        this.leftBtn.style.display = 'none'
-        this.rightBtn.style.display = 'none'
-      }
-    }
+    // Start button readiness is refreshed independently of screen transitions.
+    this.updatePermissions()
 
     // Reset log
     if (state === 'start') {
@@ -276,6 +254,27 @@ export class GameView {
       addScoreColumn(tr, player.total ?? 0)
 
       this.bodyScoreTable.appendChild(tr)
+    }
+  }
+
+  updatePermissions() {
+    if (this.startBtn) this.startBtn.disabled = !appState.canStartRound()
+    if (this.startFeedback)
+      this.startFeedback.textContent = appState.startRoundReason()
+    // Touch control buttons
+    if (this.leftBtn && this.rightBtn) {
+      if (
+        !canHover &&
+        appState.ownedPlayerIds.size > 0 &&
+        appState.isJoinedRoom() &&
+        ['start', 'running'].includes(appState.matchState)
+      ) {
+        this.leftBtn.style.display = ''
+        this.rightBtn.style.display = ''
+      } else {
+        this.leftBtn.style.display = 'none'
+        this.rightBtn.style.display = 'none'
+      }
     }
   }
 

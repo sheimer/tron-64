@@ -107,7 +107,24 @@ export class LobbyView {
   updateGamelistTable(list) {
     if (!this.bodyGamelistTable) return
 
-    if (!Array.isArray(list) || list.length === 0) {
+    const publicRooms = Array.isArray(list) ? list : []
+    const publicKeys = new Set(publicRooms.map((room) => room.key))
+    const savedRooms = Object.keys(state.connectedGames)
+      .filter(
+        (key) =>
+          /^[a-f0-9]{8}$/.test(key) &&
+          !publicKeys.has(key) &&
+          (state.getRoomOwnerClaim(key, true) ||
+            state.getReconnectEntries(key, true).length > 0),
+      )
+      .map((key) => ({
+        key,
+        name: `Saved room ${key}`,
+        numPlayers: '—',
+        saved: true,
+      }))
+    const rooms = [...publicRooms, ...savedRooms]
+    if (rooms.length === 0) {
       this.renderStatusRow(
         'No active games found. Create one above to get started!',
       )
@@ -118,8 +135,8 @@ export class LobbyView {
       this.bodyGamelistTable.removeChild(this.bodyGamelistTable.lastChild)
     }
 
-    for (let i = 0; i < list.length; i++) {
-      const item = list[i]
+    for (let i = 0; i < rooms.length; i++) {
+      const item = rooms[i]
       const tr = document.createElement('tr')
 
       // Key
@@ -140,7 +157,13 @@ export class LobbyView {
       // Status
       const tdStatus = document.createElement('td')
       tdStatus.appendChild(
-        document.createTextNode(item.acceptingPlayers ? 'waiting' : 'running'),
+        document.createTextNode(
+          item.saved
+            ? 'saved; rejoin to check'
+            : item.acceptingPlayers
+              ? 'registration open'
+              : 'registration closed',
+        ),
       )
       tr.appendChild(tdStatus)
 
@@ -176,7 +199,14 @@ export class LobbyView {
     if (this.container) this.container.style.display = ''
     if (this.footer) this.footer.style.display = ''
 
-    if (!state.gamesList || state.gamesList.length === 0) {
+    if (
+      (!state.gamesList || state.gamesList.length === 0) &&
+      !Object.keys(state.connectedGames).some(
+        (key) =>
+          state.getRoomOwnerClaim(key, true) ||
+          state.getReconnectEntries(key, true).length,
+      )
+    ) {
       if (network.isConnected()) {
         this.renderStatusRow('Fetching active games...')
       } else {
@@ -185,6 +215,12 @@ export class LobbyView {
     } else {
       this.updateGamelistTable(state.gamesList)
     }
+
+    this.unsubscribers.push(
+      state.subscribe('connectedGames', () => {
+        this.updateGamelistTable(state.gamesList)
+      }),
+    )
 
     this.unsubscribers.push(
       network.on('close', () => {

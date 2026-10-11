@@ -449,25 +449,25 @@ and final permission presentation are pending; broader room reaping is excluded.
 
 ### Phase 3 — Independent creator recovery and persisted-room migration
 
-- [ ] Restore creator verifier/identity and the durable launch flag with no live
+- [x] Restore creator verifier/identity and the durable launch flag with no live
       owners or pending round. Handle zero-player rooms and legacy missing/invalid data
       without electing a player or joining client as owner.
-- [ ] Restore committed-launch rooms as registration-closed/idle even when no
+- [x] Restore committed-launch rooms as registration-closed/idle even when no
       result completed; preserve scores and show interrupted-round recovery without
       fabricating a result. Cover public stage/started fields and next-round admission.
-- [ ] Finish owner-only saved-room rejoin and private result validation, plus
+- [x] Finish owner-only saved-room rejoin and private result validation, plus
       current-socket-only revocation/release on owner proof handover, leave, switch,
       and close. Preserve independent bike claims/bindings and preflight rollback.
-- [ ] Preserve owner-only records and credentials for rooms absent from the public
+- [x] Preserve owner-only records and credentials for rooms absent from the public
       lobby list; remove missing-room records only on matching explicit join failure.
       Make registration-closed room admission available to new spectators and owners.
-- [ ] Test creator credential recovery with no bikes, transfer of all creator bikes
+- [x] Test creator credential recovery with no bikes, transfer of all creator bikes
       without transfer of the room role, replacement-owner versus former-socket close,
       mixed valid/invalid owner/bike claims, handle/room-capacity rejection, and restart.
-- [ ] Verify absent creator blocks only initial start and owner-only speed changes,
+- [x] Verify absent creator blocks only initial start and owner-only speed changes,
       while later eligible rounds remain startable by any joined client. Test legacy
       already-played versus unstarted recovery policy and failed first-launch writes.
-- [ ] Document credential loss, creator absence, restart/migration limitations and
+- [x] Document credential loss, creator absence, restart/migration limitations and
       the absence of automatic ownership transfer in the living lifecycle guide.
 
 Dependencies: Phase 2. Exit: creator recovery/persistence regressions and required

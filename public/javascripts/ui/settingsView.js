@@ -1,7 +1,9 @@
 import { LIGHT, DARK, AUTO, SPEED, settings } from '../settings.js'
 
 export class SettingsView {
-  constructor() {
+  constructor({ onChangeRoomInterval } = {}) {
+    this.onChangeRoomInterval = onChangeRoomInterval
+    this.inRoom = false
     this.elements = {
       theme: {
         [AUTO]: document.getElementById('scheme-auto'),
@@ -13,6 +15,8 @@ export class SettingsView {
       showPalette: document.querySelector('#show-palette input'),
       palette: document.getElementById('game-palette'),
       speed: document.getElementById('game-speed'),
+      customSpeed: document.getElementById('game-speed-custom'),
+      speedFeedback: document.getElementById('speed-feedback'),
       pingDiv: document.getElementById('ping'),
       paletteDiv: document.getElementById('palette'),
     }
@@ -88,47 +92,55 @@ export class SettingsView {
   }
 
   initSpeedSelect() {
+    this.updateSpeed(settings.speed)
     if (this.elements.speed) {
-      const speedByValue = Object.entries(SPEED).reduce(
-        (speeds, [key, value]) => {
-          speeds[value] = key
-          return speeds
-        },
-        {},
-      )
-      this.elements.speed.value = speedByValue[settings.speed] || 'NORMAL'
       this.elements.speed.onchange = (evt) => {
-        settings.set('speed', SPEED[evt.target.value])
+        const speed = SPEED[evt.target.value]
+        if (!speed) return
+        if (this.inRoom) this.onChangeRoomInterval(Math.round(1000 / speed))
+        else settings.set('speed', speed)
       }
-
-      settings.addListener('speed', (newSpeed) => {
-        if (this.elements.speed) {
-          this.elements.speed.value = speedByValue[newSpeed] || 'NORMAL'
-        }
-      })
     }
+    settings.addListener('speed', (speed) => {
+      if (!this.inRoom) this.updateSpeed(speed)
+    })
   }
 
-  updateSpeed(speedValue) {
-    if (this.elements.speed) {
-      const speedByValue = Object.entries(SPEED).reduce(
-        (speeds, [key, value]) => {
-          speeds[value] = key
-          return speeds
-        },
-        {},
-      )
-      this.elements.speed.value = speedByValue[speedValue] || 'NORMAL'
-    }
+  updateSpeed(speed) {
+    this.updateInterval(Math.round(1000 / speed))
   }
 
-  setSpectatorMode(isSpectator) {
-    if (this.elements.speed) {
-      this.elements.speed.disabled = isSpectator
-      this.elements.speed.title = isSpectator
-        ? 'Only the room creator can change speed between rounds'
-        : ''
+  updateInterval(interval) {
+    if (!this.elements.speed) return
+    const preset = Object.entries(SPEED).find(
+      ([, fps]) => Math.round(1000 / fps) === interval,
+    )?.[0]
+    if (this.elements.customSpeed) {
+      this.elements.customSpeed.hidden = Boolean(preset)
+      this.elements.customSpeed.textContent = `custom (${interval} ms per step)`
     }
+    this.elements.speed.value = preset || 'CUSTOM'
+  }
+
+  setSpectatorMode(disabled) {
+    if (this.elements.speed) this.elements.speed.disabled = disabled
+  }
+
+  updateRoomControls(inRoom, enabled, reason, interval) {
+    this.inRoom = inRoom
+    if (inRoom) {
+      if (Number.isInteger(interval)) this.updateInterval(interval)
+      this.setSpectatorMode(!enabled)
+    } else {
+      this.updateSpeed(settings.speed)
+      this.setSpectatorMode(false)
+    }
+    if (this.elements.speedFeedback)
+      this.elements.speedFeedback.textContent =
+        inRoom && Number.isInteger(interval)
+          ? `${interval} ms per step. ${reason}`
+          : reason
+    if (this.elements.speed) this.elements.speed.title = reason
   }
 
   initVisibilityListeners() {

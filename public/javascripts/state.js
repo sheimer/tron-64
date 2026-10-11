@@ -24,6 +24,9 @@ class State {
       this.connectedGames = {}
     this.ownedPlayerIds = new Set()
     this.roomOwnerClientId = null
+    this.roomOwnerBinding = null
+    this.roomSession = null
+    this.connectionIsCurrent = () => false
     this.roundInfo = null
 
     this.gamesList = []
@@ -165,6 +168,8 @@ class State {
   clearOwnership() {
     this.ownedPlayerIds.clear()
     this.roomOwnerClientId = null
+    this.roomOwnerBinding = null
+    this.roomSession = null
     this.roundInfo = null
   }
 
@@ -191,29 +196,105 @@ class State {
     if (owner?.ownerClientId !== ownerClientId) return false
     owner.revoked = false
     this.roomOwnerClientId = ownerClientId
+    this.roomOwnerBinding = { ...this.roomSession, ownerClientId }
     this.saveConnectedGames()
     return true
   }
 
   revokeRoomOwner(key) {
     this.roomOwnerClientId = null
+    this.roomOwnerBinding = null
     const owner = this.connectedGames[key]?.roomOwner
     if (owner) owner.revoked = true
     this.saveConnectedGames()
   }
 
+  acknowledgeRoomJoin(key, generation) {
+    this.roomSession = { key, generation }
+  }
+
+  isJoinedRoom() {
+    return Boolean(
+      this.roomSession &&
+      this.roomSession.key === this.currentGame.key &&
+      this.connectionIsCurrent(this.roomSession),
+    )
+  }
+
   isRoomOwner() {
-    return Boolean(this.roomOwnerClientId)
+    return Boolean(
+      this.isJoinedRoom() &&
+      this.roomOwnerBinding?.key === this.roomSession.key &&
+      this.roomOwnerBinding.generation === this.roomSession.generation &&
+      this.roomOwnerBinding.ownerClientId === this.roomOwnerClientId,
+    )
+  }
+
+  roomIdle() {
+    return Boolean(
+      this.roundInfo?.key === this.currentGame.key &&
+      this.roundInfo.running === false &&
+      ['configuration', 'finished'].includes(this.roundInfo.round?.stage),
+    )
   }
 
   canStartRound() {
     return Boolean(
-      this.roundInfo &&
-      !this.roundInfo.running &&
-      !['preparation', 'countdown'].includes(this.roundInfo.round?.stage) &&
+      this.isJoinedRoom() &&
+      this.roomIdle() &&
       this.roundInfo.eligiblePlayerCount >= 2 &&
-      (this.roundInfo.firstRoundStarted || this.isRoomOwner()),
+      this.roundInfo.eligiblePlayerCount <= 6 &&
+      this.players.length <= 6 &&
+      (this.roundInfo.firstRoundStarted === true || this.isRoomOwner()),
     )
+  }
+
+  canChangeInterval() {
+    return this.isJoinedRoom() && this.isRoomOwner() && this.roomIdle()
+  }
+
+  ownerStatusText() {
+    if (!this.isJoinedRoom()) return 'Waiting for room authentication.'
+    const status = this.roundInfo?.ownerStatus
+    if (this.isRoomOwner()) return 'You created this room. Creator present.'
+    if (status === 'unrecoverable')
+      return 'Creator unrecoverable. Original creator credentials are unavailable; create a new room for creator controls.'
+    if (status === 'away')
+      return 'Creator away. The creator can rejoin with saved credentials.'
+    if (status === 'present') return 'Creator present on another connection.'
+    return 'Waiting for creator status.'
+  }
+
+  startRoundReason() {
+    if (!this.isJoinedRoom())
+      return 'Join and authenticate this room before starting.'
+    if (!this.roomIdle()) {
+      if (this.roundInfo?.running)
+        return 'Wait until the current round finishes.'
+      if (['preparation', 'countdown'].includes(this.roundInfo?.round?.stage))
+        return 'A round is being prepared. Wait for it to start.'
+      return 'Waiting for room state.'
+    }
+    const eligible = this.roundInfo.eligiblePlayerCount
+    const roster = `At least two authenticated, connected bikes are required (two on one keyboard is enough); up to six bike slots. ${eligible} eligible now.`
+    if (!this.roundInfo.firstRoundStarted && !this.isRoomOwner())
+      return `Only the authenticated room creator can start the first round. ${this.ownerStatusText()} ${roster}`
+    if (this.players.length > 6)
+      return `This room has more than six registered bike slots. Create a new room. ${roster}`
+    if (eligible < 2 || eligible > 6) return roster
+    return this.roundInfo.firstRoundStarted
+      ? `Any joined client, including spectators, can start the next round. ${roster}`
+      : `You can start the first round without a bike of your own. ${roster}`
+  }
+
+  speedReason() {
+    if (!this.currentGame.key) return 'Personal speed preference for new rooms.'
+    if (!this.isJoinedRoom())
+      return 'Room speed is available after joining and authenticating.'
+    if (!this.isRoomOwner())
+      return `Only the authenticated room creator can change speed between rounds. ${this.ownerStatusText()}`
+    if (!this.roomIdle()) return 'Speed can change only between rounds.'
+    return 'You can change room speed between rounds. Your personal speed preference is kept.'
   }
 
   removeConnectedGames(keys) {
@@ -224,6 +305,7 @@ class State {
   }
 
   saveConnectedGames() {
+    this.emit('connectedGames', this.connectedGames)
     if (typeof sessionStorage !== 'undefined') {
       try {
         sessionStorage.setItem(

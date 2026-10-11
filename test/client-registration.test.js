@@ -20,11 +20,15 @@ class View {
   show() {}
   hide() {}
   updatePlayersTable() {}
+  updatePermissions() {}
   updateScores() {}
   updateState() {}
   updatePlayerPositions() {}
   setSpectatorMode() {}
   updateSpeed() {}
+  updateRoomControls(inRoom, enabled) {
+    this.setSpectatorMode(inRoom && !enabled)
+  }
   showFeedback(message) {
     this.feedback.push(message)
   }

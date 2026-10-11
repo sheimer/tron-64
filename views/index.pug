@@ -131,6 +131,8 @@ block content
             input(type='submit' value=' add player ' id='btn-add-player' disabled=true)
             input(type='button' value=' start ' id='btn-init-game' disabled=true)
           #registration-feedback(class='fg-rose-muted' role='status')
+          #registration-permission-feedback(role='status')
+          #config-start-feedback(role='status')
       #footer-game(style="display:none;")
         form(onsubmit='return false;')
           div(class='flex-row space-between' )
@@ -141,6 +143,10 @@ block content
                 i(class='ri-arrow-left-line')
               button#btn-right(type='button' aria-label='Turn Right')
                 i(class='ri-arrow-right-line')
+        #game-start-feedback(role='status')
+      #room-authority(role='status' style='display:none;')
+        #room-owner-status
+        #room-control-feedback(class='fg-rose-muted')
     #palette
       div(class="flex-row small-gap")
         each group in ['bg', 'fg', 'rose', 'leaf', 'wood', 'water', 'blossom', 'sky', 'rock']

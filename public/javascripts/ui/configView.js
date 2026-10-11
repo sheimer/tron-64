@@ -46,11 +46,15 @@ export class ConfigView {
 
     this.formAddPlayer = document.getElementById('form-add-player')
     this.registrationFeedback = document.getElementById('registration-feedback')
+    this.registrationPermissionFeedback = document.getElementById(
+      'registration-permission-feedback',
+    )
     this.inputPlayerName = document.getElementById('input-add-player')
     this.selectKeycodes = document.getElementById('select-keycodes')
     this.msgNoKeycodes = document.getElementById('msg-no-keycodes')
     this.btnAddPlayer = document.getElementById('btn-add-player')
     this.btnInitGame = document.getElementById('btn-init-game')
+    this.startFeedback = document.getElementById('config-start-feedback')
     this.btnLeaveConfig = document.getElementById('btn-leave-config')
 
     this.initForm()
@@ -74,9 +78,15 @@ export class ConfigView {
 
     const checkAddButtonState = () => {
       if (this.btnAddPlayer) {
-        this.btnAddPlayer.disabled = !(playerName.length && playerKeys.length)
+        this.btnAddPlayer.disabled =
+          !state.isJoinedRoom() ||
+          state.roundInfo?.acceptingPlayers !== true ||
+          state.players.length >= 6 ||
+          !(playerName.length && playerKeys.length)
       }
     }
+
+    this.updateAddButtonState = checkAddButtonState
 
     if (this.inputPlayerName) {
       this.inputPlayerName.oninput = (evt) => {
@@ -180,21 +190,29 @@ export class ConfigView {
       this.bodyPlayersTable.appendChild(tr)
     }
 
-    if (this.btnInitGame) {
-      this.btnInitGame.disabled = !state.canStartRound()
-    }
+    this.updatePermissions()
+  }
 
-    if (players.length >= 6) {
-      if (this.inputPlayerName) this.inputPlayerName.disabled = true
-      if (this.selectKeycodes) this.selectKeycodes.disabled = true
-      if (this.btnAddPlayer) this.btnAddPlayer.disabled = true
-    } else {
-      if (this.inputPlayerName) {
-        this.inputPlayerName.disabled = false
-        this.inputPlayerName.focus()
-      }
-      if (this.selectKeycodes) this.selectKeycodes.disabled = !canHover
-    }
+  updatePermissions() {
+    if (this.btnInitGame) this.btnInitGame.disabled = !state.canStartRound()
+    if (this.startFeedback)
+      this.startFeedback.textContent = state.startRoundReason()
+    const canRegister =
+      state.isJoinedRoom() &&
+      state.roundInfo?.acceptingPlayers === true &&
+      state.players.length < 6
+    if (this.inputPlayerName) this.inputPlayerName.disabled = !canRegister
+    if (this.selectKeycodes)
+      this.selectKeycodes.disabled = !canRegister || !canHover
+    this.updateAddButtonState()
+    if (this.registrationPermissionFeedback)
+      this.registrationPermissionFeedback.textContent = !state.isJoinedRoom()
+        ? 'Join and authenticate this room before adding bikes.'
+        : state.players.length >= 6
+          ? 'All six bike slots are occupied.'
+          : !state.roundInfo?.acceptingPlayers
+            ? 'Bike registration is closed. Saved bikes can rejoin; new clients can spectate.'
+            : `${state.players.length} of six bike slots occupied. Register bikes here, including several on one keyboard.`
   }
 
   showFeedback(message) {
