@@ -79,10 +79,14 @@ class View {
   show() {}
   hide() {}
   updatePlayersTable() {}
+  updatePermissions() {}
   updateScores() {}
   updateState() {}
   updatePlayerPositions() {}
   updateSpeed() {}
+  updateRoomControls(inRoom, enabled) {
+    this.setSpectatorMode(inRoom && !enabled)
+  }
   setSpectatorMode(value) {
     this.spectator = value
   }
@@ -306,7 +310,8 @@ try {
     false,
     'Private result must carry the current protocol',
   )
-  f.result(request)
+  assert.equal(f.app.pendingJoin, null, 'Mismatch retires the private request')
+  f.result(f.join())
   assert.equal(f.state.isRoomOwner(), true)
   assert.equal(f.network.inputHandles.size, 0)
   f.socket().receive(MSG_TYPE.GAME_INFO, info(room))

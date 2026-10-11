@@ -106,7 +106,10 @@ For example, `#registration-feedback` in [index.pug](../../views/index.pug) is
 always the same status region below the add-player controls;
 [ConfigView](../../public/javascripts/ui/configView.js) only updates its text.
 Keep its `role='status'` in the template, just as `#connection-feedback` and
-`#lobby-error` declare their structure there.
+`#lobby-error` declare their structure there. The room owner/action status, registration/start reasons and speed feedback
+are also permanent Pug regions. The custom interval option is defined once in
+[controls.pug](../../views/controls.pug); the settings view changes its text,
+selection and visibility without appending options across rooms.
 
 JavaScript creates the changing children of those stable containers:
 

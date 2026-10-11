@@ -343,3 +343,19 @@ button.modal-close:hover,
 .modal-body p {
   margin: 0.35rem 0;
 }
+
+/* Stable room feedback lives beside controls and never overlays the arena. */
+#room-authority,
+#config-start-feedback,
+#game-start-feedback,
+#registration-permission-feedback,
+#speed-feedback {
+  margin-top: var(--size-small);
+  font-size: 0.85em;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+#speed-feedback {
+  max-width: 24rem;
+}

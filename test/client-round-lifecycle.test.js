@@ -77,6 +77,7 @@ class View {
   show() {}
   hide() {}
   updatePlayersTable() {}
+  updatePermissions() {}
   updateScores() {}
   updateState() {}
   updatePlayerPositions(players, positions) {
@@ -84,6 +85,9 @@ class View {
   }
   setSpectatorMode() {}
   updateSpeed() {}
+  updateRoomControls(inRoom, enabled) {
+    this.setSpectatorMode(inRoom && !enabled)
+  }
   showFeedback() {}
 }
 class Renderer {

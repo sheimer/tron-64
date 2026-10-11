@@ -54,7 +54,9 @@ div(class='flex-row small-gap align-center')
             option(value='SLOW') slow
             option(value='NORMAL' selected=true) normal
             option(value='FAST') fast
+            option#game-speed-custom(value='CUSTOM' disabled=true hidden=true) custom
           div speed
+        #speed-feedback(role='status')
         div(class="flex-column small-gap")
           +checkbox({"id":"colored-players", "label": "Colored Players"})
           +checkbox({"id":"show-gamestats", "label": "Show Ping"})

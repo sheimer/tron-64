@@ -112,6 +112,10 @@ try {
     state.getRoomOwnerClaim(created.key),
     'Public absence cannot erase private room credentials',
   )
+  state.setCurrentGame(created.key, payload.name)
+  state.connectionIsCurrent = ({ key, generation }) =>
+    key === created.key && generation === network.generation
+  state.acknowledgeRoomJoin(created.key, network.generation)
   state.acknowledgeRoomOwner(created.key, created.ownerClientId)
   assert.equal(state.isRoomOwner(), true)
   state.revokeRoomOwner(created.key)

@@ -1,6 +1,6 @@
 import './ui/dropdown.js'
 import { state } from './state.js'
-import { settings, SPEED } from './settings.js'
+import { settings } from './settings.js'
 import { network } from './network.js'
 import { Renderer } from './Renderer.js'
 import { getThemeColors, onThemeChange } from './theme.js'
@@ -47,6 +47,15 @@ class AppCoordinator {
     this.pendingRegistrations = new Map()
     this.pendingJoin = null
     this.recoveryNotice = false
+    this.ownerStatus = document.getElementById('room-owner-status')
+    this.authorityContainer = document.getElementById('room-authority')
+    this.controlFeedback = document.getElementById('room-control-feedback')
+    this.pendingInterval = null
+    state.connectionIsCurrent = ({ key, generation }) =>
+      key === this.currentGameKey &&
+      generation === network.generation &&
+      network.isConnected() &&
+      network.protocolReady
     this.connectionFeedback = document.getElementById('connection-feedback')
     this.reloadButton = document.getElementById('btn-reload-connection')
     this.reloadButton?.addEventListener('click', () => {
@@ -55,7 +64,9 @@ class AppCoordinator {
     this.unsubscribers = []
     this.keyboardBound = false
 
-    this.settingsView = new SettingsView()
+    this.settingsView = new SettingsView({
+      onChangeRoomInterval: (interval) => this.changeRoomInterval(interval),
+    })
 
     this.welcomeView = new WelcomeView({
       onEnterLobby: () => {
@@ -119,7 +130,7 @@ class AppCoordinator {
         retry()
       },
       onStartGame: () => {
-        network.startGame()
+        this.startRound()
       },
       onLeaveGame: () => {
         this.leaveCurrentGame()
@@ -128,7 +139,7 @@ class AppCoordinator {
 
     this.gameView = new GameView({
       onStartGame: () => {
-        network.startGame()
+        this.startRound()
       },
       onLeaveGame: () => {
         this.leaveCurrentGame()
@@ -158,6 +169,7 @@ class AppCoordinator {
     })
 
     this.setScreen('welcome')
+    this.refreshRoomControls()
   }
 
   initNavigationControls() {
@@ -235,16 +247,6 @@ class AppCoordinator {
 
     onThemeChange(updateColors)
     settings.addListener('coloredPlayers', updateColors)
-    settings.addListener('speed', (speed) => {
-      if (
-        this.currentGameKey &&
-        state.isRoomOwner() &&
-        !state.roundInfo?.running &&
-        !['start', 'running', 'scores'].includes(state.matchState)
-      ) {
-        network.setInterval(Math.round(1000 / speed))
-      }
-    })
   }
 
   initKeyboardControls() {
@@ -316,6 +318,8 @@ class AppCoordinator {
       this.pendingJoin = null
       this.localPlayersConfig.clear()
       state.clearOwnership()
+      this.pendingInterval = null
+      this.refreshRoomControls()
       if (this.currentGameKey) {
         this.showConnectionFeedback(
           'Connection lost. Reconnecting and authenticating saved players.',
@@ -362,7 +366,7 @@ class AppCoordinator {
         ),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.isRoomOwner())
+      this.refreshRoomControls()
     })
 
     network.on(MSG_TYPE.JOIN_RESULT, (result, msg) => {
@@ -424,6 +428,7 @@ class AppCoordinator {
       )
         return
       this.pendingJoin = null
+      state.acknowledgeRoomJoin(pending.key, pending.generation)
       if (
         pending.roomOwner &&
         result.roomOwner?.accepted === true &&
@@ -459,7 +464,7 @@ class AppCoordinator {
         })),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.isRoomOwner())
+      this.refreshRoomControls()
     })
 
     network.on(MSG_TYPE.ROOM_OWNER_REVOKED, (notice) => {
@@ -470,7 +475,7 @@ class AppCoordinator {
         return
       state.revokeRoomOwner(notice.key)
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(true)
+      this.refreshRoomControls()
       this.showConnectionFeedback(
         'Room creator controls moved to another connection. Rejoin explicitly to recover them.',
       )
@@ -490,13 +495,25 @@ class AppCoordinator {
         })),
       )
       this.configView.updatePlayersTable(state.players)
-      this.settingsView.setSpectatorMode(!state.isRoomOwner())
+      this.refreshRoomControls()
       this.showConnectionFeedback(
         'Player control moved to another connection. Select the room again to reclaim it explicitly.',
       )
     })
 
     network.on(MSG_TYPE.ERROR, (message, msg) => {
+      if (msg?.code === 'PROTOCOL_MISMATCH') {
+        this.clearRoundCallbacks()
+        this.clearPendingRegistrations()
+        this.pendingJoin = null
+        this.pendingInterval = null
+        this.localPlayersConfig.clear()
+        state.clearOwnership()
+        this.showControlFeedback(message)
+        this.refreshRoomControls()
+        this.showConnectionFeedback(message, true)
+        return
+      }
       const pending = this.pendingRegistrations.get(msg?.requestId)
       if (pending) {
         clearTimeout(pending.timer)
@@ -517,7 +534,12 @@ class AppCoordinator {
           return
         }
       }
-      if (this.currentGameKey) this.configView.showFeedback(message)
+      if (this.currentGameKey) {
+        this.configView.showFeedback(message)
+        this.pendingInterval = null
+        this.showControlFeedback(message)
+        this.refreshRoomControls()
+      }
       if (msg?.code === 'INPUT_HANDLE_EXHAUSTED' && this.currentGameKey) {
         this.showConnectionFeedback(message, true)
         return
@@ -556,19 +578,11 @@ class AppCoordinator {
       state.set('players', players)
       this.configView.updatePlayersTable(players)
 
-      this.settingsView.setSpectatorMode(
-        !state.isRoomOwner() ||
-          info.running ||
-          ['start', 'running', 'scores'].includes(state.matchState),
-      )
-
-      if (info.interval) {
-        const targetFps = Math.round(1000 / info.interval)
-        const closestSpeed = Object.values(SPEED).reduce((prev, curr) =>
-          Math.abs(curr - targetFps) < Math.abs(prev - targetFps) ? curr : prev,
-        )
-        this.settingsView.updateSpeed(closestSpeed)
+      if (this.pendingInterval?.interval === info.interval) {
+        this.pendingInterval = null
+        this.showControlFeedback('Room speed updated.')
       }
+      this.refreshRoomControls()
 
       if (info.scores) {
         state.set('scores', info.scores)
@@ -629,12 +643,29 @@ class AppCoordinator {
         this.setMatchState(
           transition.stage === 'configuration' ? 'settingPlayers' : 'finished',
         )
-        this.showConnectionFeedback(
-          `Round cancelled: ${transition.reason}. Start again when ready.`,
-        )
+        const reasons = {
+          PARTICIPANTS_CHANGED: 'bike connections or controls changed',
+          CREATOR_CHANGED: 'the creator connection changed',
+          PERSISTENCE_FAILED: 'the launch could not be saved',
+          ROOM_REMOVED: 'the room was removed',
+          ROOM_RESET: 'the room was reset',
+          ROOM_STOPPED: 'the round was stopped',
+          CANCELLED: 'the round was stopped',
+        }
+        const reason = reasons[transition.reason] ?? 'the room state changed'
+        const cancellation = `Round cancelled because ${reason}. Start again when ready.`
+        this.showConnectionFeedback(cancellation)
+        this.showControlFeedback(cancellation)
+        this.refreshRoomControls()
         return
       }
       this.roundStage = transition.stage
+      if (state.roundInfo)
+        state.roundInfo = {
+          ...state.roundInfo,
+          running: transition.stage === 'running',
+          round: { ...state.roundInfo.round, stage: transition.stage },
+        }
       if (transition.stage === 'running') this.setMatchState('running')
       else if (['preparation', 'countdown'].includes(transition.stage))
         this.setMatchState('start')
@@ -711,6 +742,12 @@ class AppCoordinator {
     this.clearRoundCallbacks()
     this.currentStartId = round.startId
     this.roundStage = round.stage ?? 'preparation'
+    if (state.roundInfo)
+      state.roundInfo = {
+        ...state.roundInfo,
+        running: false,
+        round: { ...round, stage: this.roundStage },
+      }
     this.showConnectionFeedback('')
     state.set('positions', round.positions)
     this.renderer.clear()
@@ -736,11 +773,7 @@ class AppCoordinator {
   setMatchState(matchState) {
     state.set('matchState', matchState)
     this.gameView.updateState(matchState)
-    if (this.currentGameKey)
-      this.settingsView.setSpectatorMode(
-        !state.isRoomOwner() ||
-          ['start', 'running', 'scores'].includes(matchState),
-      )
+    this.refreshRoomControls()
   }
 
   joinGame(gameKey, explicit = true) {
@@ -750,6 +783,9 @@ class AppCoordinator {
     this.localPlayersConfig.clear()
     state.clearOwnership()
     this.currentGameKey = gameKey
+    this.pendingInterval = null
+    this.showControlFeedback('')
+    this.refreshRoomControls()
     const reconnect = state.getReconnectEntries(gameKey, explicit)
     const requestId = Array.from(crypto.getRandomValues(new Uint8Array(12)))
       .map((num) => num.toString(16).padStart(2, '0'))
@@ -769,6 +805,48 @@ class AppCoordinator {
         'Some saved players have missing or unusable credentials. They cannot be restored automatically.',
       )
     }
+  }
+
+  refreshRoomControls() {
+    const inRoom = Boolean(this.currentGameKey)
+    if (this.authorityContainer)
+      this.authorityContainer.style.display = inRoom ? '' : 'none'
+    if (this.ownerStatus) this.ownerStatus.textContent = state.ownerStatusText()
+    this.configView.updatePermissions()
+    this.gameView.updatePermissions()
+    this.settingsView.updateRoomControls(
+      inRoom,
+      state.canChangeInterval(),
+      state.speedReason(),
+      state.roundInfo?.interval,
+    )
+  }
+
+  showControlFeedback(message) {
+    if (this.controlFeedback) this.controlFeedback.textContent = message
+  }
+
+  startRound() {
+    if (!state.canStartRound()) {
+      this.showControlFeedback(state.startRoundReason())
+      this.refreshRoomControls()
+      return
+    }
+    this.showControlFeedback('Requesting round start.')
+    network.startGame()
+  }
+
+  changeRoomInterval(interval) {
+    if (!state.canChangeInterval()) {
+      this.showControlFeedback(state.speedReason())
+      this.refreshRoomControls()
+      return
+    }
+    this.pendingInterval = { interval }
+    this.showControlFeedback('Requesting room speed change.')
+    network.setInterval(interval)
+    // Keep the acknowledged value until the authoritative snapshot arrives.
+    this.refreshRoomControls()
   }
 
   clearPendingRegistrations() {
@@ -798,7 +876,10 @@ class AppCoordinator {
     this.pendingJoin = null
     this.localPlayersConfig.clear()
     state.clearOwnership()
-    this.settingsView.setSpectatorMode(false)
+    this.pendingInterval = null
+    state.set('currentGame', { key: null, name: null })
+    this.showControlFeedback('')
+    this.refreshRoomControls()
     state.set('players', [])
     state.set('scores', { gamecount: 0, players: [], messages: [] })
     state.set('positions', {})
