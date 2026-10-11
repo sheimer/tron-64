@@ -5,11 +5,13 @@ Use the runtime's actual model catalog and controls. Names below are preferences
 | Role        | Preferred model / effort | Assignment                                                                        |
 | ----------- | ------------------------ | --------------------------------------------------------------------------------- |
 | Lead        | Current session model    | Own approval, orchestration, integration, commits, CI evidence, and PR            |
-| Implementer | GPT-6 Sol / high         | Implement one approved phase and its tests/documentation                          |
-| Tester      | GPT-6 Sol / high         | Independently assess acceptance coverage, add missing tests, and verify execution |
-| Reviewer    | GPT-6 Astra / high       | Review final changes and contracts independently                                  |
+| Implementer | GPT-6.1 Sol / high       | Implement one approved phase and its tests/documentation                          |
+| Tester      | GPT-6.1 Sol / high       | Independently assess acceptance coverage, add missing tests, and verify execution |
+| Reviewer    | GPT-6.1 Sol / xhigh      | Review final changes and contracts independently                                  |
 
-Where exposed, corresponding tool identifiers are `gpt-6-sol` and `gpt-6-astra`, with `high` reasoning. Use higher reasoning for a concrete unresolved security/concurrency issue, not for every routine task. A straightforward documentation phase can use a lower effort setting if available. Respect user model/budget preferences.
+Where exposed, the tool identifier is `gpt-6.1-sol`: use `high` reasoning for implementation and independent testing, and `xhigh` for independent review. Escalate review to `max`, or the highest model-specific setting actually supported by the host, for a concrete unresolved authorization, security, or concurrency issue; do not make maximum effort mandatory for every follow-up. A straightforward documentation phase can use a lower effort setting if available. Respect user model/budget preferences, including the user's selected lead model and effort; do not attempt to change the lead session.
+
+Keep the three delegated roles in separate contexts even though their preferred model is now the same. Higher effort is not evidence that Sol matches Astra on this repository. Judge the workflow by acceptance coverage, actionable findings, corrections, and executed CI, and keep efficiency comparisons observational rather than claiming unmeasured quality or savings.
 
 If a preferred model is absent, use an available coding-capable model and report the substitution unless the user required that exact model. Separate contexts still provide role independence when models are the same. If no subagents exist, stop and offer a sequential workflow explicitly described as lacking independent agent review. A skill cannot create missing runtime capabilities.
 
