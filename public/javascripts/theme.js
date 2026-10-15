@@ -91,8 +91,7 @@ const notifyThemeChange = () => {
 export const initTheme = () => {
   document.documentElement.style.colorScheme = settings.theme
   document.body.style.colorScheme = settings.theme
-  document.documentElement.dataset.palette =
-    settings.palette || DEFAULT_PALETTE
+  document.documentElement.dataset.palette = settings.palette || DEFAULT_PALETTE
 
   darkThemeMq.addEventListener('change', () => {
     if (settings.theme === AUTO) {

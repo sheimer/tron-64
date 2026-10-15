@@ -114,7 +114,9 @@ export const isMetricsRequestAuthorized = (req) => {
 
   const forwardedFor = req?.headers ? req.headers['x-forwarded-for'] : null
   const rawIp = (
-    (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : null) ||
+    (typeof forwardedFor === 'string'
+      ? forwardedFor.split(',')[0].trim()
+      : null) ||
     (req?.headers ? req.headers['x-real-ip'] : null) ||
     req?.ip ||
     req?.socket?.remoteAddress ||
@@ -137,7 +139,12 @@ export const isMetricsRequestAuthorized = (req) => {
   if (allowedIpsStr) {
     const allowedIps = allowedIpsStr
       .split(',')
-      .map((ip) => ip.trim().replace(/^::ffff:/, '').toLowerCase())
+      .map((ip) =>
+        ip
+          .trim()
+          .replace(/^::ffff:/, '')
+          .toLowerCase(),
+      )
       .filter(Boolean)
     if (allowedIps.includes(rawIp)) {
       return true
@@ -146,4 +153,3 @@ export const isMetricsRequestAuthorized = (req) => {
 
   return false
 }
-

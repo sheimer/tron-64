@@ -1,76 +1,182 @@
-@import './palettes.css';
-
+@import "./palettes.css";
 
 /* Color utility classes */
-.fg-bg { color: var(--color-bg); }
-.fg-bg-hl { color: var(--color-bg-hl); }
-.fg-bg-muted { color: var(--color-bg-muted); }
+.fg-bg {
+  color: var(--color-bg);
+}
+.fg-bg-hl {
+  color: var(--color-bg-hl);
+}
+.fg-bg-muted {
+  color: var(--color-bg-muted);
+}
 
-.fg-fg { color: var(--color-fg); }
-.fg-fg-hl { color: var(--color-fg-hl); }
-.fg-fg-muted { color: var(--color-fg-muted); }
+.fg-fg {
+  color: var(--color-fg);
+}
+.fg-fg-hl {
+  color: var(--color-fg-hl);
+}
+.fg-fg-muted {
+  color: var(--color-fg-muted);
+}
 
-.fg-rose { color: var(--color-rose); }
-.fg-rose-hl { color: var(--color-rose-hl); }
-.fg-rose-muted { color: var(--color-rose-muted); }
+.fg-rose {
+  color: var(--color-rose);
+}
+.fg-rose-hl {
+  color: var(--color-rose-hl);
+}
+.fg-rose-muted {
+  color: var(--color-rose-muted);
+}
 
-.fg-leaf { color: var(--color-leaf); }
-.fg-leaf-hl { color: var(--color-leaf-hl); }
-.fg-leaf-muted { color: var(--color-leaf-muted); }
+.fg-leaf {
+  color: var(--color-leaf);
+}
+.fg-leaf-hl {
+  color: var(--color-leaf-hl);
+}
+.fg-leaf-muted {
+  color: var(--color-leaf-muted);
+}
 
-.fg-wood { color: var(--color-wood); }
-.fg-wood-hl { color: var(--color-wood-hl); }
-.fg-wood-muted { color: var(--color-wood-muted); }
+.fg-wood {
+  color: var(--color-wood);
+}
+.fg-wood-hl {
+  color: var(--color-wood-hl);
+}
+.fg-wood-muted {
+  color: var(--color-wood-muted);
+}
 
-.fg-water { color: var(--color-water); }
-.fg-water-hl { color: var(--color-water-hl); }
-.fg-water-muted { color: var(--color-water-muted); }
+.fg-water {
+  color: var(--color-water);
+}
+.fg-water-hl {
+  color: var(--color-water-hl);
+}
+.fg-water-muted {
+  color: var(--color-water-muted);
+}
 
-.fg-blossom { color: var(--color-blossom); }
-.fg-blossom-hl { color: var(--color-blossom-hl); }
-.fg-blossom-muted { color: var(--color-blossom-muted); }
+.fg-blossom {
+  color: var(--color-blossom);
+}
+.fg-blossom-hl {
+  color: var(--color-blossom-hl);
+}
+.fg-blossom-muted {
+  color: var(--color-blossom-muted);
+}
 
-.fg-sky { color: var(--color-sky); }
-.fg-sky-hl { color: var(--color-sky-hl); }
-.fg-sky-muted { color: var(--color-sky-muted); }
+.fg-sky {
+  color: var(--color-sky);
+}
+.fg-sky-hl {
+  color: var(--color-sky-hl);
+}
+.fg-sky-muted {
+  color: var(--color-sky-muted);
+}
 
-.fg-rock { color: var(--color-rock); }
-.fg-rock-hl { color: var(--color-rock-hl); }
-.fg-rock-muted { color: var(--color-rock-muted); }
+.fg-rock {
+  color: var(--color-rock);
+}
+.fg-rock-hl {
+  color: var(--color-rock-hl);
+}
+.fg-rock-muted {
+  color: var(--color-rock-muted);
+}
 
-.bg-bg { background-color: var(--color-bg); }
-.bg-bg-hl { background-color: var(--color-bg-hl); }
-.bg-bg-muted { background-color: var(--color-bg-muted); }
+.bg-bg {
+  background-color: var(--color-bg);
+}
+.bg-bg-hl {
+  background-color: var(--color-bg-hl);
+}
+.bg-bg-muted {
+  background-color: var(--color-bg-muted);
+}
 
-.bg-fg { background-color: var(--color-fg); }
-.bg-fg-hl { background-color: var(--color-fg-hl); }
-.bg-fg-muted { background-color: var(--color-fg-muted); }
+.bg-fg {
+  background-color: var(--color-fg);
+}
+.bg-fg-hl {
+  background-color: var(--color-fg-hl);
+}
+.bg-fg-muted {
+  background-color: var(--color-fg-muted);
+}
 
-.bg-rose { background-color: var(--color-rose); }
-.bg-rose-hl { background-color: var(--color-rose-hl); }
-.bg-rose-muted { background-color: var(--color-rose-muted); }
+.bg-rose {
+  background-color: var(--color-rose);
+}
+.bg-rose-hl {
+  background-color: var(--color-rose-hl);
+}
+.bg-rose-muted {
+  background-color: var(--color-rose-muted);
+}
 
-.bg-leaf { background-color: var(--color-leaf); }
-.bg-leaf-hl { background-color: var(--color-leaf-hl); }
-.bg-leaf-muted { background-color: var(--color-leaf-muted); }
+.bg-leaf {
+  background-color: var(--color-leaf);
+}
+.bg-leaf-hl {
+  background-color: var(--color-leaf-hl);
+}
+.bg-leaf-muted {
+  background-color: var(--color-leaf-muted);
+}
 
-.bg-wood { background-color: var(--color-wood); }
-.bg-wood-hl { background-color: var(--color-wood-hl); }
-.bg-wood-muted { background-color: var(--color-wood-muted); }
+.bg-wood {
+  background-color: var(--color-wood);
+}
+.bg-wood-hl {
+  background-color: var(--color-wood-hl);
+}
+.bg-wood-muted {
+  background-color: var(--color-wood-muted);
+}
 
-.bg-water { background-color: var(--color-water); }
-.bg-water-hl { background-color: var(--color-water-hl); }
-.bg-water-muted { background-color: var(--color-water-muted); }
+.bg-water {
+  background-color: var(--color-water);
+}
+.bg-water-hl {
+  background-color: var(--color-water-hl);
+}
+.bg-water-muted {
+  background-color: var(--color-water-muted);
+}
 
-.bg-blossom { background-color: var(--color-blossom); }
-.bg-blossom-hl { background-color: var(--color-blossom-hl); }
-.bg-blossom-muted { background-color: var(--color-blossom-muted); }
+.bg-blossom {
+  background-color: var(--color-blossom);
+}
+.bg-blossom-hl {
+  background-color: var(--color-blossom-hl);
+}
+.bg-blossom-muted {
+  background-color: var(--color-blossom-muted);
+}
 
-.bg-sky { background-color: var(--color-sky); }
-.bg-sky-hl { background-color: var(--color-sky-hl); }
-.bg-sky-muted { background-color: var(--color-sky-muted); }
+.bg-sky {
+  background-color: var(--color-sky);
+}
+.bg-sky-hl {
+  background-color: var(--color-sky-hl);
+}
+.bg-sky-muted {
+  background-color: var(--color-sky-muted);
+}
 
-.bg-rock { background-color: var(--color-rock); }
-.bg-rock-hl { background-color: var(--color-rock-hl); }
-.bg-rock-muted { background-color: var(--color-rock-muted); }
-
+.bg-rock {
+  background-color: var(--color-rock);
+}
+.bg-rock-hl {
+  background-color: var(--color-rock-hl);
+}
+.bg-rock-muted {
+  background-color: var(--color-rock-muted);
+}

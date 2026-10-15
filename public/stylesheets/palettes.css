@@ -193,13 +193,34 @@
   --color-rock: light-dark(#6b498f, #c4a7e7);
 
   /* Override derived variants: Gentle desaturation (s * 0.7) preserving subtle dusty rose and cedar undertones */
-  --color-rose-muted: light-dark(hsl(from var(--color-rose) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-rose) h calc(s * 0.7) calc(l * 0.75)));
-  --color-water-muted: light-dark(hsl(from var(--color-water) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-water) h calc(s * 0.7) calc(l * 0.75)));
-  --color-wood-muted: light-dark(hsl(from var(--color-wood) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-wood) h calc(s * 0.7) calc(l * 0.75)));
-  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-leaf) h calc(s * 0.7) calc(l * 0.75)));
-  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-blossom) h calc(s * 0.7) calc(l * 0.75)));
-  --color-sky-muted: light-dark(hsl(from var(--color-sky) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-sky) h calc(s * 0.7) calc(l * 0.75)));
-  --color-rock-muted: light-dark(hsl(from var(--color-rock) h calc(s * 0.7) calc(l * 1.15)), hsl(from var(--color-rock) h calc(s * 0.7) calc(l * 0.75)));
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-rose) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-water) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-wood) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-leaf) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-blossom) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-sky) h calc(s * 0.7) calc(l * 0.75))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h calc(s * 0.7) calc(l * 1.15)),
+    hsl(from var(--color-rock) h calc(s * 0.7) calc(l * 0.75))
+  );
 }
 
 /* ==========================================================================
@@ -311,26 +332,68 @@
   --color-rock: light-dark(#1c1c1c, #d8d8d8);
 
   /* Override derived variants: 1-bit monochrome stepped luminance */
-  --color-rose-hl: light-dark(hsl(from var(--color-rose) h s calc(l * 0.8)), hsl(from var(--color-rose) h s calc(l * 1.15)));
-  --color-rose-muted: light-dark(hsl(from var(--color-rose) h s calc(l * 1.25)), hsl(from var(--color-rose) h s calc(l * 0.65)));
+  --color-rose-hl: light-dark(
+    hsl(from var(--color-rose) h s calc(l * 0.8)),
+    hsl(from var(--color-rose) h s calc(l * 1.15))
+  );
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h s calc(l * 1.25)),
+    hsl(from var(--color-rose) h s calc(l * 0.65))
+  );
 
-  --color-water-hl: light-dark(hsl(from var(--color-water) h s calc(l * 0.8)), hsl(from var(--color-water) h s calc(l * 1.15)));
-  --color-water-muted: light-dark(hsl(from var(--color-water) h s calc(l * 1.25)), hsl(from var(--color-water) h s calc(l * 0.65)));
+  --color-water-hl: light-dark(
+    hsl(from var(--color-water) h s calc(l * 0.8)),
+    hsl(from var(--color-water) h s calc(l * 1.15))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h s calc(l * 1.25)),
+    hsl(from var(--color-water) h s calc(l * 0.65))
+  );
 
-  --color-wood-hl: light-dark(hsl(from var(--color-wood) h s calc(l * 0.8)), hsl(from var(--color-wood) h s calc(l * 1.15)));
-  --color-wood-muted: light-dark(hsl(from var(--color-wood) h s calc(l * 1.25)), hsl(from var(--color-wood) h s calc(l * 0.65)));
+  --color-wood-hl: light-dark(
+    hsl(from var(--color-wood) h s calc(l * 0.8)),
+    hsl(from var(--color-wood) h s calc(l * 1.15))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h s calc(l * 1.25)),
+    hsl(from var(--color-wood) h s calc(l * 0.65))
+  );
 
-  --color-leaf-hl: light-dark(hsl(from var(--color-leaf) h s calc(l * 0.8)), hsl(from var(--color-leaf) h s calc(l * 1.15)));
-  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h s calc(l * 1.25)), hsl(from var(--color-leaf) h s calc(l * 0.65)));
+  --color-leaf-hl: light-dark(
+    hsl(from var(--color-leaf) h s calc(l * 0.8)),
+    hsl(from var(--color-leaf) h s calc(l * 1.15))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h s calc(l * 1.25)),
+    hsl(from var(--color-leaf) h s calc(l * 0.65))
+  );
 
-  --color-blossom-hl: light-dark(hsl(from var(--color-blossom) h s calc(l * 0.8)), hsl(from var(--color-blossom) h s calc(l * 1.15)));
-  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h s calc(l * 1.25)), hsl(from var(--color-blossom) h s calc(l * 0.65)));
+  --color-blossom-hl: light-dark(
+    hsl(from var(--color-blossom) h s calc(l * 0.8)),
+    hsl(from var(--color-blossom) h s calc(l * 1.15))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h s calc(l * 1.25)),
+    hsl(from var(--color-blossom) h s calc(l * 0.65))
+  );
 
-  --color-sky-hl: light-dark(hsl(from var(--color-sky) h s calc(l * 0.8)), hsl(from var(--color-sky) h s calc(l * 1.15)));
-  --color-sky-muted: light-dark(hsl(from var(--color-sky) h s calc(l * 1.25)), hsl(from var(--color-sky) h s calc(l * 0.65)));
+  --color-sky-hl: light-dark(
+    hsl(from var(--color-sky) h s calc(l * 0.8)),
+    hsl(from var(--color-sky) h s calc(l * 1.15))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h s calc(l * 1.25)),
+    hsl(from var(--color-sky) h s calc(l * 0.65))
+  );
 
-  --color-rock-hl: light-dark(hsl(from var(--color-rock) h s calc(l * 0.8)), hsl(from var(--color-rock) h s calc(l * 1.15)));
-  --color-rock-muted: light-dark(hsl(from var(--color-rock) h s calc(l * 1.25)), hsl(from var(--color-rock) h s calc(l * 0.65)));
+  --color-rock-hl: light-dark(
+    hsl(from var(--color-rock) h s calc(l * 0.8)),
+    hsl(from var(--color-rock) h s calc(l * 1.15))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h s calc(l * 1.25)),
+    hsl(from var(--color-rock) h s calc(l * 0.65))
+  );
 }
 
 /* ==========================================================================
@@ -354,26 +417,68 @@
   --color-rock: light-dark(#6f00b3, #b030ff);
 
   /* Override derived variants: High-radiance electric bloom in dark mode and wireframe neon glow for muted */
-  --color-rose-hl: light-dark(hsl(from var(--color-rose) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-rose) h s calc(l * 1.25)));
-  --color-rose-muted: light-dark(hsl(from var(--color-rose) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-rose) h calc(s * 0.75) calc(l * 0.5)));
+  --color-rose-hl: light-dark(
+    hsl(from var(--color-rose) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-rose) h s calc(l * 1.25))
+  );
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-rose) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-water-hl: light-dark(hsl(from var(--color-water) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-water) h s calc(l * 1.25)));
-  --color-water-muted: light-dark(hsl(from var(--color-water) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-water) h calc(s * 0.75) calc(l * 0.5)));
+  --color-water-hl: light-dark(
+    hsl(from var(--color-water) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-water) h s calc(l * 1.25))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-water) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-wood-hl: light-dark(hsl(from var(--color-wood) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-wood) h s calc(l * 1.2)));
-  --color-wood-muted: light-dark(hsl(from var(--color-wood) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-wood) h calc(s * 0.75) calc(l * 0.5)));
+  --color-wood-hl: light-dark(
+    hsl(from var(--color-wood) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-wood) h s calc(l * 1.2))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-wood) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-leaf-hl: light-dark(hsl(from var(--color-leaf) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-leaf) h s calc(l * 1.25)));
-  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-leaf) h calc(s * 0.75) calc(l * 0.5)));
+  --color-leaf-hl: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-leaf) h s calc(l * 1.25))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-leaf) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-blossom-hl: light-dark(hsl(from var(--color-blossom) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-blossom) h s calc(l * 1.25)));
-  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-blossom) h calc(s * 0.75) calc(l * 0.5)));
+  --color-blossom-hl: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-blossom) h s calc(l * 1.25))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-blossom) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-sky-hl: light-dark(hsl(from var(--color-sky) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-sky) h s calc(l * 1.25)));
-  --color-sky-muted: light-dark(hsl(from var(--color-sky) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-sky) h calc(s * 0.75) calc(l * 0.5)));
+  --color-sky-hl: light-dark(
+    hsl(from var(--color-sky) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-sky) h s calc(l * 1.25))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-sky) h calc(s * 0.75) calc(l * 0.5))
+  );
 
-  --color-rock-hl: light-dark(hsl(from var(--color-rock) h calc(s * 1.1) calc(l * 0.85)), hsl(from var(--color-rock) h s calc(l * 1.25)));
-  --color-rock-muted: light-dark(hsl(from var(--color-rock) h calc(s * 0.5) calc(l * 1.25)), hsl(from var(--color-rock) h calc(s * 0.75) calc(l * 0.5)));
+  --color-rock-hl: light-dark(
+    hsl(from var(--color-rock) h calc(s * 1.1) calc(l * 0.85)),
+    hsl(from var(--color-rock) h s calc(l * 1.25))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h calc(s * 0.5) calc(l * 1.25)),
+    hsl(from var(--color-rock) h calc(s * 0.75) calc(l * 0.5))
+  );
 }
 
 /* ==========================================================================
@@ -397,26 +502,68 @@
   --color-rock: light-dark(#6e4000, #c85a00);
 
   /* Override derived variants: Radiometric beam overdrive (bloom) and phosphor persistence (afterglow) */
-  --color-rose-hl: light-dark(hsl(from var(--color-rose) h s calc(l * 0.8)), hsl(from var(--color-rose) h s calc(l * 1.25)));
-  --color-rose-muted: light-dark(hsl(from var(--color-rose) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-rose) h s calc(l * 0.6)));
+  --color-rose-hl: light-dark(
+    hsl(from var(--color-rose) h s calc(l * 0.8)),
+    hsl(from var(--color-rose) h s calc(l * 1.25))
+  );
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-rose) h s calc(l * 0.6))
+  );
 
-  --color-water-hl: light-dark(hsl(from var(--color-water) h s calc(l * 0.8)), hsl(from var(--color-water) h s calc(l * 1.25)));
-  --color-water-muted: light-dark(hsl(from var(--color-water) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-water) h s calc(l * 0.6)));
+  --color-water-hl: light-dark(
+    hsl(from var(--color-water) h s calc(l * 0.8)),
+    hsl(from var(--color-water) h s calc(l * 1.25))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-water) h s calc(l * 0.6))
+  );
 
-  --color-wood-hl: light-dark(hsl(from var(--color-wood) h s calc(l * 0.8)), hsl(from var(--color-wood) h s calc(l * 1.25)));
-  --color-wood-muted: light-dark(hsl(from var(--color-wood) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-wood) h s calc(l * 0.6)));
+  --color-wood-hl: light-dark(
+    hsl(from var(--color-wood) h s calc(l * 0.8)),
+    hsl(from var(--color-wood) h s calc(l * 1.25))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-wood) h s calc(l * 0.6))
+  );
 
-  --color-leaf-hl: light-dark(hsl(from var(--color-leaf) h s calc(l * 0.8)), hsl(from var(--color-leaf) h s calc(l * 1.25)));
-  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-leaf) h s calc(l * 0.6)));
+  --color-leaf-hl: light-dark(
+    hsl(from var(--color-leaf) h s calc(l * 0.8)),
+    hsl(from var(--color-leaf) h s calc(l * 1.25))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-leaf) h s calc(l * 0.6))
+  );
 
-  --color-blossom-hl: light-dark(hsl(from var(--color-blossom) h s calc(l * 0.8)), hsl(from var(--color-blossom) h s calc(l * 1.25)));
-  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-blossom) h s calc(l * 0.6)));
+  --color-blossom-hl: light-dark(
+    hsl(from var(--color-blossom) h s calc(l * 0.8)),
+    hsl(from var(--color-blossom) h s calc(l * 1.25))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-blossom) h s calc(l * 0.6))
+  );
 
-  --color-sky-hl: light-dark(hsl(from var(--color-sky) h s calc(l * 0.8)), hsl(from var(--color-sky) h s calc(l * 1.25)));
-  --color-sky-muted: light-dark(hsl(from var(--color-sky) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-sky) h s calc(l * 0.6)));
+  --color-sky-hl: light-dark(
+    hsl(from var(--color-sky) h s calc(l * 0.8)),
+    hsl(from var(--color-sky) h s calc(l * 1.25))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-sky) h s calc(l * 0.6))
+  );
 
-  --color-rock-hl: light-dark(hsl(from var(--color-rock) h s calc(l * 0.8)), hsl(from var(--color-rock) h s calc(l * 1.25)));
-  --color-rock-muted: light-dark(hsl(from var(--color-rock) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-rock) h s calc(l * 0.6)));
+  --color-rock-hl: light-dark(
+    hsl(from var(--color-rock) h s calc(l * 0.8)),
+    hsl(from var(--color-rock) h s calc(l * 1.25))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-rock) h s calc(l * 0.6))
+  );
 }
 
 /* ==========================================================================
@@ -440,24 +587,66 @@
   --color-rock: light-dark(#1a5924, #00aa33);
 
   /* Override derived variants: Radiometric beam overdrive (bloom) and phosphor persistence (afterglow) */
-  --color-rose-hl: light-dark(hsl(from var(--color-rose) h s calc(l * 0.8)), hsl(from var(--color-rose) h s calc(l * 1.25)));
-  --color-rose-muted: light-dark(hsl(from var(--color-rose) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-rose) h s calc(l * 0.6)));
+  --color-rose-hl: light-dark(
+    hsl(from var(--color-rose) h s calc(l * 0.8)),
+    hsl(from var(--color-rose) h s calc(l * 1.25))
+  );
+  --color-rose-muted: light-dark(
+    hsl(from var(--color-rose) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-rose) h s calc(l * 0.6))
+  );
 
-  --color-water-hl: light-dark(hsl(from var(--color-water) h s calc(l * 0.8)), hsl(from var(--color-water) h s calc(l * 1.25)));
-  --color-water-muted: light-dark(hsl(from var(--color-water) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-water) h s calc(l * 0.6)));
+  --color-water-hl: light-dark(
+    hsl(from var(--color-water) h s calc(l * 0.8)),
+    hsl(from var(--color-water) h s calc(l * 1.25))
+  );
+  --color-water-muted: light-dark(
+    hsl(from var(--color-water) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-water) h s calc(l * 0.6))
+  );
 
-  --color-wood-hl: light-dark(hsl(from var(--color-wood) h s calc(l * 0.8)), hsl(from var(--color-wood) h s calc(l * 1.25)));
-  --color-wood-muted: light-dark(hsl(from var(--color-wood) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-wood) h s calc(l * 0.6)));
+  --color-wood-hl: light-dark(
+    hsl(from var(--color-wood) h s calc(l * 0.8)),
+    hsl(from var(--color-wood) h s calc(l * 1.25))
+  );
+  --color-wood-muted: light-dark(
+    hsl(from var(--color-wood) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-wood) h s calc(l * 0.6))
+  );
 
-  --color-leaf-hl: light-dark(hsl(from var(--color-leaf) h s calc(l * 0.8)), hsl(from var(--color-leaf) h s calc(l * 1.25)));
-  --color-leaf-muted: light-dark(hsl(from var(--color-leaf) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-leaf) h s calc(l * 0.6)));
+  --color-leaf-hl: light-dark(
+    hsl(from var(--color-leaf) h s calc(l * 0.8)),
+    hsl(from var(--color-leaf) h s calc(l * 1.25))
+  );
+  --color-leaf-muted: light-dark(
+    hsl(from var(--color-leaf) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-leaf) h s calc(l * 0.6))
+  );
 
-  --color-blossom-hl: light-dark(hsl(from var(--color-blossom) h s calc(l * 0.8)), hsl(from var(--color-blossom) h s calc(l * 1.25)));
-  --color-blossom-muted: light-dark(hsl(from var(--color-blossom) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-blossom) h s calc(l * 0.6)));
+  --color-blossom-hl: light-dark(
+    hsl(from var(--color-blossom) h s calc(l * 0.8)),
+    hsl(from var(--color-blossom) h s calc(l * 1.25))
+  );
+  --color-blossom-muted: light-dark(
+    hsl(from var(--color-blossom) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-blossom) h s calc(l * 0.6))
+  );
 
-  --color-sky-hl: light-dark(hsl(from var(--color-sky) h s calc(l * 0.8)), hsl(from var(--color-sky) h s calc(l * 1.25)));
-  --color-sky-muted: light-dark(hsl(from var(--color-sky) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-sky) h s calc(l * 0.6)));
+  --color-sky-hl: light-dark(
+    hsl(from var(--color-sky) h s calc(l * 0.8)),
+    hsl(from var(--color-sky) h s calc(l * 1.25))
+  );
+  --color-sky-muted: light-dark(
+    hsl(from var(--color-sky) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-sky) h s calc(l * 0.6))
+  );
 
-  --color-rock-hl: light-dark(hsl(from var(--color-rock) h s calc(l * 0.8)), hsl(from var(--color-rock) h s calc(l * 1.25)));
-  --color-rock-muted: light-dark(hsl(from var(--color-rock) h calc(s * 0.8) calc(l * 1.25)), hsl(from var(--color-rock) h s calc(l * 0.6)));
+  --color-rock-hl: light-dark(
+    hsl(from var(--color-rock) h s calc(l * 0.8)),
+    hsl(from var(--color-rock) h s calc(l * 1.25))
+  );
+  --color-rock-muted: light-dark(
+    hsl(from var(--color-rock) h calc(s * 0.8) calc(l * 1.25)),
+    hsl(from var(--color-rock) h s calc(l * 0.6))
+  );
 }

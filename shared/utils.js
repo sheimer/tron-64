@@ -85,4 +85,3 @@ export function sortScoreboardPlayers(players) {
 
   return sorted
 }
-

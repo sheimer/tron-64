@@ -2,18 +2,19 @@
 
 > **Date:** 2026-08-22  
 > **Topic:** Disconnected Client Lifecycle, In-Match Explosion, and Start-Round Ghost Trail Elimination  
-> **Status:** Completed  
+> **Status:** Completed
 
 ---
 
 ## 1. Overview & Goals
 
 In multiplayer Tron matches, when a client closes their browser tab or loses network connectivity mid-game:
+
 1. **Mid-Round Client Disconnect:** The client's WebSocket connection drops (`ws.on('close')`). The server immediately eliminates all players owned by that socket at their current coordinates with an explosion, while **leaving their existing trail intact on the arena grid** as a physical obstacle for surviving players.
 2. **Undisturbed Live Gameplay:** Connected, driving clients continue their match on `#arena` without UI interruptions or blank screens.
 3. **Subsequent Rounds (While Client Remains Offline):** At round start ($t=0$), any player whose client is still offline explodes immediately at their starting dot with **zero trail left on the grid** (`CELL_TYPE.EMPTY`), preventing ghost obstacles.
 4. **Reconnection & Spectating:** When a disconnected client reopens the page / reconnects:
-   - If a round is actively running: the client enters as a spectator showing the scoreboard with *"waiting for current round to finish"*.
+   - If a round is actively running: the client enters as a spectator showing the scoreboard with _"waiting for current round to finish"_.
    - On the next round: the client automatically joins active driving with controls restored.
 5. **Scoreboard & UI:** Disconnected players are displayed with a `[disconnected]` badge and dimmed opacity on the scoreboard and player tables.
 
@@ -29,7 +30,7 @@ flowchart TD
     D --> E["Explosion particle animation plays<br>Existing trail remains on grid"]
     D --> F["Surviving players continue driving on #arena"]
     C -- No --> G["Mark player(s) connected = false"]
-    
+
     H["Next Round Starts (Arena.reset & start)"] --> I{"player.connected == false?"}
     I -- Yes --> J["Explode at start position at t=0"]
     J --> K["Clear start cell to CELL_TYPE.EMPTY (0 trail)"]

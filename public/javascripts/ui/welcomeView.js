@@ -21,8 +21,12 @@ export class WelcomeView {
   hydrateMailLinks() {
     if (typeof document === 'undefined' || !document.querySelectorAll) return
     document.querySelectorAll('.mail-link').forEach((el) => {
-      const user = el.getAttribute ? el.getAttribute('data-user') : el.dataset?.user
-      const domain = el.getAttribute ? el.getAttribute('data-domain') : el.dataset?.domain
+      const user = el.getAttribute
+        ? el.getAttribute('data-user')
+        : el.dataset?.user
+      const domain = el.getAttribute
+        ? el.getAttribute('data-domain')
+        : el.dataset?.domain
       if (user && domain) {
         const email = `${user}@${domain}`
         const a = document.createElement('a')
@@ -109,7 +113,8 @@ export class WelcomeView {
   hide() {
     if (this.layout) this.layout.classList.remove('screen-welcome')
     if (this.container) this.container.style.display = 'none'
-    if (this.btnHeaderEnterLobby) this.btnHeaderEnterLobby.style.display = 'none'
+    if (this.btnHeaderEnterLobby)
+      this.btnHeaderEnterLobby.style.display = 'none'
     if (this.btnInfo) this.btnInfo.style.display = ''
     this.closeModals()
   }
