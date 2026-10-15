@@ -2,7 +2,7 @@
 
 > **Date:** 2026-09-05  
 > **Topic:** Multiple Color Schemes (Zenbones Family & Retro/Non-Editor Palettes) and Palette Verification Strategy  
-> **Status:** Completed  
+> **Status:** Completed
 
 ---
 
@@ -24,7 +24,7 @@
      - `duckbones` (deep ocean teal and dusk hues)
      - `seoulbones` (Seoul256 soft low-contrast pastels)
    - **Retro & Display Aesthetic Palettes (Non-Editor):**
-     - `c64` (Commodore 64 16-color VIC-II palette — dedicated tribute to Oliver Stiller's *Ultimate Tron II*)
+     - `c64` (Commodore 64 16-color VIC-II palette — dedicated tribute to Oliver Stiller's _Ultimate Tron II_)
      - `arcade-neon` (high-contrast synthwave neon on deep pitch black)
      - `amber-crt` (vintage monochrome amber phosphor monitor with stepped luminance)
      - `green-crt` (vintage monochrome P1 green phosphor CRT monitor)
@@ -78,11 +78,13 @@ flowchart TD
 ```
 
 ### Color Mapping Contract
+
 Every palette implements the standard 9 semantic color tokens in both light and dark modes:
-* **UI Backgrounds:** `--color-bg`, `--color-bg-hl`, `--color-bg-muted`
-* **UI Foregrounds / Borders:** `--color-fg`, `--color-fg-hl`, `--color-fg-muted`
-* **Explosions & Highlight:** `--color-rose` (also available as player color fallback)
-* **6 Light-Cycle Player Trails:**
+
+- **UI Backgrounds:** `--color-bg`, `--color-bg-hl`, `--color-bg-muted`
+- **UI Foregrounds / Borders:** `--color-fg`, `--color-fg-hl`, `--color-fg-muted`
+- **Explosions & Highlight:** `--color-rose` (also available as player color fallback)
+- **6 Light-Cycle Player Trails:**
   1. `--color-water` (Player 0)
   2. `--color-wood` (Player 1)
   3. `--color-leaf` (Player 2)
@@ -99,11 +101,13 @@ Each color token generates `-hl` and `-muted` variants (using native CSS `hsl(fr
 To evaluate, refine, and approve color palettes systematically, we propose a three-tier verification suite:
 
 ### Tier 1: Automated Mathematical Contrast & Discriminability Test (`test/palette.test.js`)
+
 A headless Node.js test executing during `npm test`:
+
 1. **WCAG 2.1 AA Contrast Ratios:**
    - **Text Readability:** `--color-fg` on `--color-bg` must meet $\ge 4.5:1$ in both light and dark variants.
    - **Trail Visibility:** All 6 player colors and `--color-rose` must achieve $\ge 3.0:1$ graphical contrast against `--color-bg`.
-2. **Perceptual Player Color Distance (CIELAB $\Delta E^*$):**
+2. **Perceptual Player Color Distance (CIELAB $\Delta E^\*$):**
    - Light-cycles move at up to 50 FPS; players must never mistake their vehicle for an opponent.
    - Computes pairwise perceptual Euclidean color distance $\Delta E^*$ across all 15 player pairings ($\binom{6}{2}$).
    - Enforces minimum threshold ($\Delta E^* \ge 25$) to guarantee distinct hues.
@@ -111,7 +115,9 @@ A headless Node.js test executing during `npm test`:
    - Tests contrast under simulated Deuteranopia (green-blind) and Protanopia (red-blind) transformation matrices.
 
 ### Tier 2: Standalone Static HTML Visual Gallery (`scripts/generate-palette-gallery.js`)
+
 An automated generator producing an offline, single-page visual comparison report (`test/reports/palette-gallery.html`):
+
 - Generates side-by-side mock canvas screenshots for every palette:
   - Arena canvas with 6 crossing trails, borders, and explosion particles.
   - Light mode vs Dark mode rendered side-by-side.
@@ -120,7 +126,9 @@ An automated generator producing an offline, single-page visual comparison repor
 - **Workflow:** Run `npm run test:palettes`, then open the generated HTML file in Chrome/Firefox to visually approve all palettes in under 2 minutes.
 
 ### Tier 3: In-App Interactive Testbench (`/#palette-preview`)
+
 An in-browser preview mode built directly into the client application:
+
 - Accessible by navigating to `/#palette-preview` or clicking an "Inspect Palettes" button in Settings when `#palette` is visible.
 - Renders a dummy test arena simulating all 6 cycles moving and crashing in a loop without requiring a multi-client WebSocket game.
 - Includes a live palette switcher and simulated SVG CVD filters (Normal, Protanopia, Deuteranopia, Tritanopia, Monochrome) to visually test gameplay visibility in real time.
@@ -130,30 +138,34 @@ An in-browser preview mode built directly into the client application:
 ## 4. File Changes & Implementation Breakdown
 
 ### A. Stylesheet Architecture (`public/stylesheets/`)
-* **`public/stylesheets/palettes.css` (New):**
+
+- **`public/stylesheets/palettes.css` (New):**
   - Define all color schemes with `[data-palette="..."]` selectors and `light-dark()` values.
   - Retain `public/stylesheets/var.css` for structural variables (`--block-size`, `--multiplicator`, layout dimensions) while importing `palettes.css`.
   - Default `:root` to `forestbones` for seamless backward compatibility.
 
 ### B. Client Settings & State (`public/javascripts/`)
-* **[`public/javascripts/settings.js`](public/javascripts/settings.js):**
+
+- **[`public/javascripts/settings.js`](public/javascripts/settings.js):**
   - Add `palette` property (default: `'forestbones'`) stored in `localStorage`.
   - Add `palette` change listeners to `this.listeners`.
-* **[`public/javascripts/theme.js`](public/javascripts/theme.js):**
+- **[`public/javascripts/theme.js`](public/javascripts/theme.js):**
   - Bind `document.documentElement.dataset.palette = settings.palette`.
   - Trigger `notifyThemeChange()` whenever `settings.palette` changes.
-* **[`public/javascripts/ui/settingsView.js`](public/javascripts/ui/settingsView.js):**
-  - Add dropdown `<select id="game-palette">` with grouped option categories (*Zenbones Themes*, *Retro & Display*).
+- **[`public/javascripts/ui/settingsView.js`](public/javascripts/ui/settingsView.js):**
+  - Add dropdown `<select id="game-palette">` with grouped option categories (_Zenbones Themes_, _Retro & Display_).
   - Sync UI on external or storage changes.
 
 ### C. Templates (`views/`)
-* **[`views/settings.pug`](views/settings.pug):**
+
+- **[`views/settings.pug`](views/settings.pug):**
   - Render the palette selection dropdown inside the Settings modal.
 
 ### D. Automated Testing & Verification
-* **`test/palette.test.js` (New):**
+
+- **`test/palette.test.js` (New):**
   - Unit test verifying all palettes pass contrast and discriminability thresholds.
-* **`scripts/generate-palette-gallery.js` (New):**
+- **`scripts/generate-palette-gallery.js` (New):**
   - Script outputting `test/reports/palette-gallery.html`.
 
 ---

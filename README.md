@@ -2,7 +2,7 @@
 
 > **Disclaimer:** This project is an independent open-source fan game and tribute to classic Commodore 64 party games. It is not affiliated with, sponsored by, or endorsed by The Walt Disney Company.
 
-A multiplayer retro light-cycle arena game inspired by the classic Commodore 64 game **Ultimate Tron II** (created by Oliver Stiller / Masters' Design Group and published on *64'er* magazine cover disks).
+A multiplayer retro light-cycle arena game inspired by the classic Commodore 64 game **Ultimate Tron II** (created by Oliver Stiller / Masters' Design Group and published on _64'er_ magazine cover disks).
 
 Built with standard web technologies — vanilla ES Modules, a deterministic 40 FPS target-timestamp physics loop, binary WebSocket streaming, and a responsive HTML5 canvas delta renderer.
 
@@ -10,7 +10,7 @@ Built with standard web technologies — vanilla ES Modules, a deterministic 40 
 
 ## Background: 6 Players on One Keyboard
 
-On the Commodore 64, *Ultimate Tron II* stood out by supporting up to 6 simultaneous players sharing a single keyboard (`Q/W`, `C/V`, `M/,`, arrow keys, etc.), creating fast-paced local multiplayer matches where light-cycles navigated tight grid corridors and left solid obstacle trails.
+On the Commodore 64, _Ultimate Tron II_ stood out by supporting up to 6 simultaneous players sharing a single keyboard (`Q/W`, `C/V`, `M/,`, arrow keys, etc.), creating fast-paced local multiplayer matches where light-cycles navigated tight grid corridors and left solid obstacle trails.
 
 **Bitcycles** brings that same multiplayer mechanic to modern web browsers — supporting multiple players on a shared local keyboard as well as cross-device multiplayer over WebSockets across desktops, laptops, and mobile devices.
 
@@ -21,9 +21,10 @@ On the Commodore 64, *Ultimate Tron II* stood out by supporting up to 6 simultan
 This project originated as an independent side project developed sporadically over several years. Recently, modern AI pair-programming tools (specifically Google's Gemini models via Antigravity) were introduced to accelerate development and modernize the architecture while balancing limited time outside of work and family commitments.
 
 AI assistance was leveraged across several key engineering areas:
-* **Protocol & Loop Design:** Architecting the deterministic target-timestamp physics loop and compact binary WebSocket frame format.
-* **Canvas Optimization:** Structuring the $O(k)$ hybrid delta renderer and `Int8Array` spatial grid buffer.
-* **Testing & Verification:** Implementing comprehensive test suites, including multi-cycle heap leak verifications (`node --expose-gc`), headless concurrency benchmarks, and Playwright browser tests.
+
+- **Protocol & Loop Design:** Architecting the deterministic target-timestamp physics loop and compact binary WebSocket frame format.
+- **Canvas Optimization:** Structuring the $O(k)$ hybrid delta renderer and `Int8Array` spatial grid buffer.
+- **Testing & Verification:** Implementing comprehensive test suites, including multi-cycle heap leak verifications (`node --expose-gc`), headless concurrency benchmarks, and Playwright browser tests.
 
 This approach enabled rapid architectural iteration, rigorous automated testing, and clean modular separation across both client and server subsystems.
 
@@ -31,11 +32,11 @@ This approach enabled rapid architectural iteration, rigorous automated testing,
 
 ## Historical & Algorithmic References
 
-* Original C64 Inspiration: **Ultimate Tron II** by Oliver Stiller / Masters' Design Group (*64'er* Magazine, Markt & Technik) — [Lemon64 Entry](https://www.lemon64.com/game/ultimate-tron-2)
-* Algorithm & Score Reference: [mist64/ultimatetron2](https://github.com/mist64/ultimatetron2)
-* Fixed Timestep Game Loop Architecture: [Glenn Fiedler - Fix Your Timestep!](https://gafferongames.com/post/fix_your_timestep/)
-* MDN Game Loop Engine: [MDN - Anatomy of a Video Game](https://developer.mozilla.org/en-US/docs/Games/Anatomy#building_a_main_loop_in_javascript)
-* MDN Resolution & Zoom Scaling: [MDN - Window devicePixelRatio](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#monitoring_screen_resolution_or_zoom_level_changes)
+- Original C64 Inspiration: **Ultimate Tron II** by Oliver Stiller / Masters' Design Group (_64'er_ Magazine, Markt & Technik) — [Lemon64 Entry](https://www.lemon64.com/game/ultimate-tron-2)
+- Algorithm & Score Reference: [mist64/ultimatetron2](https://github.com/mist64/ultimatetron2)
+- Fixed Timestep Game Loop Architecture: [Glenn Fiedler - Fix Your Timestep!](https://gafferongames.com/post/fix_your_timestep/)
+- MDN Game Loop Engine: [MDN - Anatomy of a Video Game](https://developer.mozilla.org/en-US/docs/Games/Anatomy#building_a_main_loop_in_javascript)
+- MDN Resolution & Zoom Scaling: [MDN - Window devicePixelRatio](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio#monitoring_screen_resolution_or_zoom_level_changes)
 
 ---
 
@@ -121,25 +122,28 @@ npm run format:check
 ### Developer Git Hooks (Optional)
 
 To streamline the commit workflow in Neovim Fugitive (`cc` in `:G`) or standard CLI `git commit`, run:
+
 ```bash
 ./scripts/setup-git-hooks.sh
 # Or via npm:
 npm run setup:hooks
 ```
-This configures `core.hooksPath` to point to version-controlled hooks in [`.githooks/`](.githooks):
-* **`pre-commit`**: Automatically runs ESLint static analysis on staged JavaScript files and checks Prettier formatting on staged `.js`, `.css`, and `.json` files, preventing syntax errors, unused variables, or formatting drift from being committed.
-* **`prepare-commit-msg`**: Automatically pre-populates the commit message editor buffer with the contents of `tmpcommit.md` when present and non-empty (for standard new commits).
-* **`post-commit`**: Resets `tmpcommit.md` after a successful commit to prevent stale messages from carrying over into subsequent manual commits.
-* **Deactivation**: To disable hooks at any time, run `git config --unset core.hooksPath`.
 
+This configures `core.hooksPath` to point to version-controlled hooks in [`.githooks/`](.githooks):
+
+- **`pre-commit`**: Automatically runs ESLint static analysis on staged JavaScript files and checks Prettier formatting on staged `.js`, `.css`, and `.json` files, preventing syntax errors, unused variables, or formatting drift from being committed.
+- **`prepare-commit-msg`**: Automatically pre-populates the commit message editor buffer with the contents of `tmpcommit.md` when present and non-empty (for standard new commits).
+- **`post-commit`**: Resets `tmpcommit.md` after a successful commit to prevent stale messages from carrying over into subsequent manual commits.
+- **Deactivation**: To disable hooks at any time, run `git config --unset core.hooksPath`.
 
 ### Server Concurrency & Capacity Configuration
-* **`MAX_ACTIVE_GAMES` (Default: `50`):** Maximum concurrent active game rooms allowed on the server. Configurable via environment variable:
+
+- **`MAX_ACTIVE_GAMES` (Default: `50`):** Maximum concurrent active game rooms allowed on the server. Configurable via environment variable:
   ```bash
   MAX_ACTIVE_GAMES=100 npm start
   ```
-* **`MAX_CLIENTS_PER_ROOM` (Default: `32`):** Maximum connected clients (players + spectators) per game room.
-* **Automatic Inactivity Reaper:** Rooms with zero connected clients automatically clean up and free server memory/slots after **5 minutes** of inactivity (`IDLE_ROOM_TIMEOUT_MS`).
+- **`MAX_CLIENTS_PER_ROOM` (Default: `32`):** Maximum connected clients (players + spectators) per game room.
+- **Automatic Inactivity Reaper:** Rooms with zero connected clients automatically clean up and free server memory/slots after **5 minutes** of inactivity (`IDLE_ROOM_TIMEOUT_MS`).
 
 ---
 
@@ -181,14 +185,14 @@ To allow automated deployments to restart the service and update systemd unit fi
 
 ## Roadmap & Changelog
 
-* **Roadmap & Planned Features:** See [ROADMAP.md](ROADMAP.md) for the active milestone backlog (Game Room Lifecycles, Audio SFX, Single-player Bot, Mobile Layouts).
-* **Release History:** See [CHANGELOG.md](CHANGELOG.md) for detailed version release notes.
+- **Roadmap & Planned Features:** See [ROADMAP.md](ROADMAP.md) for the active milestone backlog (Game Room Lifecycles, Audio SFX, Single-player Bot, Mobile Layouts).
+- **Release History:** See [CHANGELOG.md](CHANGELOG.md) for detailed version release notes.
 
 ## Acknowledgments & Credits
 
-* **Ultimate Tron II:** Gameplay rules, 6-player local keyboard ergonomics, and nostalgic inspiration by Oliver Stiller / Masters' Design Group (1989, *64'er* Magazine).
-* **Zenbones Color Schemes:** Palette values and design aesthetics adapted from [`zenbones.nvim`](https://github.com/mcchrish/zenbones.nvim) created by [Michael Chris Lopez (mcchrish)](https://github.com/mcchrish), licensed under the [MIT License](https://github.com/mcchrish/zenbones.nvim/blob/main/LICENSE). Includes derivative adaptations of [Tokyo Night](https://github.com/folke/tokyonight.nvim) (Folke Lemaitre), [Nord](https://www.nordtheme.com/) (Arctic Ice Studio), [Rosé Pine](https://rosepinetheme.com/), and [Gruvbox](https://github.com/morhetz/gruvbox).
-* **Commodore 64 Palette:** Authentic 16-color VIC-II hardware palette based on vintage C64 video signal standards.
+- **Ultimate Tron II:** Gameplay rules, 6-player local keyboard ergonomics, and nostalgic inspiration by Oliver Stiller / Masters' Design Group (1989, _64'er_ Magazine).
+- **Zenbones Color Schemes:** Palette values and design aesthetics adapted from [`zenbones.nvim`](https://github.com/mcchrish/zenbones.nvim) created by [Michael Chris Lopez (mcchrish)](https://github.com/mcchrish), licensed under the [MIT License](https://github.com/mcchrish/zenbones.nvim/blob/main/LICENSE). Includes derivative adaptations of [Tokyo Night](https://github.com/folke/tokyonight.nvim) (Folke Lemaitre), [Nord](https://www.nordtheme.com/) (Arctic Ice Studio), [Rosé Pine](https://rosepinetheme.com/), and [Gruvbox](https://github.com/morhetz/gruvbox).
+- **Commodore 64 Palette:** Authentic 16-color VIC-II hardware palette based on vintage C64 video signal standards.
 
 ---
 

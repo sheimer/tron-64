@@ -2,13 +2,14 @@
 
 > **Date:** 2026-08-23  
 > **Topic:** Server Capacity Caps, Concurrent Game Limits, and Idle Room Garbage Collection  
-> **Status:** Completed  
+> **Status:** Completed
 
 ---
 
 ## 1. Overview & Goals
 
 To ensure the Node.js event loop remains responsive and does not suffer from frame drops or memory exhaustion during high traffic:
+
 1. **Configurable Game Capacity (`MAX_ACTIVE_GAMES`):** Enforce an upper bound on concurrent active matches (default: `50`, configurable via `process.env.MAX_ACTIVE_GAMES` and `.env`).
 2. **Room Client / Spectator Cap (`MAX_CLIENTS_PER_ROOM`):** Limit total connected sockets per room (default: `32`) to prevent socket flooding.
 3. **Preservation & Enhancement of Inactivity Cleanup (`GameSession.checkConnectionStatus`):**

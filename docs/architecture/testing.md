@@ -138,7 +138,7 @@ frame guarantees; they do not currently establish a need to batch saves.
 - **Mathematical Accessibility Suite (`test/palette.test.js`):**
   - Parses `public/stylesheets/palettes.css` directly to ensure zero drift between production stylesheets and verification checks.
   - **WCAG 2.1 AA Contrast:** Enforces $\ge 4.5:1$ text contrast (`--color-fg` on `--color-bg`) and $\ge 3.0:1$ graphical visibility for all 6 player trails and `--color-rose` against `--color-bg`.
-  - **CIELAB Perceptual Color Distance ($\Delta E^*$):** Computes Euclidean $\Delta E^*$ across all 15 player pairings ($\binom{6}{2}$) to ensure light-cycle vehicles are distinctly distinguishable during high-speed gameplay.
+  - **CIELAB Perceptual Color Distance ($\Delta E^\*$):** Computes Euclidean $\Delta E^*$ across all 15 player pairings ($\binom{6}{2}$) to ensure light-cycle vehicles are distinctly distinguishable during high-speed gameplay.
   - **CVD Simulation:** Validates legibility under Deuteranopia and Protanopia linear transformation matrices.
 - **Offline Visual Gallery Generator (`scripts/generate-palette-gallery.js`):**
   - Executed via `npm run test:palettes`.

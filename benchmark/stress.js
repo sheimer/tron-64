@@ -19,13 +19,17 @@ import { BINARY_OPCODE } from '../shared/protocol.js'
 function parseArgs() {
   const args = process.argv.slice(2)
   const isQuick =
-    args.includes('--quick') || process.env.QUICK === '1' || process.env.QUICK === 'true'
+    args.includes('--quick') ||
+    process.env.QUICK === '1' ||
+    process.env.QUICK === 'true'
 
   const config = {
     startRooms: isQuick ? 50 : parseInt(process.env.START_ROOMS, 10) || 100,
     stepRooms: isQuick ? 25 : parseInt(process.env.STEP_ROOMS, 10) || 100,
     maxRooms: isQuick ? 50 : parseInt(process.env.MAX_ROOMS, 10) || 3000,
-    stepDurationMs: (parseFloat(process.env.STEP_DURATION, 10) || (isQuick ? 1.2 : 1.5)) * 1000,
+    stepDurationMs:
+      (parseFloat(process.env.STEP_DURATION, 10) || (isQuick ? 1.2 : 1.5)) *
+      1000,
     jitterThresholdMs: parseFloat(process.env.MAX_JITTER_MS, 10) || 10.0,
     spikeThresholdMs: parseFloat(process.env.MAX_SPIKE_MS, 10) || 40.0,
     isQuick,
@@ -108,10 +112,34 @@ function createActiveSession(id) {
   })
 
   // Populate 4 active competitors
-  session.addPlayer({ id: `p_${id}_0`, name: 'P0', color: 'water', left: 65, right: 68 })
-  session.addPlayer({ id: `p_${id}_1`, name: 'P1', color: 'leaf', left: 37, right: 39 })
-  session.addPlayer({ id: `p_${id}_2`, name: 'P2', color: 'rose', left: 75, right: 76 })
-  session.addPlayer({ id: `p_${id}_3`, name: 'P3', color: 'sky', left: 81, right: 87 })
+  session.addPlayer({
+    id: `p_${id}_0`,
+    name: 'P0',
+    color: 'water',
+    left: 65,
+    right: 68,
+  })
+  session.addPlayer({
+    id: `p_${id}_1`,
+    name: 'P1',
+    color: 'leaf',
+    left: 37,
+    right: 39,
+  })
+  session.addPlayer({
+    id: `p_${id}_2`,
+    name: 'P2',
+    color: 'rose',
+    left: 75,
+    right: 76,
+  })
+  session.addPlayer({
+    id: `p_${id}_3`,
+    name: 'P3',
+    color: 'sky',
+    left: 81,
+    right: 87,
+  })
 
   // Connect client handler simulating delta broadcasts and round auto-restarts
   session.connect({
@@ -158,7 +186,9 @@ async function runStressBenchmark(config) {
   if (!isQuick) {
     console.log(`Step Increment:      +${stepRooms} rooms per stage`)
   }
-  console.log(`Sampling Duration:   ${(stepDurationMs / 1000).toFixed(1)}s per stage`)
+  console.log(
+    `Sampling Duration:   ${(stepDurationMs / 1000).toFixed(1)}s per stage`,
+  )
   console.log(`Game Physics Rate:   40 FPS (25ms interval)`)
   console.log(
     `Degradation Limits:  ⚡ Avg Jitter >= ${jitterThresholdMs}ms OR ⚠️ Max Spike >= ${spikeThresholdMs}ms`,
@@ -173,7 +203,9 @@ async function runStressBenchmark(config) {
 
   const cleanup = () => {
     if (sessions.length > 0) {
-      process.stdout.write(`🧹 Cleaning up ${sessions.length} active sessions... `)
+      process.stdout.write(
+        `🧹 Cleaning up ${sessions.length} active sessions... `,
+      )
       sessions.forEach((s) => s.destroy())
       sessions.length = 0
       console.log('done.\n')
@@ -188,10 +220,13 @@ async function runStressBenchmark(config) {
 
   try {
     while (sessions.length < maxRooms && !saturated) {
-      const nextTarget = sessions.length === 0 ? startRooms : sessions.length + stepRooms
+      const nextTarget =
+        sessions.length === 0 ? startRooms : sessions.length + stepRooms
       const addedThisStep = nextTarget - sessions.length
 
-      process.stdout.write(`Allocating +${addedThisStep} rooms (${nextTarget} total)... `)
+      process.stdout.write(
+        `Allocating +${addedThisStep} rooms (${nextTarget} total)... `,
+      )
       const allocStart = performance.now()
       while (sessions.length < nextTarget) {
         sessions.push(createActiveSession(sessions.length))
@@ -237,10 +272,14 @@ async function runStressBenchmark(config) {
         }, 40)
       })
 
-      const avgLag = tickLags.length ? tickLags.reduce((a, b) => a + b, 0) / tickLags.length : 0
+      const avgLag = tickLags.length
+        ? tickLags.reduce((a, b) => a + b, 0) / tickLags.length
+        : 0
       const maxLag = tickLags.length ? Math.max(...tickLags) : 0
       const sortedLags = [...tickLags].sort((a, b) => a - b)
-      const p95Lag = sortedLags.length ? sortedLags[Math.floor(sortedLags.length * 0.95)] : 0
+      const p95Lag = sortedLags.length
+        ? sortedLags[Math.floor(sortedLags.length * 0.95)]
+        : 0
       const heapMB = process.memoryUsage().heapUsed / 1024 / 1024
 
       let statusText = '🟢 HEALTHY'
@@ -291,19 +330,29 @@ async function runStressBenchmark(config) {
 
     if (saturated) {
       const lastEntry = history[history.length - 1]
-      const lastHealthy = history.filter((h) => !h.statusText.includes('NOT GOOD')).pop()
+      const lastHealthy = history
+        .filter((h) => !h.statusText.includes('NOT GOOD'))
+        .pop()
 
       console.log(
         `🛑 SATURATION POINT: ${lastEntry.roomCount} Concurrent Rooms (${lastEntry.playerCount.toLocaleString()} players)`,
       )
       console.log(`   Degradation Cause:            ${saturationReason}`)
-      console.log(`   ⚡ Average Event-Loop Jitter:   ${lastEntry.avgLag.toFixed(2)} ms`)
-      console.log(`   ⚠️ Max Event-Loop Spike:        ${lastEntry.maxLag.toFixed(2)} ms`)
+      console.log(
+        `   ⚡ Average Event-Loop Jitter:   ${lastEntry.avgLag.toFixed(2)} ms`,
+      )
+      console.log(
+        `   ⚠️ Max Event-Loop Spike:        ${lastEntry.maxLag.toFixed(2)} ms`,
+      )
       console.log(
         `   ⏱ Physics Throughput:         ~${lastEntry.ticksPerSec.toLocaleString()} ticks/s on single Node.js thread`,
       )
-      console.log(`   🎮 Steering Inputs Injected:   ${totalSteeringInputs.toLocaleString()}`)
-      console.log(`   💾 Peak Heap Memory:           ${lastEntry.heapMB.toFixed(1)} MB`)
+      console.log(
+        `   🎮 Steering Inputs Injected:   ${totalSteeringInputs.toLocaleString()}`,
+      )
+      console.log(
+        `   💾 Peak Heap Memory:           ${lastEntry.heapMB.toFixed(1)} MB`,
+      )
 
       if (lastHealthy) {
         console.log(`\n✅ Recommended Maximum Safe Operating Capacity:`)

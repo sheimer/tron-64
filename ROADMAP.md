@@ -83,7 +83,7 @@ Make the existing game easy to try and maintain. A complete demo engine, practic
 
 - [ ] Add pull-request and push CI for the supported Node version, dependency installation, lint, formatting, server tests, and required browser tests.
 - [ ] Report skipped suites separately from passing suites. Required browser checks must fail if the browser is unavailable; optional local skips must remain visible.
-- [ ] Resolve formatting drift in a separate cleanup change so functional fixes remain reviewable.
+- [x] Resolve formatting drift in a separate cleanup change so functional fixes remain reviewable.
 - [ ] Exercise the complete create → register → start → score → leave/reconnect flow in browser tests, including two independent clients.
 - [ ] Review runtime dependencies for known security issues and record resolutions or justified exceptions.
 - [ ] Document supported browsers and their required CSS, canvas, and input capabilities.

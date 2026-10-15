@@ -2,7 +2,7 @@
 
 > **Date:** 2026-08-29  
 > **Topic:** Prometheus / VictoriaMetrics Metrics, Custom Game Telemetry, Node Exporter, Grafana Dashboard & Email Alerts  
-> **Status:** Completed  
+> **Status:** Completed
 
 ---
 
@@ -11,6 +11,7 @@
 This plan details the implementation of full-stack telemetry and centralized monitoring for Bitcycles. A lightweight metric collection layer is embedded in the application on the production server (Tiny Server) and ingested by a monitoring stack (VictoriaMetrics + Grafana + Alertmanager) hosted on your primary server (Strong Server).
 
 ### Key Goals
+
 1. **Game & WebSocket Telemetry:** Real-time visibility into active games (public/private), connected players, spectators, packet throughput, crash statistics, and game loop tick durations.
 2. **Node.js Runtime Metrics:** Heap memory usage, GC pauses, event loop lag, and process CPU consumption.
 3. **Host OS Metrics (Node Exporter):** CPU utilization, RAM distribution, network RX/TX bandwidth, disk I/O, and load average on the game server.
@@ -28,7 +29,7 @@ flowchart TD
         App["Bitcycles Node.js App<br/>(Exposes /metrics on PORT 3042)"]
         NodeExp["prometheus-node-exporter<br/>(OS CPU, RAM, Disk on PORT 9100)"]
         Nginx["Nginx Reverse Proxy<br/>(SSL + IP Whitelisting)"]
-        
+
         App -->|Internal /metrics| Nginx
     end
 
@@ -53,33 +54,37 @@ flowchart TD
 ## 3. Metric Taxonomy & Specifications
 
 ### A. Custom Bitcycles Metrics
-| Metric Name | Type | Description | Labels |
-| :--- | :--- | :--- | :--- |
-| `bitcycles_active_rooms` | Gauge | Number of active game rooms | `visibility="public\|private"` |
-| `bitcycles_connected_players` | Gauge | Total active players driving in arenas | - |
-| `bitcycles_spectators` | Gauge | Total spectators observing matches | - |
-| `bitcycles_ws_clients_active` | Gauge | Total open WebSocket connections | - |
-| `bitcycles_rounds_played_total` | Counter | Cumulative finished match rounds | - |
-| `bitcycles_crashes_total` | Counter | Cumulative lightcycle crashes | - |
-| `bitcycles_ws_messages_sent_total` | Counter | Total outgoing WebSocket frames | `type="binary\|text"` |
-| `bitcycles_ws_messages_received_total` | Counter | Total incoming WebSocket frames | `type="binary\|text"` |
-| `bitcycles_tick_duration_seconds` | Summary / Gauge | Average duration of 40 FPS game loop tick | - |
+
+| Metric Name                            | Type            | Description                               | Labels                         |
+| :------------------------------------- | :-------------- | :---------------------------------------- | :----------------------------- |
+| `bitcycles_active_rooms`               | Gauge           | Number of active game rooms               | `visibility="public\|private"` |
+| `bitcycles_connected_players`          | Gauge           | Total active players driving in arenas    | -                              |
+| `bitcycles_spectators`                 | Gauge           | Total spectators observing matches        | -                              |
+| `bitcycles_ws_clients_active`          | Gauge           | Total open WebSocket connections          | -                              |
+| `bitcycles_rounds_played_total`        | Counter         | Cumulative finished match rounds          | -                              |
+| `bitcycles_crashes_total`              | Counter         | Cumulative lightcycle crashes             | -                              |
+| `bitcycles_ws_messages_sent_total`     | Counter         | Total outgoing WebSocket frames           | `type="binary\|text"`          |
+| `bitcycles_ws_messages_received_total` | Counter         | Total incoming WebSocket frames           | `type="binary\|text"`          |
+| `bitcycles_tick_duration_seconds`      | Summary / Gauge | Average duration of 40 FPS game loop tick | -                              |
 
 ### B. Standard Node.js Metrics (via `prom-client`)
-* `nodejs_heap_size_used_bytes` / `nodejs_heap_size_total_bytes`
-* `nodejs_eventloop_lag_seconds`
-* `nodejs_active_handles_total` / `nodejs_active_requests_total`
-* `process_cpu_user_seconds_total` / `process_cpu_system_seconds_total`
-* `process_resident_memory_bytes`
+
+- `nodejs_heap_size_used_bytes` / `nodejs_heap_size_total_bytes`
+- `nodejs_eventloop_lag_seconds`
+- `nodejs_active_handles_total` / `nodejs_active_requests_total`
+- `process_cpu_user_seconds_total` / `process_cpu_system_seconds_total`
+- `process_resident_memory_bytes`
 
 ### C. Host OS Metrics (via `prometheus-node-exporter`)
-* `node_cpu_seconds_total`, `node_memory_MemAvailable_bytes`, `node_load1`, `node_network_receive_bytes_total`.
+
+- `node_cpu_seconds_total`, `node_memory_MemAvailable_bytes`, `node_load1`, `node_network_receive_bytes_total`.
 
 ---
 
 ## 4. Step-by-Step Implementation Roadmap
 
 ### Phase 1: Application Metrics Module & Route (`server/metrics.js`)
+
 1. Add `prom-client` to `package.json` dependencies.
 2. Implement `server/metrics.js`:
    - Initialize Prometheus registry and enable default process metrics with prefix `bitcycles_`.
@@ -91,6 +96,7 @@ flowchart TD
 4. Create test suite `test/metrics.test.js` validating metrics generation, format, and value incrementation.
 
 ### Phase 2: Tiny Server Setup (Node Exporter & Nginx Security)
+
 1. Install node exporter on the Tiny Server:
    ```bash
    sudo apt install -y prometheus-node-exporter
@@ -114,6 +120,7 @@ flowchart TD
    Reload Nginx: `sudo nginx -t && sudo systemctl reload nginx`.
 
 ### Phase 3: Strong Server Ingestion Setup (VictoriaMetrics)
+
 1. Install VictoriaMetrics (single binary, low RAM usage) on the Strong Server:
    ```bash
    sudo apt install -y victoriametrics
@@ -141,6 +148,7 @@ flowchart TD
    ```
 
 ### Phase 4: Grafana Dashboard Setup on Strong Server
+
 1. Install Grafana on the Strong Server:
    ```bash
    sudo apt install -y apt-transport-https software-properties-common
@@ -159,6 +167,7 @@ flowchart TD
    - **System Resources:** CPU Core %, RAM Available, Network Traffic.
 
 ### Phase 5: Automated Email Alerting Setup
+
 1. Configure Grafana Notification Contact Point:
    - Type: **Email**
    - SMTP host: `127.0.0.1:25` (local Postfix mail server on Strong Server)
@@ -182,4 +191,3 @@ flowchart TD
 - [x] Prometheus successfully scraping both endpoints with target status `HEALTHY` / `up`.
 - [x] Grafana dashboard visualizing live data and room updates in real-time.
 - [x] Test alert fired and successfully received in admin inbox via local Postfix mail server.
-

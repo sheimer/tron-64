@@ -7,11 +7,11 @@
 
 ## 1. Problem Statement
 
-* The Tron arena has a fixed **16:10** aspect ratio (`320 x 200` cells = `1.6`).
-* **In Portrait (Mobile / Vertical):** The viewport is tall (`100dvh > 100dvw`), so the arena is width-constrained. Scaling by width works naturally, and touch buttons sit comfortably below the canvas.
-* **In Landscape (Mobile / Horizontal):** The viewport is short and wide (e.g. `844px x 390px`). Sizing based on width overflows the screen vertically, pushing the controls, start buttons, and scores off-screen.
-* **Input latency:** Touch controls must react on contact rather than waiting for a synthesized click. Registering overlapping pointer, touch, and click handlers can submit the same turn more than once, while an unconstrained input queue can accumulate stale turns.
-* **Goal:** When in horizontal orientation, size the arena based on available **height** (`max-height: 100dvh - offset`), derive width via `aspect-ratio: 16 / 10`, position touch controls under the left and right thumbs, and process rapid direction changes without duplicate events or an unbounded backlog.
+- The Tron arena has a fixed **16:10** aspect ratio (`320 x 200` cells = `1.6`).
+- **In Portrait (Mobile / Vertical):** The viewport is tall (`100dvh > 100dvw`), so the arena is width-constrained. Scaling by width works naturally, and touch buttons sit comfortably below the canvas.
+- **In Landscape (Mobile / Horizontal):** The viewport is short and wide (e.g. `844px x 390px`). Sizing based on width overflows the screen vertically, pushing the controls, start buttons, and scores off-screen.
+- **Input latency:** Touch controls must react on contact rather than waiting for a synthesized click. Registering overlapping pointer, touch, and click handlers can submit the same turn more than once, while an unconstrained input queue can accumulate stale turns.
+- **Goal:** When in horizontal orientation, size the arena based on available **height** (`max-height: 100dvh - offset`), derive width via `aspect-ratio: 16 / 10`, position touch controls under the left and right thumbs, and process rapid direction changes without duplicate events or an unbounded backlog.
 
 ---
 
@@ -47,19 +47,20 @@ In `public/stylesheets/layout.css`:
 ### B. "Retro Handheld" Layout for Mobile Landscape
 
 For `@media (orientation: landscape) and (max-height: 500px)`:
-* **Grid Layout:** 3-column split view:
-  * **Left Column:** Left-turn touch button (`<-`) and game stats.
-  * **Center Column:** `#main` canvas scaled to maximum available viewport height with 16:10 ratio.
-  * **Right Column:** Right-turn touch button (`->`) and settings/theme dropdown.
-* **Ergonomics:** Enables two-handed thumb play without obstructing the canvas or requiring vertical scrolling.
+
+- **Grid Layout:** 3-column split view:
+  - **Left Column:** Left-turn touch button (`<-`) and game stats.
+  - **Center Column:** `#main` canvas scaled to maximum available viewport height with 16:10 ratio.
+  - **Right Column:** Right-turn touch button (`->`) and settings/theme dropdown.
+- **Ergonomics:** Enables two-handed thumb play without obstructing the canvas or requiring vertical scrolling.
 
 ### C. Immediate, De-duplicated Touch Input
 
-* Prefer `pointerdown` as the single unified activation event where Pointer Events are supported, so a turn is sent as soon as the control is pressed.
-* Use `touchstart` only as a deliberate compatibility fallback. Do not register pointer and touch handlers that can both process the same physical gesture.
-* Apply `touch-action: manipulation` to the controls and suppress the follow-up synthetic click where necessary, while preserving keyboard activation and accessible button semantics.
-* Evaluate a small client-side direction buffer for rapid sequential turns. Keep it explicitly bounded (for example, one pending turn beyond the current input), discard stale or invalid entries, and reset it on round/lifecycle transitions.
-* Treat the buffer as an implementation option to validate against the existing server/player direction queue; do not introduce two independent queues with conflicting ordering rules.
+- Prefer `pointerdown` as the single unified activation event where Pointer Events are supported, so a turn is sent as soon as the control is pressed.
+- Use `touchstart` only as a deliberate compatibility fallback. Do not register pointer and touch handlers that can both process the same physical gesture.
+- Apply `touch-action: manipulation` to the controls and suppress the follow-up synthetic click where necessary, while preserving keyboard activation and accessible button semantics.
+- Evaluate a small client-side direction buffer for rapid sequential turns. Keep it explicitly bounded (for example, one pending turn beyond the current input), discard stale or invalid entries, and reset it on round/lifecycle transitions.
+- Treat the buffer as an implementation option to validate against the existing server/player direction queue; do not introduce two independent queues with conflicting ordering rules.
 
 ---
 

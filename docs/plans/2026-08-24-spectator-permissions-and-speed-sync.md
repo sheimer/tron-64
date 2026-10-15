@@ -2,7 +2,7 @@
 
 > **Date:** 2026-08-24  
 > **Topic:** Spectator Action Restraint (Start/Speed Controls) and Multi-Client Speed Synchronization  
-> **Status:** Completed  
+> **Status:** Completed
 
 ---
 
