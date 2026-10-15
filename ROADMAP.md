@@ -104,6 +104,7 @@ Reference: [Testing architecture](docs/architecture/testing.md).
 - [ ] Explain the fastest two-player-on-one-keyboard setup and how friends connect from separate devices.
 - [ ] Provide a useful empty-lobby path: clear local-play instructions plus a short watchable preview or minimal demo. Start with a small capture; automate later.
 - [ ] Put the main play action and controls ahead of extended engineering/history detail on the welcome screen.
+- [ ] Rework room authority and round-start feedback in `#room-authority` and `#game-start-feedback`: define placement, wording, visibility, and message priority across configuration, gameplay, scores, spectator, and reconnect states. Remove redundant messages and verify keyboard and screen-reader behavior.
 - [ ] Add `CONTRIBUTING.md` with setup, checks, architecture entry points, and a small first-contribution path.
 - [ ] Add `SECURITY.md` with a private reporting route, plus concise bug-report templates requesting browser/device and reproduction steps.
 
