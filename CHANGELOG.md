@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Implementation and executed acceptance evidence: [approved plan](docs/plans/2026-10-11-registration-invariants-and-round-authority.md) and [four-phase progress](docs/plans/2026-10-11-registration-invariants-and-round-authority-progress.md).
 
+### Fixed
+
+- Restore focus to Start when finished scores are ready and starting is permitted, so Enter or Space starts the next round again. Reconnection can restore focus when eligibility returns; routine room updates preserve subsequent focus changes.
+
 ---
 
 ## [1.4.1] - 2026-10-10

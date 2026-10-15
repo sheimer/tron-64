@@ -17,6 +17,7 @@ export class GameView {
     this.scoresWaiting = document.getElementById('scores-waiting')
     this.footer = document.getElementById('footer-game')
     this.startBtn = document.getElementById('btn-start-game')
+    this.startAvailable = false
     this.startFeedback = document.getElementById('game-start-feedback')
     this.leaveBtn = document.getElementById('btn-leave-game')
     this.leftBtn = document.getElementById('btn-left')
@@ -258,7 +259,18 @@ export class GameView {
   }
 
   updatePermissions() {
-    if (this.startBtn) this.startBtn.disabled = !appState.canStartRound()
+    const canStart = appState.canStartRound()
+    const startAvailable =
+      appState.screen === 'game' &&
+      appState.matchState === 'finished' &&
+      canStart
+    if (this.startBtn) {
+      this.startBtn.disabled = !canStart
+      // Restore native Enter/Space activation once scores are ready, including
+      // eligibility restored by reconnect, without refocusing on every update.
+      if (startAvailable && !this.startAvailable) this.startBtn.focus()
+    }
+    this.startAvailable = startAvailable
     if (this.startFeedback)
       this.startFeedback.textContent = appState.startRoundReason()
     // Touch control buttons
@@ -283,9 +295,11 @@ export class GameView {
     if (this.playernames) this.playernames.style.display = ''
     if (this.footer) this.footer.style.display = ''
     if (this.startBtn) this.startBtn.style.display = ''
+    this.updatePermissions()
   }
 
   hide() {
+    this.startAvailable = false
     if (this.arenaCanvas) this.arenaCanvas.style.display = 'none'
     if (this.playernames) this.playernames.style.display = 'none'
     if (this.scores) this.scores.style.display = 'none'
