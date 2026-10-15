@@ -287,8 +287,9 @@ async function forceError(page, type, payload, code) {
     { previous, code },
   )
 }
-async function launch(page, key, selector) {
-  await page.locator(selector).click()
+async function launch(page, key, selector, activationKey) {
+  if (activationKey) await page.keyboard.press(activationKey)
+  else await page.locator(selector).click()
   await waitServer(key, (room) => room.info.round.stage === 'countdown')
   const launched = await rpc('tick', key, { milliseconds: 1000 })
   assert.equal(launched.info.running, true)
@@ -678,12 +679,25 @@ async function run() {
   )
   assert.equal(await late.locator('#btn-start-game').isEnabled(), true)
   assert.equal(await rider.locator('#btn-start-game').isEnabled(), true)
+  assert.equal(
+    await late.evaluate(() => document.activeElement.id),
+    'btn-start-game',
+    'Finished scores focus Start for native keyboard activation',
+  )
+  await late.locator('#btn-header-lobby').focus()
+  await late.evaluate(() => window.browserFixture.app.refreshRoomControls())
+  assert.equal(
+    await late.evaluate(() => document.activeElement.id),
+    'btn-header-lobby',
+    'Routine permission updates preserve deliberate focus changes',
+  )
+  await late.locator('#btn-start-game').focus()
 
   step = 'later cancellation preserves actual scores and ordinary retry'
   await rider.evaluate(() => {
     window.authorityProbe.hold = true
   })
-  await late.locator('#btn-start-game').click()
+  await late.keyboard.press('Space')
   await waitServer(key, (room) => room.info.round.stage === 'preparation')
   await rider.evaluate(() => window.browserFixture.app.leaveCurrentGame())
   await waitServer(key, (room) => room.info.round.stage === 'finished')
@@ -706,7 +720,12 @@ async function run() {
   await rider.evaluate(() => {
     window.authorityProbe.hold = false
   })
-  await launch(rider, key, '#btn-start-game')
+  assert.equal(
+    await rider.evaluate(() => document.activeElement.id),
+    'btn-start-game',
+    'Rejoining with eligible bikes restores Start focus',
+  )
+  await launch(rider, key, '#btn-start-game', 'Enter')
   assert.equal(
     diagnostics.some((line) => line.includes('PAGE ERROR:')),
     false,

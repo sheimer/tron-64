@@ -85,6 +85,7 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 ### Arena & Match Layout
 
 - **Fixed Viewport CSS Grid:** Renders fixed-dimension arenas with responsive multiplicator scaling (`--multiplicator`), DPR alignment, and zero artificial scrollbars across desktop and mobile.
+- **Next-round focus:** GameView focuses Start once when the game screen is in `finished` state and round-start permission becomes available, after the score reveal or later reconnection. Subsequent permission refreshes preserve the user's focus. Enter and Space use native button activation.
 
 ### Accessible Modals & Email Anti-Scraping
 
