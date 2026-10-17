@@ -36,6 +36,12 @@ by browser fixtures. Session probes inspect `app.roomSession`; round/clock probe
 inspect `app.roundLifecycle`. Controlled timers and captured browser callbacks
 continue to exercise the actual extracted controller implementations.
 
+Lobby regressions import `LobbySession` and `LobbyView` directly with supplied
+dependencies, exercising the production creation/discovery logic without
+rewriting those modules. The client round lifecycle suite also runs the actual
+`GameView` through repeated finished snapshots during score reveal, preserving
+the same timer and hidden arena before showing the next prepared round.
+
 ---
 
 ## 2. Test Suite Overview
@@ -187,7 +193,7 @@ Static analysis and formatting tools maintain codebase readability and prevent s
 
 [Tests workflow](../../.github/workflows/ci.yml) runs on branch pushes and pull requests targeting main. It uses Node 24, `npm ci`, and `npx playwright install --with-deps chromium`, then runs the unified `npm test` command with `CI=true`. The application runs on the runner with isolated test data; no deployment is required.
 
-The workflow checks the CI test JavaScript with ESLint. Browser smoke failures retain a screenshot and Playwright trace where capture is possible. Test output is retained in a diagnostics artifact for seven days, including failed runs. The shell preserves the test command's failure through `tee`.
+The workflow runs `npm run lint` across all configured JavaScript, including application code, tests, scripts, and benchmarks. Browser smoke failures retain a screenshot and Playwright trace where capture is possible. Test output is retained in a diagnostics artifact for seven days, including failed runs. The shell preserves the test command's failure through `tee`.
 
 For autonomous work, a push is a validation candidate. Require a successful Tests run for the exact candidate commit before marking a package verified. Read failed job logs, fix the cause, push a follow-up commit, and check the new run. A cancelled, skipped, timed-out, or missing run is not passing evidence. This workflow does not configure branch protection or merge a PR automatically.
 

@@ -87,6 +87,7 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 - **Fixed Viewport CSS Grid:** Renders fixed-dimension arenas with responsive multiplicator scaling (`--multiplicator`), DPR alignment, and zero artificial scrollbars across desktop and mobile.
 - **Player-name overlay:** Names fade in during preparation and remain visible through the server's one-second countdown. Entering `running` removes the active class and fades them out over one second as bikes move. CSS owns the fade, so no delayed name callback can affect a later attempt. The decorative `#playernames` layer ignores pointer events, including while faded out, so it cannot block text selection on the score screen. Its opacity animation is independent of canvas paint synchronization.
 - **Next-round focus:** GameView focuses Start once when the game screen is in `finished` state and round-start permission becomes available, after the score reveal or later reconnection. Subsequent permission refreshes preserve the user's focus. Enter and Space use native button activation.
+- **Repeated screen display:** `GameView.show()` reapplies the current match state to canvas, scores, waiting overlay, and names. A room snapshot during score reveal must keep the arena hidden and preserve the reveal timer. The next preparation still shows the canvas before the guarded grid reset.
 
 ### Accessible Modals & Email Anti-Scraping
 
@@ -118,6 +119,9 @@ JavaScript creates the changing children of those stable containers:
 - [LobbyView](../../public/javascripts/ui/lobbyView.js) builds room rows and their
   join buttons from the current room list. Its loading, empty, and connection
   status rows replace that same table content according to runtime state.
+  [LobbySession](../../public/javascripts/lobbySession.js) owns transport requests,
+  discovery validation, creation retries, and subscriptions; injected callbacks
+  connect it to the view without singleton imports in the view.
   Transient errors keep their eight-second display window; a replacement error
   cancels the old timer, and hiding/reinitializing the view releases it. Stale
   callbacks cannot hide newer feedback or persistent lost-acknowledgement guidance.

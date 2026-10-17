@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { LobbySession } from '../public/javascripts/lobbySession.js'
+import { LobbyView } from '../public/javascripts/ui/lobbyView.js'
 import { LOBBY_CHECK_BATCH_SIZE } from '../shared/constants.js'
 
 class Element {
@@ -22,7 +23,6 @@ class Element {
 }
 
 const originalDocument = globalThis.document
-const originalFixture = globalThis.__lobbyReviewState
 try {
   globalThis.document = {
     getElementById: () => null,
@@ -37,15 +37,11 @@ try {
     isConnected: () => true,
     requestLobbyList: (rooms, requestId) => queries.push({ rooms, requestId }),
   }
-  globalThis.__lobbyReviewState = { state, network, LOBBY_CHECK_BATCH_SIZE }
-  const source = readFileSync(
-    new URL('../public/javascripts/ui/lobbyView.js', import.meta.url),
-    'utf8',
-  ).replace(/^import .*\n/gm, '')
-  const { LobbyView } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { state, network, LOBBY_CHECK_BATCH_SIZE } = globalThis.__lobbyReviewState;\n${source}`)}`
-  )
-  const lobby = Object.create(LobbyView.prototype)
+  const lobby = new LobbyView({
+    canRejoin: (key) =>
+      state.getReconnectEntries(key, true).length > 0 ||
+      Boolean(state.getRoomOwnerClaim(key, true)),
+  })
   lobby.bodyGamelistTable = new Element()
   let selected
   lobby.onSelectGame = (key) => {
@@ -98,8 +94,14 @@ try {
     'Saved owner proof grants no live permission',
   )
 
-  const discovery = new LobbyView({ onSelectGame() {} })
-  discovery.bodyGamelistTable = new Element()
+  const discovery = new LobbySession({
+    state,
+    network,
+    settings: {},
+    callbacks: {
+      updateGamelistTable: (list) => lobby.updateGamelistTable(list),
+    },
+  })
   state.connectedGames = {}
   const keys = Array.from({ length: LOBBY_CHECK_BATCH_SIZE + 1 }, (_, index) =>
     index.toString(16).padStart(8, '0'),
@@ -175,7 +177,7 @@ try {
     ],
     { requestId: current.requestId, missingKeys: [] },
   )
-  const row = discovery.bodyGamelistTable.children[0]
+  const row = lobby.bodyGamelistTable.children[0]
   assert.equal(row.children[1].children[0].text, 'Live private room')
   assert.equal(row.children[2].children[0].text, 2)
   assert.equal(row.children[3].children[0].text, 'private; registration closed')
@@ -193,5 +195,4 @@ try {
   )
 } finally {
   globalThis.document = originalDocument
-  globalThis.__lobbyReviewState = originalFixture
 }

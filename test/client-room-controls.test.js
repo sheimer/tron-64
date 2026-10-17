@@ -1,4 +1,5 @@
 import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
+import { LobbyView } from '../public/javascripts/ui/lobbyView.js'
 import assert from 'node:assert/strict'
 import { fork } from 'node:child_process'
 import { once } from 'node:events'
@@ -14,7 +15,6 @@ import {
   PLAYER_COLOR_KEYS,
   GRID_SIZE,
   BLOCK_SIZE,
-  LOBBY_CHECK_BATCH_SIZE,
 } from '../shared/constants.js'
 import { ordinalSuffixOf, sortScoreboardPlayers } from '../shared/utils.js'
 
@@ -217,12 +217,12 @@ try {
     PLAYER_COLOR_KEYS,
     GRID_SIZE,
     BLOCK_SIZE,
-    LOBBY_CHECK_BATCH_SIZE,
     MSG_TYPE,
     ordinalSuffixOf,
     sortScoreboardPlayers,
     Renderer,
     WelcomeView,
+    LobbyView,
     getThemeColors: () => ({ bg: '#000', fg: '#fff', rose: '#f00' }),
     onThemeChange() {},
   }
@@ -233,7 +233,7 @@ try {
       `data:text/javascript,${encodeURIComponent(`const { ${Object.keys(bindings).join(', ')} } = globalThis.__roomControlFixture;\n${body}`)}`
     )
   }
-  for (const name of ['SettingsView', 'ConfigView', 'GameView', 'LobbyView']) {
+  for (const name of ['SettingsView', 'ConfigView', 'GameView']) {
     const file = name[0].toLowerCase() + name.slice(1)
     bindings[name] = (
       await actualModule(`../public/javascripts/ui/${file}.js`)
