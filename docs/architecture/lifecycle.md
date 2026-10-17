@@ -6,7 +6,15 @@
 
 ## 1. Client Screens and Navigation
 
-The client application (`public/javascripts/main.js`, `public/javascripts/state.js`) coordinates four primary top-level screens:
+The client application coordinates four primary top-level screens. Its module boundaries are:
+
+- [main.js](../../public/javascripts/main.js) is the browser entrypoint. It imports browser dependencies, constructs one `AppCoordinator`, and exports the existing `app` singleton.
+- [AppCoordinator](../../public/javascripts/appCoordinator.js) is a named export with injected state, transport, renderer, theme functions, and view constructors. Importing the class does not start the application. It wires views and domain callbacks, routes screens, handles input/theme updates, and projects room controls.
+- [RoomSession](../../public/javascripts/roomSession.js) owns the current room, pending joins and registrations, registration retry timers, recovered local control bindings, and reconnect/revocation handling. It validates private acknowledgements before restoring authority and projects room snapshots before invoking coordinator callbacks.
+- [RoundLifecycle](../../public/javascripts/roundLifecycle.js) owns the current attempt, round stage and callback generation, canvas reset/readiness timer, score-reveal timer, and round event/snapshot routing. Its guards capture the room, socket generation, attempt and callback generation. Session transitions invalidate these callbacks before changing room identity.
+- [state.js](../../public/javascripts/state.js) retains shared observable state, saved credentials and permission predicates. Views continue to own their markup and presentation behavior.
+
+The session and round controllers receive explicit dependencies and callbacks; neither imports browser singletons or holds the entire coordinator. `GAME_INFO` applies authenticated local bindings and roster state first, then room-control feedback and scores, then round routing and readiness. Join, leave, close and protocol mismatch preserve their existing cleanup order.
 
 ```
 ┌──────────────┐     Enter Lobby     ┌──────────────┐     Join / Create     ┌──────────────┐
