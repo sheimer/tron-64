@@ -17,7 +17,9 @@ function room() {
   const creator = socket(game)
   const bikes = socket(game)
   const spectator = socket(game)
-  game.clients.push(creator, bikes, spectator)
+  for (const client of [creator, bikes, spectator]) {
+    game.connect({ client })
+  }
   const credential = game.roomOwner.create()
   assert.equal(game.roomOwner.verify(credential), true)
   game.roomOwner.bind(creator)

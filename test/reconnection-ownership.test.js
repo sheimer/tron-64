@@ -353,14 +353,11 @@ try {
 
   // Admission to a full target room fails before releasing the old room or
   // taking an authenticated player in the target.
-  while (
-    targetGame.clients.filter((client) => client.readyState === WebSocket.OPEN)
-      .length < MAX_CLIENTS_PER_ROOM
-  ) {
+  while (targetGame.liveClients.length < MAX_CLIENTS_PER_ROOM) {
     const spectator = await connect()
     await join(spectator, target)
   }
-  assert.equal(targetGame.clients.length, MAX_CLIENTS_PER_ROOM)
+  assert.equal(targetGame.liveClients.length, MAX_CLIENTS_PER_ROOM)
   const roomFull = await join(switching, target, [claim(targetFirst)])
   assert.equal(roomFull.code, 'ROOM_FULL')
   assert.equal(secondRoom.ownership.owners.size, 1)

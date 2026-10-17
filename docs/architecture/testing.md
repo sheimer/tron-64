@@ -49,6 +49,7 @@ the same timer and hidden arena before showing the next prepared round.
 | Test Suite                                                                | Purpose                                                                                                                                                               | Key Techniques                                                                                                                         |
 | :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
 | `test/lobby-discovery.test.js` and `test/lobby-rejoin.test.js`            | Verify server-personalized public/private discovery, read-only credential checks, isolated broadcasts, expiry cleanup, bounded batches and stale-response protection. | Real WebSocket clients and actual lobby/state modules; assert unchanged ownership, membership, pending rounds and inactivity.          |
+| `test/room-membership.test.js`                                            | Verifies deduplicated membership, capacity and rejected admission, safe leave/switch/close/termination/pruning, partial handover and former-room delivery isolation.  | Real WebSocket clients, protocol barriers, binary and JSON events, authoritative owner checks and injected stale indexes.              |
 | `test/concurrency.test.js`                                                | Verifies `MAX_ACTIVE_GAMES` limits and room creation guardrails.                                                                                                      | Rapid allocation past limit and validation of room rejection errors.                                                                   |
 | `test/disconnect.test.js`                                                 | Verifies the 4 phases of disconnected client handling and trail ghosting.                                                                                             | Mock WebSocket drops, mid-round elimination checks, and zero-trail restart verification.                                               |
 | `test/explosion.test.js`                                                  | Verifies explosion particle cleanup, `Arena.reset()` flushing, wall breaches, client `Int8Array` buffer resets, and persistence isolation.                            | Mid-round crash simulation, expiration force-timeouts, border restoration, client buffer reset checks, and cold reboot disk isolation. |
@@ -68,6 +69,16 @@ the same timer and hidden arena before showing the next prepared round.
 | `test/player-reconnect.test.js` and `test/reconnection-ownership.test.js` | Verify credential claims, partial and repeated handovers, owner-safe leave/close, fresh handles, capacity preflight, and real-disconnect recovery.                    | Real local WebSocket clients and isolated room/socket teardown.                                                                        |
 
 ---
+
+The membership regression uses real local sockets and private correlated replies
+with ping barriers to observe delivered packets without timing sleeps. It checks
+repeated joins at the socket cap, preserved pending attempts through failed
+preflights, monotonically allocated handles across departure/rejoin, retained
+rosters/scores/verifiers, repeated cleanup, server-side termination and defensive
+pruning before close. Stale old-room owner records cannot clear a different
+current room's handles. Both binary draws and JSON room events reach each live
+member once and exclude switched or routing-only sockets. Controlled idle expiry
+and complete destruction are separate follow-up coverage.
 
 ## 3. Playwright Headless Browser Testing
 

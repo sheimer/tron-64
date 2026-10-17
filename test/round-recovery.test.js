@@ -32,7 +32,7 @@ async function serve() {
         physicsTimer: Boolean(game.timer),
         owners: game.ownership.owners.size,
         creatorBound: Boolean(game.roomOwner.socket),
-        clients: game.clients.map((client) => ({
+        clients: game.liveClients.map((client) => ({
           ids: [...client.playerIds],
           handles: [...client.handlesById],
           owner: game.roomOwner.owns(client),
@@ -145,7 +145,7 @@ async function verify() {
     assert.equal(game.nextTickTime, null)
     assert.equal(game.ownership.owners.size, 0)
     assert.equal(game.roomOwner.socket, null)
-    assert.deepEqual(game.clients, [])
+    assert.deepEqual(game.liveClients, [])
     assert.ok(game.arena.players.every((player) => player.connected === false))
     return game
   }

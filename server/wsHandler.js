@@ -52,19 +52,20 @@ const controlErrors = {
   PERSISTENCE_FAILED: 'The change could not be saved. Try again later.',
 }
 
-const releaseOwnedPlayers = (ws, game) => {
-  // The room map is authoritative even if the socket index is stale.
-  for (const [id, owner] of game?.ownership.owners ?? []) {
-    if (owner === ws && game.ownership.release(id, ws)) {
-      game.disconnectPlayer(id)
-    }
+const leaveRoom = (ws) => {
+  const game = gameServer.getGame(ws.gameKey)
+  if (game) {
+    return game.disconnect(ws)
   }
-  game?.roomOwner.release(ws)
-  game?.reconcilePendingStart()
+  // A missing room may still have routing/handle indexes on its old socket.
+  const changed = ws.gameKey !== null
+  ws.gameKey = null
+  ws.protocolReady = false
   ws.playerIds.clear()
   ws.handlesById.clear()
   ws.idsByHandle.clear()
   ws.registrationRetries.clear()
+  return changed
 }
 
 const encodeBinaryDraw = (changes) => {
@@ -106,16 +107,14 @@ export const setupWebSocketServer = (server) => {
         ? message
         : JSON.stringify({ ...message, protocolVersion: PROTOCOL_VERSION })
 
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN && client.gameKey === gameKey) {
-        wsMessagesSentCounter.inc({ type: isBuffer ? 'binary' : 'text' })
-        if (isBuffer) {
-          client.send(data, { binary: true })
-        } else {
-          client.send(data)
-        }
+    for (const client of gameServer.getGame(gameKey)?.liveClients ?? []) {
+      wsMessagesSentCounter.inc({ type: isBuffer ? 'binary' : 'text' })
+      if (isBuffer) {
+        client.send(data, { binary: true })
+      } else {
+        client.send(data)
       }
-    })
+    }
   }
 
   const sendLobbyList = (ws, extra = {}, missingKeys = []) => {
@@ -185,7 +184,11 @@ export const setupWebSocketServer = (server) => {
         }
         const game = gameServer.getGame(ws.gameKey)
         const id = ws.idsByHandle.get(raw[1])
-        if (game && id !== undefined && game.ownership.owns(id, ws)) {
+        if (
+          game?.isJoined(ws) &&
+          id !== undefined &&
+          game.ownership.owns(id, ws)
+        ) {
           game.changeDir({ id, dir: raw[2] === 0 ? 'left' : 'right' })
         }
         return
@@ -395,12 +398,9 @@ export const setupWebSocketServer = (server) => {
               return
             }
 
-            const openClients = game.clients.filter(
-              (c) => c?.readyState === WebSocket.OPEN,
-            )
             if (
-              ws.gameKey !== gameKey &&
-              openClients.length >= MAX_CLIENTS_PER_ROOM
+              !game.isJoined(ws) &&
+              game.liveClients.length >= MAX_CLIENTS_PER_ROOM
             ) {
               sendError(
                 ws,
@@ -435,7 +435,7 @@ export const setupWebSocketServer = (server) => {
             }
             const allocations = accepted.filter(
               (id) =>
-                ws.gameKey !== gameKey ||
+                !game.isJoined(ws) ||
                 !game.ownership.owns(id, ws) ||
                 !ws.handlesById.has(id),
             ).length
@@ -452,26 +452,20 @@ export const setupWebSocketServer = (server) => {
             // Admission/handle preflights above must finish before invalidation.
             const rosterBefore = game.captureRoundRoster()
             const creatorBefore = game.roomOwner.socket
-            if (ws.gameKey && ws.gameKey !== gameKey) {
-              const oldKey = ws.gameKey
-              const oldGame = gameServer.getGame(oldKey)
-              releaseOwnedPlayers(ws, oldGame)
-              if (oldGame) {
-                oldGame.clients = oldGame.clients.filter((c) => c !== ws)
-              }
-              ws.gameKey = null
-              if (oldGame) {
-                broadcastToRoom(oldKey, {
-                  type: MSG_TYPE.GAME_INFO,
-                  payload: gameServer.getGameInfo(oldKey),
-                })
-              }
+            if (ws.gameKey && !game.isJoined(ws)) {
+              leaveRoom(ws)
             }
-            if (ws.gameKey !== gameKey) {
+            if (!game.isJoined(ws)) {
               ws.gameKey = gameKey
               ws.protocolReady = true
               game.connect({
                 client: ws,
+                onleave: () => {
+                  broadcastToRoom(gameKey, {
+                    type: MSG_TYPE.GAME_INFO,
+                    payload: gameServer.getGameInfo(gameKey),
+                  })
+                },
                 ondraw: (changes) => {
                   const buf = encodeBinaryDraw(changes)
                   if (buf) {
@@ -602,20 +596,7 @@ export const setupWebSocketServer = (server) => {
 
           case MSG_TYPE.LEAVE_GAME: {
             if (ws.gameKey) {
-              const gameKey = ws.gameKey
-              const game = gameServer.getGame(gameKey)
-              releaseOwnedPlayers(ws, game)
-              if (game) {
-                game.clients = game.clients.filter((c) => c !== ws)
-              }
-              ws.gameKey = null
-              ws.protocolReady = false
-              if (game) {
-                broadcastToRoom(gameKey, {
-                  type: MSG_TYPE.GAME_INFO,
-                  payload: gameServer.getGameInfo(gameKey),
-                })
-              }
+              leaveRoom(ws)
               broadcastLobbyList()
             }
             break
@@ -638,7 +619,7 @@ export const setupWebSocketServer = (server) => {
               return
             }
             const game = gameServer.getGame(ws.gameKey)
-            if (game && payload) {
+            if (game?.isJoined(ws) && payload) {
               const fingerprint = createHash('sha256')
                 .update(JSON.stringify(payload) ?? 'undefined')
                 .digest('hex')
@@ -809,17 +790,7 @@ export const setupWebSocketServer = (server) => {
 
     ws.on('close', () => {
       wsClientsGauge.set(wss.clients.size)
-      if (ws.gameKey) {
-        const game = gameServer.getGame(ws.gameKey)
-        releaseOwnedPlayers(ws, game)
-        if (game) {
-          game.clients = game.clients.filter((c) => c !== ws)
-          broadcastToRoom(ws.gameKey, {
-            type: MSG_TYPE.GAME_INFO,
-            payload: gameServer.getGameInfo(ws.gameKey),
-          })
-        }
-      }
+      leaveRoom(ws)
       ws.gameKey = null
       ws.protocolReady = false
       ws.playerIds.clear()

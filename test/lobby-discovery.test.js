@@ -135,7 +135,11 @@ try {
   assert.equal(game.roomOwner.socket, owner)
   assert.equal(game.ownership.owners.get('one'), owner)
   assert.equal(game.ownership.owners.get('two'), owner)
-  assert.deepEqual(game.clients, [owner], 'Discovery adds no room membership')
+  assert.deepEqual(
+    game.liveClients,
+    [owner],
+    'Discovery adds no room membership',
+  )
   assert.equal(
     game.pendingStart,
     pending,

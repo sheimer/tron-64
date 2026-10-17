@@ -31,7 +31,7 @@ function inspect(game) {
     gameStarted: game.gameStarted !== null,
     creatorBound: Boolean(game.roomOwner.socket),
     owners: game.ownership.owners.size,
-    clients: game.clients.map((client) => ({
+    clients: game.liveClients.map((client) => ({
       ids: [...client.playerIds],
       handles: [...client.handlesById],
       owner: game.roomOwner.owns(client),
@@ -51,7 +51,7 @@ function publish(game) {
     payload: gameServer.getGameInfo(game.key),
     protocolVersion: PROTOCOL_VERSION,
   })
-  for (const client of game.clients) {
+  for (const client of game.liveClients) {
     if (client.readyState === 1) {
       client.send(data)
     }

@@ -15,8 +15,8 @@
 - Starting head: `c006c4822bb23abef74d829ab9c44d5abce635d7` (approved roadmap rationale documentation).
 - Existing PR/dependency: none at preparation.
 - Latest implementation candidate: none.
-- Last verified implementation candidate: none.
-- Status: implementing Phase 1.
+- Last verified implementation candidate: none. Approval checkpoint `c3c3af6` passed Tests run `39074867491` / job `117519804698`, with 34 suites and real Chromium journeys.
+- Status: Phase 1 candidate ready; exact-candidate CI pending.
 - Local dependencies: `npm ci` succeeded on Node 24.19.0. Shell Git pushes lack authentication; supported GitHub connector writes are available and already proven. Preserve unrelated files and symlink modes in connector commits.
 
 ## Evidence by phase
@@ -29,7 +29,7 @@
 
 ## Blockers and next action
 
-Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. Next: implement Phase 1, independently test/review, then verify its pushed candidate. No product decision is pending.
+Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. P1-I implementation, P1-T independent tests and P1-R independent review are complete. Next: push the Phase 1 candidate and inspect exact-candidate CI/browser results. Global JavaScript lint, documentation links and diff whitespace also passed. No product decision is pending.
 
 ## Final acceptance audit
 
@@ -41,11 +41,26 @@ Record delegation timestamps and actual outcomes here. Usage/token telemetry and
 
 ### P1-I — Phase 1 / implementation
 
-- Requested model/effort: `gpt-6.1-sol` / `high`; tool-supported settings; agent confirmation pending.
-- Start: 2026-10-18T00:21:49+02:00; end/elapsed pending.
+- Requested via spawn controls: `gpt-6.1-sol` / `high`; worker could not introspect actual model/effort, so actual selection is unverified.
+- Worker-reported first timestamp: 2026-10-17T22:22:49Z; handoff 2026-10-17T22:27:15Z; observed worker interval 4m26s, not compute time. Earlier delegation/orchestration overhead is unmeasured.
 - Scope: Phase 1 runtime membership/departure, migrated fixtures, socket regressions and relevant docs.
 - Usage: unavailable.
-- Outcome, follow-ups and corrections: pending.
+- Outcome: runtime/fixture/docs implementation ready; affected Node suites and scoped lint/format passed. Full isolated `npm test`: 32 runner-passed / 3 failed, 15.300s; all Node suites passed, three required browser suites failed only for missing Chromium, optional client-leak skipped browser execution. Server GC +0.238 MB. Quick benchmark: 50 rooms / 200 players, mean jitter 0.30ms, p95 1.13ms, max spike 1.65ms. Independent test/review and CI still pending.
+- Corrections: three curly-brace ESLint findings in the new test corrected before handoff. One lead follow-up highlighted stale routing/current-room index safety; no model or cost comparison.
+
+### P1-T — Phase 1 / independent testing
+
+- Requested via spawn controls: `gpt-6.1-sol` / `high`; actual model/effort introspection unavailable.
+- First worker-observed clock: 2026-10-17T22:28:12Z, after initial reads; final verification 2026-10-17T22:30:23Z. Observed interval 2m11s excludes initial reads and is not compute time.
+- Scope: challenge Phase 1 acceptance, real socket regressions, missing cases and local checks. Only test changes allowed.
+- Usage: unavailable. Outcome: strengthened only `test/room-membership.test.js` with cap spectator retries, target state preservation, leave-to-lobby packet isolation, routing-only authorization denial, successful-switch cancellation/preservation, mixed invalid proof and fresh monotonically allocated handles. Eight relevant Node suites and final scoped lint/format/diff checks passed. No blocking runtime finding; no installer/full-suite/benchmark repeats. One lead follow-up requested final handoff timing; no corrective runtime follow-up.
+
+### P1-R — Phase 1 / independent review
+
+- Requested via spawn controls: `gpt-6.1-sol` / `xhigh`; worker introspection pending.
+- First worker-observed start 2026-10-17T22:30:50Z; end 22:32:31Z; observed interval 1m41s, not compute time.
+- Scope: read-only review of approved Phase 1 contract and final runtime/tests/docs diff; authorization, cleanup, idempotence and rejection atomicity.
+- Usage: unavailable; actual model/effort introspection unavailable. Outcome: no blocking Phase 1 findings. Reviewer inspected final runtime, fixtures, regression and documentation; no assertion weakening. Residual requirement: exact-candidate CI including real Chromium before Phase 2. No corrective follow-up required.
 
 ## Model-efficiency review
 

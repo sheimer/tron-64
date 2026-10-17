@@ -116,7 +116,7 @@ Input handles belong to a single socket. Losing ownership immediately invalidate
 
 When a browser's socket closes, for example after a tab closes or a carrier connection drops:
 
-1. The server's `close` handler in `wsHandler.js` releases only players still owned by that socket and invalidates their input handles.
+1. The server's `close` handler in `wsHandler.js` uses the same idempotent departure path as leaving, switching, termination, and defensive pruning. It removes membership and releases only players and the creator binding still owned by that socket, invalidating their input handles and registration retries.
 2. Those active players are marked dead and explode into particle sparks. Their wall trails remain as obstacles for the rest of the round.
 3. Remaining connected players continue racing undisturbed.
 
@@ -170,6 +170,22 @@ new players where registration remains open.
 
 ## 5. Leaving and Switching Rooms
 
+### Live membership and admission
+
+Each room records sockets in a deduplicated `Set`. A live member must be open,
+recorded in that room, and indexed to that room by `gameKey`; a routing key alone
+grants neither membership nor control. Capacity, room broadcasts, round
+eligibility/readiness and inactivity checks share this predicate. Each joined
+socket occupies one slot, including spectators and creators with no bikes;
+multiple local bikes do not use extra client slots.
+
+Repeated same-room joins retain one slot, the existing room event hooks, and
+current input handles, even at capacity. Authenticated claims can still transfer
+individual bike or creator bindings. Full/missing targets, malformed claim lists
+and handle exhaustion reject before changing the source room or either room's
+ownership or pending round. Independently rejected credentials retain the
+existing spectator-admission and per-claim result behavior.
+
 ### Return to lobby
 
 When a player clicks the “← Lobby” header button (`#btn-header-lobby`):
@@ -178,7 +194,23 @@ When a player clicks the “← Lobby” header button (`#btn-header-lobby`):
 2. The server releases only IDs still owned by that socket, invalidates their handles, clears room membership, and broadcasts updated `GAME_INFO` to remaining room members. The leaving socket stops receiving room packets that could pull it back into the match screen.
 3. The client clears its local match state (`players`, `scores`, `positions`), switches to the lobby screen, and requests the latest `LOBBY_LIST`.
 
-Leaving releases current bike and creator socket bindings, not saved credentials. Later re-entry requires authenticated reconnect.
+Leaving releases current bike and creator socket bindings, not roster entries,
+scores or saved credentials. Later re-entry requires authenticated reconnect.
+Discovery grants and room-creation retries remain available on the open socket
+while their referenced room exists. The input-handle counter never resets during
+the connection's lifetime.
+
+Departure removes membership before disconnect effects, reconciles a pending
+round, then publishes the updated room snapshot. Repeating cleanup, including a
+later `close` after termination or pruning, produces no second disconnection,
+explosion or room event. Cleanup checks actual current room owners, so a partial
+handover preserves replacement-owned bikes and creator authority. Pruning a stale
+old-room reference also preserves any handles and indexes belonging to the
+socket's different current room.
+
+Binary draws and JSON reset/state/finish/info broadcasts enumerate the room's
+live members. Former members in the lobby or another room receive none of these
+old-room events. Personalized global lobby discovery remains separate.
 
 ### Switch to another room
 
@@ -231,7 +263,10 @@ Rejected snapshots restore no rooms, preserve original bytes, and block writes a
 
 ## 7. Room Inactivity and Destruction
 
-`GameSession.checkConnectionStatus()` periodically prunes closed socket references. When no clients remain in the room, it records the start of inactivity. A later check destroys the room once inactivity exceeds `IDLE_ROOM_TIMEOUT_MS` (five minutes); reconnecting clears that inactivity timestamp.
+`GameSession.checkConnectionStatus()` periodically prunes closed or stale room
+members through the ordinary departure path, releasing their current room
+bindings rather than only dropping references. When no live members remain in
+the room, it records the start of inactivity. A later check destroys the room once inactivity exceeds `IDLE_ROOM_TIMEOUT_MS` (five minutes); reconnecting clears that inactivity timestamp.
 
 The periodic `statusTimer` uses `unref()`, so it does not keep the Node.js process alive by itself. When `game.destroy()` runs:
 
@@ -239,7 +274,8 @@ The periodic `statusTimer` uses `unref()`, so it does not keep the Node.js proce
 - Grid buffers, player references, and room ownership/credential state are released.
 - The room is removed from `gameServer.games` and snapshots on disk.
 
-Broader room-membership, capacity, and idle-reaping work remains tracked in the [roadmap](../../ROADMAP.md#accurate-room-membership-and-cleanup).
+Idle-window transition timing, complete direct-removal disposal and external
+reference cleanup remain tracked in the [roadmap](../../ROADMAP.md#accurate-room-membership-and-cleanup).
 
 ---
 

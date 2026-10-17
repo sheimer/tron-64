@@ -83,7 +83,7 @@ export class GameSession {
       !this.firstRoundStarted &&
       this.arena.players.length < MAX_PLAYERS &&
       this.stats.players.length < MAX_PLAYERS
-    this.clients = []
+    this.clients = new Set()
     this.allDisconnected = null
     this.statusTimer = null
     this.checkConnectionStatus()
@@ -93,6 +93,7 @@ export class GameSession {
     this.stop()
     this.stage = 'destroyed'
     this.onstate = null
+    this.onleave = null
     if (this.statusTimer !== null) {
       clearTimeout(this.statusTimer)
       this.statusTimer = null
@@ -102,7 +103,7 @@ export class GameSession {
     }
     this.arena = null
     this.onChange = null
-    this.clients = []
+    this.clients.clear()
     this.ownership.clear()
     this.roomOwner.clear()
 
@@ -113,12 +114,9 @@ export class GameSession {
   }
 
   checkConnectionStatus() {
-    // Prune closed socket references
-    this.clients = this.clients.filter(
-      (client) => client?.readyState === WebSocket.OPEN,
-    )
+    this.pruneClients()
 
-    if (this.clients.length > 0) {
+    if (this.liveClients.length > 0) {
       this.allDisconnected = null
     } else {
       if (this.allDisconnected === null) {
@@ -139,13 +137,18 @@ export class GameSession {
     }
   }
 
-  connect({ client, ondraw, onfinish, onreset, onstate }) {
-    // Prune closed socket references before adding new client
-    this.clients = this.clients.filter((c) => c?.readyState === WebSocket.OPEN)
-    this.clients.push(client)
+  connect({ client, ondraw, onfinish, onreset, onstate, onleave }) {
+    this.pruneClients()
+    if (this.clients.has(client)) {
+      return
+    }
+    this.clients.add(client)
     this.allDisconnected = null
     if (!this.onstate) {
       this.onstate = onstate
+    }
+    if (!this.onleave) {
+      this.onleave = onleave
     }
     this.arena.addHandler({
       ondraw,
@@ -183,8 +186,49 @@ export class GameSession {
     return Boolean(
       client?.readyState === WebSocket.OPEN &&
       client.gameKey === this.key &&
-      this.clients.includes(client),
+      this.clients.has(client),
     )
+  }
+
+  get liveClients() {
+    return [...this.clients].filter((client) => this.isJoined(client))
+  }
+
+  pruneClients() {
+    for (const client of this.clients) {
+      if (!this.isJoined(client)) {
+        this.disconnect(client)
+      }
+    }
+  }
+
+  disconnect(client) {
+    // Remove membership first: departure effects and cancellation packets must
+    // reach only the remaining live members, including during defensive pruning.
+    let changed = this.clients.delete(client)
+    for (const [id, owner] of this.ownership.owners) {
+      if (owner === client && this.ownership.release(id, client)) {
+        changed = true
+        this.disconnectPlayer(id)
+      }
+    }
+    changed = this.roomOwner.release(client) || changed
+    // A stale old-room member may already belong to another room. Its current
+    // handles/indexes belong to that room and must survive old-room cleanup.
+    if (client?.gameKey === this.key) {
+      client.gameKey = null
+      client.protocolReady = false
+      client.playerIds?.clear()
+      client.handlesById?.clear()
+      client.idsByHandle?.clear()
+      client.registrationRetries?.clear()
+      changed = true
+    }
+    if (changed) {
+      this.reconcilePendingStart()
+      this.onleave?.()
+    }
+    return changed
   }
 
   get eligiblePlayerCount() {

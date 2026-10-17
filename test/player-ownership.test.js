@@ -236,7 +236,7 @@ try {
     }),
   )
   await receive(spectator, (m) => m.code === 'UNKNOWN_MESSAGE_TYPE')
-  assert.equal(game.clients.length, 2)
+  assert.equal(game.liveClients.length, 2)
   for (const type of ['CHANGE_DIR', 'changeDir']) {
     send(spectator, type, { id: player.id, dir: 'left' })
     assert.equal(

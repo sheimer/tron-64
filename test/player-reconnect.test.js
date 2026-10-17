@@ -190,7 +190,7 @@ try {
   const revived = await join(replacement, key, [claim(first)], 'revive')
   assert.equal(revived.payload.accepted[0].inputHandle, 0)
   assert.equal(p1.connected, true)
-  assert.equal(room.ownership.owns('first', room.clients.at(-1)), true)
+  assert.equal(room.ownership.owns('first', room.liveClients.at(-1)), true)
   console.log(
     'Authenticated per-player reconnect and owner-safe handover passed',
   )

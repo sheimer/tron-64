@@ -35,7 +35,7 @@ async function childServer() {
             acceptingPlayers: game.acceptingPlayers,
             owners: game.ownership.owners.size,
             verifiers: game.ownership.verifiers.size,
-            sockets: game.clients.map((socket) => ({
+            sockets: game.liveClients.map((socket) => ({
               playerIds: [...socket.playerIds],
               handles: [...socket.handlesById],
               nextInputHandle: socket.nextInputHandle,

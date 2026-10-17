@@ -62,7 +62,7 @@ async function serve() {
               startTimer: timerId(game.pendingStart?.startTimer),
               physicsTimer: timerId(game.timer),
               nextTickTime: game.nextTickTime,
-              clients: game.clients.map((socket) => ({
+              clients: game.liveClients.map((socket) => ({
                 playerIds: [...socket.playerIds],
                 handles: [...socket.handlesById],
                 nextInputHandle: socket.nextInputHandle,

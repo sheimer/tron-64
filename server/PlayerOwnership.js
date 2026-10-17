@@ -69,7 +69,7 @@ export class PlayerOwnership {
 
   transfer(id, socket) {
     const previous = this.owners.get(id)
-    if (previous && previous !== socket) {
+    if (previous && previous !== socket && previous.gameKey === this.roomKey) {
       previous.playerIds.delete(id)
       const handle = previous.handlesById.get(id)
       previous.handlesById.delete(id)
@@ -83,15 +83,19 @@ export class PlayerOwnership {
   }
 
   release(id, socket) {
-    if (!this.owns(id, socket)) {
+    // Releasing authority uses the actual owner, even if its routing index is
+    // stale. Indexes for a different current room must remain untouched.
+    if (this.owners.get(id) !== socket) {
       return false
     }
     this.owners.delete(id)
-    socket.playerIds.delete(id)
-    const handle = socket.handlesById.get(id)
-    socket.handlesById.delete(id)
-    if (handle !== undefined) {
-      socket.idsByHandle.delete(handle)
+    if (socket.gameKey === this.roomKey) {
+      socket.playerIds.delete(id)
+      const handle = socket.handlesById.get(id)
+      socket.handlesById.delete(id)
+      if (handle !== undefined) {
+        socket.idsByHandle.delete(handle)
+      }
     }
     return true
   }
