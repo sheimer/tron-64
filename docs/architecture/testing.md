@@ -51,6 +51,7 @@ the same timer and hidden arena before showing the next prepared round.
 | `test/lobby-discovery.test.js` and `test/lobby-rejoin.test.js`            | Verify server-personalized public/private discovery, read-only credential checks, isolated broadcasts, expiry cleanup, bounded batches and stale-response protection. | Real WebSocket clients and actual lobby/state modules; assert unchanged ownership, membership, pending rounds and inactivity.          |
 | `test/room-membership.test.js`                                            | Verifies deduplicated membership, capacity and rejected admission, safe leave/switch/close/termination/pruning, partial handover and former-room delivery isolation.  | Real WebSocket clients, protocol barriers, binary and JSON events, authoritative owner checks and injected stale indexes.              |
 | `test/room-cleanup.test.js`                                               | Verifies membership-driven idle windows, complete disposal, exact-instance protection, snapshot deletion/failure and external-reference cleanup.                      | Controlled clock, captured queued timers/arena hooks, actual disk snapshots and real WebSocket discovery/switch/deletion.              |
+| `test/room-membership-flow.test.js`                                       | Required independent-context browser membership, saved recovery, packet isolation and expiry journey.                                                                 | Real app/screens, two shared-keyboard bikes, real completed physics rounds and a private controlled-clock IPC fixture.                 |
 | `test/concurrency.test.js`                                                | Verifies `MAX_ACTIVE_GAMES` limits and room creation guardrails.                                                                                                      | Rapid allocation past limit and validation of room rejection errors.                                                                   |
 | `test/disconnect.test.js`                                                 | Verifies the 4 phases of disconnected client handling and trail ghosting.                                                                                             | Mock WebSocket drops, mid-round elimination checks, and zero-trail restart verification.                                               |
 | `test/explosion.test.js`                                                  | Verifies explosion particle cleanup, `Arena.reset()` flushing, wall breaches, client `Int8Array` buffer resets, and persistence isolation.                            | Mid-round crash simulation, expiration force-timeouts, border restoration, client buffer reset checks, and cold reboot disk isolation. |
@@ -102,13 +103,38 @@ retains its original cycle count and heap threshold.
 
 - **Prerequisites:** `playwright` devDependency and Chromium binaries (`npx playwright install chromium`).
 - **Local optional coverage:** The client-leak suite may skip if Playwright or Chromium is unavailable outside CI. In CI those conditions fail. Assertions fail in every environment; cleanup must never replace a failure with exit code 0.
-- **Required browser coverage:** `test/browser-smoke.test.js`, `test/ownership-flow.test.js` and `test/round-authority-flow.test.js` never skip missing browser prerequisites. Install Chromium before running the complete suite. CI lints and executes all four browser suites and their shared helpers; the aggregated runner fails when any required suite cannot launch.
+- **Required browser coverage:** `test/browser-smoke.test.js`, `test/ownership-flow.test.js`, `test/round-authority-flow.test.js` and `test/room-membership-flow.test.js` never skip missing browser prerequisites. Install Chromium before running the complete suite. CI lints and executes all five browser suites and their shared helpers; the aggregated runner fails when any required suite cannot launch.
 - **CDP Metrics:** Uses `Performance.enable` and `Performance.getMetrics` to inspect `JSHeapUsedSize`, `Nodes`, and `JSEventListeners`.
 - **Assertions:**
   - Attached DOM elements (`document.querySelectorAll('*')`) must be strictly flat across matches ($\Delta = 0$).
   - Retained JS heap memory delta must remain $<1.0\text{MB}$.
 
-All four browser suites await fixture module imports separately after navigation or reload, then use synchronous `waitForFunction` predicates. Playwright treats an async predicate's Promise as truthy before its condition is ready, so async polling callbacks can silently bypass launch, ownership, or finished-state gates. A scoped ESLint rule rejects those callbacks; imports remain awaited through `page.evaluate`, and the synchronous predicates keep Playwright's real polling and timeout semantics.
+All five browser suites await fixture module imports separately after navigation or reload, then use synchronous `waitForFunction` predicates. Playwright treats an async predicate's Promise as truthy before its condition is ready, so async polling callbacks can silently bypass launch, ownership, or finished-state gates. A scoped ESLint rule rejects those callbacks; imports remain awaited through `page.evaluate`, and the synchronous predicates keep Playwright's real polling and timeout semantics.
+
+The required membership journey uses independent creator, shared-keyboard rider,
+spectator and saved-bike recovery contexts. Repeated joins preserve three live
+slots, existing handles and their allocation counters. A real completed round
+establishes scores before leave and a successful direct room switch; offline
+roster flags, saved proofs and scores survive, and explicit lobby rejoin restores
+both bikes with fresh handles. A spectator alone retains the room across five
+minutes of controlled server time. A second real round supplies binary draws,
+reset, state, info and finish events: remaining members see them, while an open
+former member in the lobby and another room retain their screens, roster, scores
+and renderer buffers with no old-room packets. Correlated same-socket replies
+form transport barriers rather than timing sleeps.
+
+[room-membership-server.js](../../test/helpers/room-membership-server.js) exposes
+only private parent-process IPC, with bounded clock advances and physics loops;
+it adds no HTTP or WebSocket test endpoint. It runs the production app, storage,
+timers and `checkConnectionStatus()` against a fresh temporary data directory.
+The browser journey checks retention just before the empty-room deadline,
+deletion at the boundary through that production check, actual snapshot removal,
+personalized lobby deletion, checked bike/creator credential retirement from
+state and session storage, and `GAME_NOT_FOUND` without disturbing the other room.
+Failure artifacts contain only sanitized step/server/page diagnostics in
+`test/artifacts/room-membership-flow/`; no credential-bearing traces or private
+frame archives are retained. These assertions still require real Chromium to
+establish browser acceptance.
 
 The client-leak fixture asserts a fresh key, matching room name, empty roster, and zero completed rounds before registering two local players in each new room, leaves and rejoins with both credentials, plays two rounds through their actual finished scoreboard transitions, then leaves. Waiting for each matching room/round's finished state settles the score-reveal callback before the next round or fixture room; room/socket/attempt guards now cancel delayed callbacks across room switches and replacement rounds. Cycle/round/step and safe client/server state diagnostics identify lifecycle failures. It reaps the empty fixture room on the server and waits for personalized discovery to remove the key from `state.gamesList`, saved state, session storage and the rendered lobby automatically before measuring the next baseline. No explicit fixture credential removal is needed. The original heap, DOM, and event-listener thresholds remain intact. Browser smoke waits for the server's committed first-launch/running snapshot before treating reset dots as gameplay evidence or transferring one of two local players to a second tab, verifies retained-only automatic reconnect after that tab closes, then explicitly rejoins with both saved bike credentials to satisfy the two-bike next-round minimum. The ownership-flow suite instead uses separate browser contexts for the owner, replacement, and spectator, so no ambient session storage is shared. It asserts feedback and bindings after a bad claim, reload, partial transfer, and the former owner's leave and close; failures preserve screenshots and server diagnostics in `test/artifacts/ownership-flow/`.
 

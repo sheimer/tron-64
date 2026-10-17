@@ -306,8 +306,15 @@ remain protected. Failed creation is not acknowledged and disposes its exact
 transient instance without another write or lobby announcement. No stronger disk
 durability or deletion guarantee is implied after a failed snapshot write.
 
-Browser membership acceptance and the final roadmap audit remain tracked in the
-[approved plan](../plans/2026-10-17-accurate-room-membership-and-cleanup.md).
+The required [browser membership journey](../../test/room-membership-flow.test.js)
+exercises live spectator retention, leave/switch/saved recovery and real
+former-room packet isolation, then drives this production cleanup check with a
+private fixture clock. Successful expiry removes checked saved bike and creator
+records through the existing lobby retirement path; joining the expired key
+returns `GAME_NOT_FOUND` while another room's live membership remains intact.
+See the [testing guide](testing.md) and
+[approved plan](../plans/2026-10-17-accurate-room-membership-and-cleanup.md) for
+coverage and execution evidence.
 
 ---
 

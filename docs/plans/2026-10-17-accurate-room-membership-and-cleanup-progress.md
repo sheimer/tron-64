@@ -16,20 +16,20 @@
 - Existing PR/dependency: none at preparation.
 - Latest implementation candidate: `2716d086e602f5e15a3e7dfc673de2cc6b23eda8` (Phase 2).
 - Last verified implementation candidate: `2716d086e602f5e15a3e7dfc673de2cc6b23eda8` (Phase 2). Approval checkpoint `c3c3af6` passed Tests run `39074867491` / job `117519804698`, with 34 suites and real Chromium journeys.
-- Status: Phase 2 verified; publishing its administrative checkpoint before Phase 3.
+- Status: Phase 3 candidate ready; real Chromium acceptance CI pending.
 - Local dependencies: `npm ci` succeeded on Node 24.19.0. Shell Git pushes lack authentication; supported GitHub connector writes are available and already proven. Preserve unrelated files and symlink modes in connector commits.
 
 ## Evidence by phase
 
-| Phase                                   | Candidate | Local results                                                                                         | CI evidence                                                                                                  | Independent review                                 | Status      |
-| --------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ----------- |
-| 1: Membership and departure             | `c1b38ca` | All Node suites passed; required local browser launch unavailable; scoped checks and benchmark passed | Tests `39075570744` / job `117521894492`: 35 suites passed, zero failed; required Chromium journeys executed | P1-T strengthened tests; P1-R no blocking findings | Verified    |
-| 2: Expiry and destruction               | `2716d08` | All Node suites and scoped checks passed; local Chromium missing                                      | Tests `39076752813` / job `117525379528`: 36 suites passed, zero failed; required Chromium executed          | P2-T strengthened tests; P2-R no blocking findings | Verified    |
-| 3: Browser acceptance and documentation | Pending   | Pending                                                                                               | Pending                                                                                                      | Pending                                            | Not started |
+| Phase                                   | Candidate      | Local results                                                                                         | CI evidence                                                                                                  | Independent review                                   | Status     |
+| --------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ---------- |
+| 1: Membership and departure             | `c1b38ca`      | All Node suites passed; required local browser launch unavailable; scoped checks and benchmark passed | Tests `39075570744` / job `117521894492`: 35 suites passed, zero failed; required Chromium journeys executed | P1-T strengthened tests; P1-R no blocking findings   | Verified   |
+| 2: Expiry and destruction               | `2716d08`      | All Node suites and scoped checks passed; local Chromium missing                                      | Tests `39076752813` / job `117525379528`: 36 suites passed, zero failed; required Chromium executed          | P2-T strengthened tests; P2-R no blocking findings   | Verified   |
+| 3: Browser acceptance and documentation | This candidate | All Node suites and private IPC smoke passed; required browser launch unavailable locally             | Pending                                                                                                      | P3-T strengthened journey; P3-R no blocking findings | CI pending |
 
 ## Blockers and next action
 
-Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. P1-I implementation, P1-T independent tests and P1-R independent review are complete. Phase 1 candidate `c1b38ca` passed exact-candidate CI with 35 suites, zero failures and real Chromium journeys. Administrative checkpoint `94f482f` passed Tests run `39075747204` / job `117522417931` (35 suites, required Chromium). P2-I, P2-T and P2-R completed implementation, independent testing and review. Global lint, scoped formatting, documentation links and whitespace passed. Phase 2 candidate `2716d08` passed exact-candidate Tests CI with 36 suites and zero failures including required Chromium. Next: verify this administrative checkpoint CI, then complete Phase 3 browser acceptance/documentation. Global JavaScript lint, documentation links and diff whitespace also passed. No product decision is pending.
+Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. P1-I implementation, P1-T independent tests and P1-R independent review are complete. Phase 1 candidate `c1b38ca` passed exact-candidate CI with 35 suites, zero failures and real Chromium journeys. Administrative checkpoint `94f482f` passed Tests run `39075747204` / job `117522417931` (35 suites, required Chromium). P2-I, P2-T and P2-R completed implementation, independent testing and review. Global lint, scoped formatting, documentation links and whitespace passed. Phase 2 candidate `2716d08` passed exact-candidate Tests CI with 36 suites and zero failures including required Chromium. Administrative checkpoint `f306535` passed Tests `39076930538` / job `117525905625`, 36 suites and required Chromium. P3-I implementation, P3-T independent testing and P3-R review are complete. Next: publish Phase 3 candidate, prove the new required Chromium journey in exact-candidate CI, then finalize roadmap/plan/progress and PR. No runtime Phase 3 changes were needed. Global JavaScript lint, documentation links and diff whitespace also passed. No product decision is pending.
 
 ## Final acceptance audit
 
@@ -85,6 +85,31 @@ Record delegation timestamps and actual outcomes here. Usage/token telemetry and
 - Delegation boundary: 2026-10-17T22:48:29.796256+00:00; worker times pending.
 - Scope: read-only final Phase 2 lifecycle/ownership/persistence/callback/retained-reference review.
 - Usage and actual model/effort introspection: unavailable. Worker-observed interval 2026-10-17T22:48:48Z–22:50:46Z (1m58s), not compute time. Outcome: no blocking findings after complete runtime/docs diff and 773-line cleanup suite review. Independently ran cleanup test and whitespace check successfully. Residual requirement: exact-candidate Chromium CI. No corrective follow-up required.
+
+### P3-I — Phase 3 / implementation
+
+- Requested via spawn controls: `gpt-6.1-sol` / `high`; actual introspection pending.
+- Delegation boundary: 2026-10-17T22:56:45.985452+00:00; worker times pending.
+- Scope: real independent-context membership browser journey, isolated production-clock expiry fixture and relevant docs. Runtime remains stable unless a demonstrated in-scope bug requires lead coordination.
+- Usage and actual model/effort introspection: unavailable. First worker clock 2026-10-17T22:59:58Z after work began; final check 23:01:44Z; exact elapsed unavailable.
+- Outcome: required independent-context Chromium journey and private 76-line IPC fixture plus testing/lifecycle/Changelog docs. Private IPC smoke proved production startup, target creation, retention at 299999ms, inclusive expiry at 300000ms and actual snapshot deletion. Full local suite: 33 runner-passed / 4 required missing-Chromium failures, 14.616s; optional browser leak skipped, all Node suites passed, server GC +0.245 MB. Scoped lint/format/diff passed. Browser behavior remains unexecuted locally; exact-candidate CI required. No runtime edits or browser bypass.
+
+### P3-T — Phase 3 / independent testing
+
+- Requested via spawn controls: `gpt-6.1-sol` / `high`; actual introspection pending.
+- Delegation boundary: 2026-10-17T23:01:59.512399+00:00; worker times pending.
+- Scope: challenge real browser journey assertions, IPC fixture bounds/isolation and diagnostics; meaningful test improvements only.
+- Usage and actual model/effort introspection: unavailable. Worker finished approximately 2026-10-17T23:05Z; exact start and elapsed unavailable.
+- Outcome: strengthened browser journey with creator-alone 300000ms activity, matching completed-score/timer gates, recovered browser roster/scores, correlated barriers before isolation baselines and both bike contexts checked before expiry. Syntax, scoped lint/format/diff passed. Independent real-WebSocket fixture smoke proved creator activity, last-leave boundaries and snapshot deletion. Initial smoke used `/` rather than `/ws`; corrected and passed.
+- Two lead follow-ups examined repeated-join freshness; source proved the existing pendingJoin/private-result gate sufficient, so no redundant wait was added. No runtime/docs edits, browser bypass or broad repeats. Browser acceptance remains pending CI.
+
+### P3-R — Phase 3 / independent review
+
+- Requested via spawn controls: `gpt-6.1-sol` / `xhigh`; actual introspection pending.
+- Delegation boundary: 2026-10-17T23:05:14.184736+00:00; worker times pending.
+- Scope: read-only final browser journey, isolated fixture and final lifecycle/testing docs; check acceptance, timing, diagnostics and no assertion weakening.
+- Usage and actual model/effort introspection: unavailable. First worker clock 2026-10-17T23:05:53Z after review began; end 23:07:02Z; exact elapsed unavailable.
+- Outcome: no blocking findings after final diff, both test files and relevant production paths. Async gates/barriers, required browser failure behavior, bounded IPC/physics/cleanup, coverage and credential-safe diagnostics were sound. Independently passed scoped ESLint/Prettier and whitespace checks. No edits. Residual requirement: exact-candidate real Chromium acceptance.
 
 ## Model-efficiency review
 

@@ -40,6 +40,10 @@ Implementation and executed acceptance evidence: [approved plan](docs/plans/2026
 - Allow selecting score-screen text through the invisible player-name overlay while preserving arena paint synchronization.
 - Restore focus to Start when finished scores are ready and starting is permitted, so Enter or Space starts the next round again. Reconnection can restore focus when eligibility returns; routine room updates preserve subsequent focus changes.
 
+Room membership and cleanup implementation and acceptance:
+[approved plan](docs/plans/2026-10-17-accurate-room-membership-and-cleanup.md) and
+[progress evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md).
+
 ---
 
 ## [1.4.1] - 2026-10-10
