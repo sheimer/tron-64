@@ -1,3 +1,4 @@
+import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -13,7 +14,6 @@ const originalWindow = globalThis.window
 const originalDocument = globalThis.document
 const originalSocket = globalThis.WebSocket
 const originalStorage = globalThis.sessionStorage
-const originalFixture = globalThis.__reconnectFixture
 
 class FakeSocket {
   static OPEN = 1
@@ -131,7 +131,7 @@ try {
   )
   const { state } =
     await import('../public/javascripts/state.js?client-reconnect')
-  globalThis.__reconnectFixture = {
+  const dependencies = {
     state,
     settings: { coloredPlayers: true, addListener: () => {} },
     SPEED: { NORMAL: 25 },
@@ -159,20 +159,7 @@ try {
     GRID_SIZE: 100,
     BLOCK_SIZE: 4,
   }
-  const mainSource = readFileSync(
-    path.resolve(directory, '../public/javascripts/main.js'),
-    'utf8',
-  )
-    .replace(/^import .*\n/gm, '')
-    .replace(
-      'export const app = new AppCoordinator()',
-      'export { AppCoordinator }',
-    )
-  const bindings = Object.keys(globalThis.__reconnectFixture).join(', ')
-  const { AppCoordinator } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { ${bindings} } = globalThis.__reconnectFixture;\n${mainSource}`)}`
-  )
-  const app = new AppCoordinator()
+  const app = new AppCoordinator(dependencies)
   const first = FakeSocket.instances[0]
   first.readyState = FakeSocket.OPEN
   first.dispatch('open')
@@ -439,5 +426,4 @@ try {
   globalThis.document = originalDocument
   globalThis.WebSocket = originalSocket
   globalThis.sessionStorage = originalStorage
-  globalThis.__reconnectFixture = originalFixture
 }

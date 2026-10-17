@@ -22,7 +22,7 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 
 - `GAME_INFO` carries public roster and score state in JSON. Binary deltas update the local grid; `GAME_RESET` and `Renderer.resetGrid()` resynchronize the grid. Local theme, resize, and DPR changes repaint the existing buffer without accepting a JSON drawing delta.
 - Full canvas repaints (`redrawAll()`) occur automatically during:
-  1. **Match Start Synchronization:** On `GAME_RESET`, the UI switches to `'game'` screen, dismisses scoreboard overlays (`setMatchState('start')`), and schedules `resetGrid()` on a 50ms paint tick. This ensures the canvas reflows and activates its GPU compositor surface before drawing borders and acknowledging `ARENA_READY`.
+  1. **Match Start Synchronization:** On `GAME_RESET`, [RoundLifecycle](../../public/javascripts/roundLifecycle.js) switches the UI to `'game'`, dismisses scoreboard overlays (`setMatchState('start')`), and schedules `resetGrid()` on a guarded 50ms paint tick. This ensures the canvas reflows and activates its GPU compositor surface before drawing borders and acknowledging `ARENA_READY`. The round controller owns reset/readiness and score-reveal timers, plus their cancellation; the browser entrypoint does not schedule them.
   2. **Layout & Grid Reflows (`ResizeObserver`):** When container dimensions change or CSS Grid shifts layout areas, `ResizeObserver` recalculates dimensions and repaints the buffer.
   3. **Display Density / DPR Changes:** Media query resolution changes (`(resolution: ${dpr}dppx)`).
   4. **Theme / Palette Changes:** Instant live CSS color resolution.

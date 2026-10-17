@@ -1,3 +1,4 @@
+import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
 import assert from 'node:assert/strict'
 import { fork } from 'node:child_process'
 import { once } from 'node:events'
@@ -225,12 +226,7 @@ try {
   }
   globalThis.__roomControlFixture = bindings
   async function actualModule(relative) {
-    const body = source(relative)
-      .replace(/^import .*\n/gm, '')
-      .replace(
-        'export const app = new AppCoordinator()',
-        'export { AppCoordinator }',
-      )
+    const body = source(relative).replace(/^import .*\n/gm, '')
     return import(
       `data:text/javascript,${encodeURIComponent(`const { ${Object.keys(bindings).join(', ')} } = globalThis.__roomControlFixture;\n${body}`)}`
     )
@@ -241,8 +237,7 @@ try {
       await actualModule(`../public/javascripts/ui/${file}.js`)
     )[name]
   }
-  const { AppCoordinator } = await actualModule('../public/javascripts/main.js')
-  app = new AppCoordinator()
+  app = new AppCoordinator(bindings)
   const socket = Socket.instances.at(-1)
   const el = (id) => elements.get(id)
   const info = (extra = {}) => ({
@@ -680,10 +675,13 @@ try {
       },
       { requestId: registration.requestId },
     )
-    assert.deepEqual(app.localPlayersConfig.get(registration.payload.id), {
-      left,
-      right,
-    })
+    assert.deepEqual(
+      app.roomSession.localPlayersConfig.get(registration.payload.id),
+      {
+        left,
+        right,
+      },
+    )
   }
   const ids = [...state.ownedPlayerIds]
   assert.equal(ids.length, 2)
@@ -710,7 +708,7 @@ try {
   )
   socket.receive(MSG_TYPE.OWNERSHIP_REVOKED, { key: room, ids })
   assert.equal(network.inputHandles.size, 0)
-  assert.equal(app.localPlayersConfig.size, 0)
+  assert.equal(app.roomSession.localPlayersConfig.size, 0)
   const beforeKeys = socket.sent.length
   windowListeners.get('keydown')({ keyCode: 66, repeat: false })
   assert.equal(socket.sent.length, beforeKeys)
@@ -760,8 +758,8 @@ try {
     await exited
   }
   if (wireDataDir) await rm(wireDataDir, { recursive: true, force: true })
-  app?.clearRoundCallbacks()
-  app?.clearPendingRegistrations()
+  app?.roundLifecycle.clearRoundCallbacks()
+  app?.roomSession.clearPendingRegistrations()
   if (network) {
     network.windowClosing = true
     network.stopPing()

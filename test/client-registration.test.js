@@ -1,3 +1,4 @@
+import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -7,7 +8,6 @@ import { MSG_TYPE } from '../shared/protocol.js'
 
 const originalDocument = globalThis.document
 const originalWindow = globalThis.window
-const originalFixture = globalThis.__registrationFixture
 const originalSetTimeout = globalThis.setTimeout
 const originalClearTimeout = globalThis.clearTimeout
 
@@ -80,7 +80,7 @@ try {
     },
     requestLobbyList() {},
   }
-  globalThis.__registrationFixture = {
+  const dependencies = {
     state,
     settings: { coloredPlayers: true, addListener: () => {} },
     SPEED: { NORMAL: 25 },
@@ -108,21 +108,7 @@ try {
     GRID_SIZE: 100,
     BLOCK_SIZE: 4,
   }
-  const mainPath = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '../public/javascripts/main.js',
-  )
-  const mainSource = readFileSync(mainPath, 'utf8')
-    .replace(/^import .*\n/gm, '')
-    .replace(
-      'export const app = new AppCoordinator()',
-      'export { AppCoordinator }',
-    )
-  const bindings = Object.keys(globalThis.__registrationFixture).join(', ')
-  const { AppCoordinator } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { ${bindings} } = globalThis.__registrationFixture;\n${mainSource}`)}`
-  )
-  const app = new AppCoordinator()
+  const app = new AppCoordinator(dependencies)
   assert.match(
     readFileSync(
       path.resolve(
@@ -145,11 +131,11 @@ try {
   assert.match(connectionFeedback.textContent, /reload/i)
   assert.notEqual(connectionFeedback.style.display, 'none')
   state.setCurrentGame('room-a', 'Room A')
-  app.currentGameKey = 'room-a'
+  app.roomSession.currentGameKey = 'room-a'
   app.configView.onAddPlayer({ name: 'Alice', left: 65, right: 68 })
   assert.equal(sends.length, 1)
   const { player, requestId } = sends[0]
-  assert.equal(app.localPlayersConfig.size, 0)
+  assert.equal(app.roomSession.localPlayersConfig.size, 0)
   assert.equal(state.isLocalPlayer(player.id), false)
   app.onKeyDown({ repeat: false, keyCode: 65 })
   assert.deepEqual(directions, [])
@@ -202,11 +188,11 @@ try {
     { key: 'room-a', id: player.id, reconnectToken: 'secret', inputHandle: 7 },
     { requestId },
   )
-  assert.equal(app.pendingRegistrations.size, 0)
+  assert.equal(app.roomSession.pendingRegistrations.size, 0)
   assert.equal(state.isLocalPlayer(player.id), true)
   assert.equal(state.players[0].isLocal, true)
   assert.equal(handles.get(player.id), 7)
-  assert.equal(app.localPlayersConfig.get(player.id).left, 65)
+  assert.equal(app.roomSession.localPlayersConfig.get(player.id).left, 65)
   app.onKeyDown({ repeat: false, keyCode: 65 })
   assert.deepEqual(directions, [player.id])
   network.emit(
@@ -239,7 +225,7 @@ try {
     { requestId: second.requestId },
   )
   assert.equal(state.isLocalPlayer(second.player.id), false)
-  app.clearPendingRegistrations()
+  app.roomSession.clearPendingRegistrations()
   network.emit('close')
   assert.equal(state.screen, 'game')
   assert.match(connectionFeedback.textContent, /connection lost/i)
@@ -263,7 +249,6 @@ try {
 } finally {
   globalThis.document = originalDocument
   globalThis.window = originalWindow
-  globalThis.__registrationFixture = originalFixture
   globalThis.setTimeout = originalSetTimeout
   globalThis.clearTimeout = originalClearTimeout
 }

@@ -1,3 +1,4 @@
+import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -194,19 +195,7 @@ async function fixture({ search = '', saved = {} } = {}) {
     `data:text/javascript,${encodeURIComponent(`const { settings, state: appState, PLAYER_COLOR_KEYS, ordinalSuffixOf, sortScoreboardPlayers } = globalThis.__ownerRecoveryFixture;\n${gameSource}\n// fixture ${tag}`)}`
   )
   bindings.GameView = GameView
-  const appSource = readFileSync(
-    new URL('../public/javascripts/main.js', import.meta.url),
-    'utf8',
-  )
-    .replace(/^import .*\n/gm, '')
-    .replace(
-      'export const app = new AppCoordinator()',
-      'export { AppCoordinator }',
-    )
-  const { AppCoordinator } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { ${Object.keys(bindings).join(', ')} } = globalThis.__ownerRecoveryFixture;\n${appSource}\n// fixture ${tag}`)}`
-  )
-  const app = new AppCoordinator()
+  const app = new AppCoordinator(bindings)
   let socket = FakeSocket.instances.at(-1)
   const open = (ws) => {
     ws.readyState = FakeSocket.OPEN
@@ -312,7 +301,11 @@ try {
     false,
     'Private result must carry the current protocol',
   )
-  assert.equal(f.app.pendingJoin, null, 'Mismatch retires the private request')
+  assert.equal(
+    f.app.roomSession.pendingJoin,
+    null,
+    'Mismatch retires the private request',
+  )
   f.result(f.join())
   assert.equal(f.state.isRoomOwner(), true)
   assert.equal(f.network.inputHandles.size, 0)
@@ -395,7 +388,7 @@ try {
     const legitimateRejection = owner?.accepted === false
     assert.equal(f.state.isLocalPlayer('one'), legitimateRejection)
     assert.equal(f.network.inputHandles.has('one'), legitimateRejection)
-    assert.equal(f.app.pendingJoin === null, legitimateRejection)
+    assert.equal(f.app.roomSession.pendingJoin === null, legitimateRejection)
     assert.deepEqual(f.state.getRoomOwnerClaim(room, true), ownerCredential)
   }
   for (const [accepted, rejected] of [
@@ -436,7 +429,7 @@ try {
     assert.equal(f.state.isLocalPlayer('one'), false)
     assert.equal(f.network.inputHandles.size, 0)
     assert.equal(f.savedBytes.get('connectedGames'), before)
-    assert.equal(f.app.pendingJoin.requestId, pending.requestId)
+    assert.equal(f.app.roomSession.pendingJoin.requestId, pending.requestId)
   }
   const ownerGood = f.join()
   f.socket().receive(
@@ -475,7 +468,7 @@ try {
   f.error('GAME_NOT_FOUND', pending)
   assert.equal(f.savedBytes.get('connectedGames'), before)
   pending = f.join()
-  f.app.currentGameKey = '55667788'
+  f.app.roomSession.currentGameKey = '55667788'
   f.error('GAME_NOT_FOUND', pending)
   assert.equal(f.savedBytes.get('connectedGames'), before)
   pending = f.join(room, false)
@@ -495,7 +488,7 @@ try {
   f.error('GAME_NOT_FOUND', pending)
   assert.equal(f.state.connectedGames[room], undefined)
   assert.ok(f.state.connectedGames['55667788'])
-  assert.equal(f.app.currentGameKey, null)
+  assert.equal(f.app.roomSession.currentGameKey, null)
   assert.equal(
     f.state.screen,
     'lobby',
@@ -602,7 +595,7 @@ try {
   missing.error('GAME_NOT_FOUND')
   assert.equal(missing.state.connectedGames[room], undefined)
   assert.equal(missing.state.screen, 'lobby')
-  assert.equal(missing.app.currentGameKey, null)
+  assert.equal(missing.app.roomSession.currentGameKey, null)
   for (const search of [
     '?room=',
     '?room=xyz',

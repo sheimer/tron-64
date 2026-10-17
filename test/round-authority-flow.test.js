@@ -233,7 +233,7 @@ async function joined(page, key) {
   await page.waitForFunction((roomKey) => {
     const { app, state } = window.browserFixture
     return (
-      app.pendingJoin === null &&
+      app.roomSession.pendingJoin === null &&
       state.roundInfo?.key === roomKey &&
       state.isJoinedRoom()
     )
@@ -243,7 +243,9 @@ async function explicitJoin(page, key) {
   // The ordinary selection path sets both coordinator and state room identity.
   // Leave first to discover the room, including revoked/private owner proof.
   if (
-    await page.evaluate(() => Boolean(window.browserFixture.app.currentGameKey))
+    await page.evaluate(() =>
+      Boolean(window.browserFixture.app.roomSession.currentGameKey),
+    )
   )
     await page.locator('#btn-header-lobby').click()
   await page.locator('#lobby').waitFor({ state: 'visible' })
@@ -481,7 +483,7 @@ async function run() {
   await creator.waitForFunction(
     () =>
       window.browserFixture.network.isConnected() &&
-      window.browserFixture.app.pendingJoin === null &&
+      window.browserFixture.app.roomSession.pendingJoin === null &&
       !window.browserFixture.state.isRoomOwner(),
   )
   assert.equal((await stateOf(replacement)).owner, true)

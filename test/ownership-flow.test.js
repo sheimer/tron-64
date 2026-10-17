@@ -303,7 +303,9 @@ async function run() {
       () =>
         window.browserFixture.state.roundInfo?.round.stage === 'preparation',
     )
-    return owner.evaluate(() => window.browserFixture.app.currentStartId)
+    return owner.evaluate(
+      () => window.browserFixture.app.roundLifecycle.currentStartId,
+    )
   }
   const waitCancelled = async (page, stage, startId) => {
     await page.waitForFunction(
@@ -311,7 +313,7 @@ async function run() {
         const { app, state } = window.browserFixture
         return (
           state.roundInfo?.round.stage === expectedStage &&
-          app.currentStartId === null &&
+          app.roundLifecycle.currentStartId === null &&
           window.roundProbe.cancellations.some(
             (entry) => entry.startId === retired,
           )
@@ -373,7 +375,7 @@ async function run() {
     const before = [
       window.roundProbe.resets,
       window.roundProbe.ready.length,
-      app.currentGameKey,
+      app.roomSession.currentGameKey,
       state.screen,
       state.matchState,
     ]
@@ -383,7 +385,7 @@ async function run() {
       after: [
         window.roundProbe.resets,
         window.roundProbe.ready.length,
-        app.currentGameKey,
+        app.roomSession.currentGameKey,
         state.screen,
         state.matchState,
       ],
@@ -439,11 +441,11 @@ async function run() {
     const before = [
       window.roundProbe.resets,
       window.roundProbe.ready.length,
-      app.currentStartId,
+      app.roundLifecycle.currentStartId,
     ]
     window.roundProbe.callbacks[0]()
     network.emit(MSG_TYPE.GAME_STATE, {
-      key: app.currentGameKey,
+      key: app.roomSession.currentGameKey,
       startId: oldId,
       stage: 'configuration',
       reason: 'OLD_CALLBACK',
@@ -453,7 +455,7 @@ async function run() {
       after: [
         window.roundProbe.resets,
         window.roundProbe.ready.length,
-        app.currentStartId,
+        app.roundLifecycle.currentStartId,
       ],
     }
   }, cancelledFirst)
@@ -483,11 +485,15 @@ async function run() {
   )
   const switchScores = await spectator.evaluate(() => {
     const { app, state } = window.browserFixture
-    const before = [app.currentGameKey, state.screen, state.matchState]
+    const before = [
+      app.roomSession.currentGameKey,
+      state.screen,
+      state.matchState,
+    ]
     window.roundProbe.scoreCallbacks.at(-1)()
     return {
       before,
-      after: [app.currentGameKey, state.screen, state.matchState],
+      after: [app.roomSession.currentGameKey, state.screen, state.matchState],
     }
   })
   assert.deepEqual(switchScores.after, switchScores.before)
@@ -516,7 +522,7 @@ async function run() {
     () => window.browserFixture.state.roundInfo?.round.stage === 'preparation',
   )
   const cancelledLater = await owner.evaluate(
-    () => window.browserFixture.app.currentStartId,
+    () => window.browserFixture.app.roundLifecycle.currentStartId,
   )
   await replacement.evaluate(() => window.browserFixture.app.leaveCurrentGame())
   await waitCancelled(owner, 'finished', cancelledLater)

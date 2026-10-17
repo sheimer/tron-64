@@ -13,6 +13,15 @@ All automated tests are executed via `npm test` (`node test/runAll.js`):
 - **Per-suite Timeout:** Each child is killed after 120 seconds and reported as failed, preventing hanging suites from blocking CI indefinitely.
 - **Summary Reporting:** Formats execution times, assertions, and pass/fail counts.
 
+Client coordinator tests import the named `AppCoordinator` class directly from
+[appCoordinator.js](../../public/javascripts/appCoordinator.js) and supply isolated
+state, network, renderer, theme functions and view constructors. They do not
+rewrite the application source to suppress browser startup. The production
+[main.js](../../public/javascripts/main.js) remains the singleton entrypoint used
+by browser fixtures. Session probes inspect `app.roomSession`; round/clock probes
+inspect `app.roundLifecycle`. Controlled timers and captured browser callbacks
+continue to exercise the actual extracted controller implementations.
+
 ---
 
 ## 2. Test Suite Overview

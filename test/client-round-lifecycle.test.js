@@ -1,3 +1,4 @@
+import { AppCoordinator } from '../public/javascripts/appCoordinator.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -10,7 +11,6 @@ const original = {
   sessionStorage: globalThis.sessionStorage,
   setTimeout: globalThis.setTimeout,
   clearTimeout: globalThis.clearTimeout,
-  fixture: globalThis.__roundFixture,
 }
 const timers = new Map()
 const callbacks = new Map()
@@ -129,7 +129,7 @@ try {
   ))
   const { state } =
     await import('../public/javascripts/state.js?round-lifecycle')
-  globalThis.__roundFixture = {
+  const dependencies = {
     state,
     network,
     settings: { coloredPlayers: true, addListener() {} },
@@ -152,20 +152,7 @@ try {
     GRID_SIZE: 100,
     BLOCK_SIZE: 4,
   }
-  const source = readFileSync(
-    new URL('../public/javascripts/main.js', import.meta.url),
-    'utf8',
-  )
-    .replace(/^import .*\n/gm, '')
-    .replace(
-      'export const app = new AppCoordinator()',
-      'export { AppCoordinator }',
-    )
-  const bindings = Object.keys(globalThis.__roundFixture).join(', ')
-  const { AppCoordinator } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { ${bindings} } = globalThis.__roundFixture;\n${source}`)}`
-  )
-  const app = new AppCoordinator()
+  const app = new AppCoordinator(dependencies)
   network.maxReconnectAttempts = 0
   let socket = FakeSocket.instances[0]
   const open = (transport) => {
@@ -218,20 +205,20 @@ try {
     )
     socket.receive(MSG_TYPE.GAME_INFO, info(key, round, played))
   }
-  const reset = (id, key = app.currentGameKey) =>
+  const reset = (id, key = app.roomSession.currentGameKey) =>
     socket.receive(MSG_TYPE.GAME_RESET, {
       key,
       startId: id,
       positions: { one: 1, two: 2 },
     })
-  const stage = (id, value, key = app.currentGameKey, reason) =>
+  const stage = (id, value, key = app.roomSession.currentGameKey, reason) =>
     socket.receive(MSG_TYPE.GAME_STATE, {
       key,
       startId: id,
       stage: value,
       ...(reason ? { reason } : {}),
     })
-  const finish = (id, key = app.currentGameKey) =>
+  const finish = (id, key = app.roomSession.currentGameKey) =>
     socket.receive(MSG_TYPE.GAME_FINISH, {
       key,
       startId: id,
@@ -239,7 +226,7 @@ try {
     })
   const observed = () =>
     JSON.stringify({
-      room: app.currentGameKey,
+      room: app.roomSession.currentGameKey,
       screen: state.screen,
       match: state.matchState,
       positions: state.positions,
@@ -379,18 +366,18 @@ try {
       reset('new-generation-round')
       const current = observed()
       old.receive(MSG_TYPE.GAME_RESET, {
-        key: app.currentGameKey,
+        key: app.roomSession.currentGameKey,
         startId: 'old-socket',
         positions: {},
       })
       old.receive(MSG_TYPE.GAME_STATE, {
-        key: app.currentGameKey,
+        key: app.roomSession.currentGameKey,
         startId: 'new-generation-round',
         stage: 'configuration',
         reason: 'OLD_SOCKET',
       })
       old.receive(MSG_TYPE.GAME_FINISH, {
-        key: app.currentGameKey,
+        key: app.roomSession.currentGameKey,
         startId: 'new-generation-round',
         scores: {},
       })
@@ -413,5 +400,4 @@ try {
   globalThis.sessionStorage = original.sessionStorage
   globalThis.setTimeout = original.setTimeout
   globalThis.clearTimeout = original.clearTimeout
-  globalThis.__roundFixture = original.fixture
 }
