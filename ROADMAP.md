@@ -41,6 +41,7 @@ Completed [ownership and reconnection](#player-ownership-and-reconnection) and [
 
 - [ ] Make joins idempotent with one membership record per socket, using a Set or equivalent deduplicated structure.
 - [ ] Explicitly remove membership on leave, room switch, close, and dead-peer termination; disconnect only players that the connection actually owns.
+- Preserve registered bikes, scores, and reconnect credentials when removing live socket membership. A client may leave, visit another room, and rejoin the original room while it still exists. Offline bikes remain marked `[disconnected]` and explode at their starting positions each round; membership cleanup must not remove them from the roster.
 - [ ] Use the same membership source for capacity checks, broadcasts, and inactivity detection.
 - [ ] Reap empty rooms even when former visitors remain connected to the lobby or another room.
 - [ ] Stop room timers and release callbacks when a room is removed; preserve the intended player-reconnection policy separately from socket membership.
