@@ -42,7 +42,7 @@ class Settings {
     this.showGamestats =
       JSON.parse(localStorage.getItem('showGamestats')) ?? true
 
-    this.speed = JSON.parse(localStorage.getItem('speed')) ?? NORMAL
+    this.speed = JSON.parse(localStorage.getItem('speed')) ?? FAST
   }
 
   set(key, value) {

@@ -357,5 +357,7 @@ button.modal-close:hover,
 }
 
 #speed-feedback {
+  margin-top: 0;
+  margin-bottom: var(--size-small);
   max-width: 24rem;
 }

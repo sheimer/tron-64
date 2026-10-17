@@ -148,6 +148,8 @@
   width: 100%;
   height: 100%;
 
+  /* Decorative labels must not intercept selection on the scores below. */
+  pointer-events: none;
   opacity: 0;
   transition: opacity 1s ease-out;
 }

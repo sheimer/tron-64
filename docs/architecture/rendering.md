@@ -85,6 +85,7 @@ Instead of clearing and redrawing the entire $320 \times 200$ canvas on every ti
 ### Arena & Match Layout
 
 - **Fixed Viewport CSS Grid:** Renders fixed-dimension arenas with responsive multiplicator scaling (`--multiplicator`), DPR alignment, and zero artificial scrollbars across desktop and mobile.
+- **Player-name overlay:** Names fade in during preparation and remain visible through the server's one-second countdown. Entering `running` removes the active class and fades them out over one second as bikes move. CSS owns the fade, so no delayed name callback can affect a later attempt. The decorative `#playernames` layer ignores pointer events, including while faded out, so it cannot block text selection on the score screen. Its opacity animation is independent of canvas paint synchronization.
 - **Next-round focus:** GameView focuses Start once when the game screen is in `finished` state and round-start permission becomes available, after the score reveal or later reconnection. Subsequent permission refreshes preserve the user's focus. Enter and Space use native button activation.
 
 ### Accessible Modals & Email Anti-Scraping
