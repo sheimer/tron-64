@@ -14,18 +14,18 @@
 - Branch: `feat/accurate-room-membership-and-cleanup`; base `main` at `30f0356068bcc873fdc92b8e5c78fc776baf60b4`.
 - Starting head: `c006c4822bb23abef74d829ab9c44d5abce635d7` (approved roadmap rationale documentation).
 - Existing PR/dependency: none at preparation.
-- Latest implementation candidate: `2716d086e602f5e15a3e7dfc673de2cc6b23eda8` (Phase 2).
+- Latest implementation candidate: `8cb70e1a8b62cacaeaa15d152e9038ecf6809ae9` (Phase 3; repair 1 in progress).
 - Last verified implementation candidate: `2716d086e602f5e15a3e7dfc673de2cc6b23eda8` (Phase 2). Approval checkpoint `c3c3af6` passed Tests run `39074867491` / job `117519804698`, with 34 suites and real Chromium journeys.
-- Status: Phase 3 candidate ready; real Chromium acceptance CI pending.
+- Status: Phase 3 repair 1 independently verified; publishing repaired candidate for real Chromium CI.
 - Local dependencies: `npm ci` succeeded on Node 24.19.0. Shell Git pushes lack authentication; supported GitHub connector writes are available and already proven. Preserve unrelated files and symlink modes in connector commits.
 
 ## Evidence by phase
 
-| Phase                                   | Candidate      | Local results                                                                                         | CI evidence                                                                                                  | Independent review                                   | Status     |
-| --------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ---------- |
-| 1: Membership and departure             | `c1b38ca`      | All Node suites passed; required local browser launch unavailable; scoped checks and benchmark passed | Tests `39075570744` / job `117521894492`: 35 suites passed, zero failed; required Chromium journeys executed | P1-T strengthened tests; P1-R no blocking findings   | Verified   |
-| 2: Expiry and destruction               | `2716d08`      | All Node suites and scoped checks passed; local Chromium missing                                      | Tests `39076752813` / job `117525379528`: 36 suites passed, zero failed; required Chromium executed          | P2-T strengthened tests; P2-R no blocking findings   | Verified   |
-| 3: Browser acceptance and documentation | This candidate | All Node suites and private IPC smoke passed; required browser launch unavailable locally             | Pending                                                                                                      | P3-T strengthened journey; P3-R no blocking findings | CI pending |
+| Phase                                   | Candidate | Local results                                                                                         | CI evidence                                                                                                  | Independent review                                            | Status               |
+| --------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | -------------------- |
+| 1: Membership and departure             | `c1b38ca` | All Node suites passed; required local browser launch unavailable; scoped checks and benchmark passed | Tests `39075570744` / job `117521894492`: 35 suites passed, zero failed; required Chromium journeys executed | P1-T strengthened tests; P1-R no blocking findings            | Verified             |
+| 2: Expiry and destruction               | `2716d08` | All Node suites and scoped checks passed; local Chromium missing                                      | Tests `39076752813` / job `117525379528`: 36 suites passed, zero failed; required Chromium executed          | P2-T strengthened tests; P2-R no blocking findings            | Verified             |
+| 3: Browser acceptance and documentation | `8cb70e1` | Node/fixture/scoped checks pass; local browser unavailable                                            | Push `39077930919` / PR `39077934710`: 36 passed, new browser journey failed score projection assertion      | P3-T and P3-R complete; repair returned to independent checks | Repair 1 in progress |
 
 ## Blockers and next action
 
@@ -110,6 +110,14 @@ Record delegation timestamps and actual outcomes here. Usage/token telemetry and
 - Scope: read-only final browser journey, isolated fixture and final lifecycle/testing docs; check acceptance, timing, diagnostics and no assertion weakening.
 - Usage and actual model/effort introspection: unavailable. First worker clock 2026-10-17T23:05:53Z after review began; end 23:07:02Z; exact elapsed unavailable.
 - Outcome: no blocking findings after final diff, both test files and relevant production paths. Async gates/barriers, required browser failure behavior, bounded IPC/physics/cleanup, coverage and credential-safe diagnostics were sound. Independently passed scoped ESLint/Prettier and whitespace checks. No edits. Residual requirement: exact-candidate real Chromium acceptance.
+
+### P3-I-F1 — Phase 3 / CI repair 1
+
+- Parent task P3-I; requested Sol/high retained, actual introspection unavailable.
+- Delegation boundary: 2026-10-17T23:12:45.042516+00:00; worker times pending.
+- Evidence: push job `117528850083` and PR job `117528861722` fail the same new-browser comparison at line 402. Browser-rendered score rows carry UI-only `_rank`/`_rankLabel`; authoritative score values match.
+- Scope: diagnose production score annotation and correct test comparison without dropping authoritative score/recovery coverage; no runtime changes or unchanged CI retries.
+- Usage and actual model/effort introspection unavailable. Worker-observed 2026-10-17T23:12:32Z–23:13:14Z (42s). Only durableScores test projection changed to omit existing connection flag and UI rank annotations; every remaining score field/messages/gamecount still exact. Scoped lint/format, scoreboard suite and direct helper sensitivity/immutability checks passed. P3-T recheck 2026-10-17T23:13:35Z–23:13:54Z passed actual helper sensitivity against production sorter and frozen sources: all authoritative fields, future fields, gamecount/messages still detect changes. P3-R re-review 23:13:40Z–23:13:50Z found no blocking issue and confirmed all other assertions unchanged. Both scoped checks passed; no writes. Actual model/effort/usage unavailable. Repaired-candidate CI remains required.
 
 ## Model-efficiency review
 

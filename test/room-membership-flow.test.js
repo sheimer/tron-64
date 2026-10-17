@@ -247,8 +247,13 @@ async function launch(page, key, selector) {
 function durableScores(info) {
   return {
     ...info.scores,
-    players: info.scores.players.map(({ connected, ...score }) => {
-      void connected
+    players: info.scores.players.map((player) => {
+      const score = { ...player }
+      // Connection is live state; GameView adds ranking annotations in place.
+      // Preserve every other wire score field in the recovery comparison.
+      delete score.connected
+      delete score._rank
+      delete score._rankLabel
       return score
     }),
   }
