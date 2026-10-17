@@ -38,10 +38,13 @@ function rememberSecrets(value) {
   if (
     typeof value === 'string' &&
     (/^[A-Za-z0-9_-]{43}$/.test(value) || /^[a-f0-9]{64}$/.test(value))
-  )
+  ) {
     secrets.add(value)
-  else if (value && typeof value === 'object')
-    for (const item of Object.values(value)) rememberSecrets(item)
+  } else if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) {
+      rememberSecrets(item)
+    }
+  }
 }
 function redactArchive(args) {
   return new Promise((resolve, reject) => {
@@ -55,8 +58,11 @@ function redactArchive(args) {
       },
       (error) => {
         redactors.delete(child)
-        if (error) reject(error)
-        else resolve()
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
       },
     )
     redactors.add(child)
@@ -106,8 +112,9 @@ async function startServer() {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   })
   children.push(server)
-  for (const stream of [server.stdout, server.stderr])
+  for (const stream of [server.stdout, server.stderr]) {
     stream.on('data', (chunk) => diagnostics.push(safe(chunk)))
+  }
   port = await new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('Fixture startup timeout')),
@@ -136,11 +143,16 @@ function rpc(command, key, extra = {}) {
       reject(new Error(`Fixture ${command} timeout`))
     }, 5000)
     function receive(message) {
-      if (message.id !== id) return
+      if (message.id !== id) {
+        return
+      }
       clearTimeout(timer)
       child.off('message', receive)
-      if (message.error) reject(new Error(message.error))
-      else resolve(message.result)
+      if (message.error) {
+        reject(new Error(message.error))
+      } else {
+        resolve(message.result)
+      }
     }
     child.on('message', receive)
     child.send({ id, command, key, ...extra })
@@ -150,7 +162,9 @@ async function waitServer(key, predicate) {
   const end = Date.now() + 7000
   do {
     const current = await rpc('inspect', key)
-    if (predicate(current)) return current
+    if (predicate(current)) {
+      return current
+    }
     await new Promise((resolve) => setTimeout(resolve, 20))
   } while (Date.now() < end)
   throw new Error(`Server condition timed out at ${step}`)
@@ -174,9 +188,9 @@ async function probe(page) {
     }
     const originalSend = network.socket.send.bind(network.socket)
     network.socket.send = (frame) => {
-      if (frame instanceof Uint8Array)
+      if (frame instanceof Uint8Array) {
         window.authorityProbe.binary.push([...frame])
-      else {
+      } else {
         const message = JSON.parse(frame)
         window.authorityProbe.outbound.push({
           type: message.type,
@@ -194,7 +208,9 @@ async function probe(page) {
     const ready = network.arenaReady.bind(network)
     network.arenaReady = (startId) => {
       window.authorityProbe.ready.push(startId)
-      if (!window.authorityProbe.hold) return ready(startId)
+      if (!window.authorityProbe.hold) {
+        return ready(startId)
+      }
     }
   })
 }
@@ -208,11 +224,13 @@ async function openPage(label, records, directKey) {
     snapshots: true,
     sources: true,
   })
-  if (records)
+  if (records) {
     await context.addInitScript((saved) => {
-      if (!sessionStorage.getItem('connectedGames'))
+      if (!sessionStorage.getItem('connectedGames')) {
         sessionStorage.setItem('connectedGames', JSON.stringify(saved))
+      }
     }, records)
+  }
   const page = await context.newPage()
   pages.push({ label, page })
   page.setDefaultTimeout(9000)
@@ -225,7 +243,9 @@ async function openPage(label, records, directKey) {
   assert.equal(response.status(), 200)
   await exposeBrowserFixture(page)
   await page.waitForFunction(() => window.browserFixture.network.isConnected())
-  if (!directKey) await page.locator('#btn-header-enter-lobby').click()
+  if (!directKey) {
+    await page.locator('#btn-header-enter-lobby').click()
+  }
   await probe(page)
   return page
 }
@@ -246,8 +266,9 @@ async function explicitJoin(page, key) {
     await page.evaluate(() =>
       Boolean(window.browserFixture.app.roomSession.currentGameKey),
     )
-  )
+  ) {
     await page.locator('#btn-header-lobby').click()
+  }
   await page.locator('#lobby').waitFor({ state: 'visible' })
   await page
     .locator('#body-gamelisttable tr')
@@ -290,8 +311,11 @@ async function forceError(page, type, payload, code) {
   )
 }
 async function launch(page, key, selector, activationKey) {
-  if (activationKey) await page.keyboard.press(activationKey)
-  else await page.locator(selector).click()
+  if (activationKey) {
+    await page.keyboard.press(activationKey)
+  } else {
+    await page.locator(selector).click()
+  }
   await waitServer(key, (room) => room.info.round.stage === 'countdown')
   const launched = await rpc('tick', key, { milliseconds: 1000 })
   assert.equal(launched.info.running, true)
@@ -365,7 +389,9 @@ async function run() {
 
   const rider = await openPage('shared-keyboard-rider', undefined, key)
   const spectator = await openPage('spectator', undefined, key)
-  for (const page of [rider, spectator]) await joined(page, key)
+  for (const page of [rider, spectator]) {
+    await joined(page, key)
+  }
   for (const [name, keys] of [
     ['Alice', '66_78'],
     ['Bob', '89_88'],
@@ -389,8 +415,9 @@ async function run() {
     assert.equal((await stateOf(page)).owner, false)
   }
   const beforeRejected = await rpc('inspect', key)
-  for (const page of [rider, spectator])
+  for (const page of [rider, spectator]) {
     await forceError(page, 'START_GAME', undefined, 'CREATOR_REQUIRED')
+  }
   assert.deepEqual(
     await rpc('inspect', key),
     beforeRejected,
@@ -568,10 +595,11 @@ async function run() {
   assert.equal(persisted.games[0].firstRoundStarted, true)
   assert.equal(persisted.games[0].stats.gamecount, 0)
   assert.deepEqual(persisted.games[0].stats.messages, [])
-  for (const page of [replacement, rider, spectator])
+  for (const page of [replacement, rider, spectator]) {
     await page.evaluate(() => {
       window.browserFixture.network.maxReconnectAttempts = 0
     })
+  }
   // Actual cold death before the first queued physics tick can invent a result.
   await stopServer()
   await rider.waitForFunction(
@@ -591,8 +619,9 @@ async function run() {
     'nextTick',
     'gameStarted',
     'creatorBound',
-  ])
+  ]) {
     assert.equal(restored[name], false)
+  }
   assert.equal(restored.owners, 0)
   assert.deepEqual(restored.clients, [])
 
@@ -767,7 +796,9 @@ try {
   )
   await Promise.allSettled(
     pages.map(async ({ label, page }) => {
-      if (page.isClosed()) return
+      if (page.isClosed()) {
+        return
+      }
       await page
         .screenshot({
           path: path.join(artifacts, `${label}.png`),
@@ -790,29 +821,38 @@ try {
 } finally {
   clearTimeout(deadline)
   const cleanupDeadline = setTimeout(() => {
-    for (const child of redactors) child.kill('SIGKILL')
+    for (const child of redactors) {
+      child.kill('SIGKILL')
+    }
     process.exit(1)
   }, 12000)
-  for (const child of children)
+  for (const child of children) {
     if (child.exitCode === null && child.signalCode === null) {
       const stopped = once(child, 'exit')
       child.kill('SIGKILL')
       await stopped
     }
+  }
   const traceResults = await Promise.allSettled(
     contexts.map(async ({ label, context }) => {
       // Raw traces are held only in the private temporary fixture directory.
-      if (process.exitCode) await preserveTrace(context, label)
-      else await context.tracing.stop()
+      if (process.exitCode) {
+        await preserveTrace(context, label)
+      } else {
+        await context.tracing.stop()
+      }
       await context.close()
     }),
   )
-  for (const result of traceResults)
+  for (const result of traceResults) {
     if (result.status === 'rejected') {
       process.exitCode = 1
       console.error(`Trace preservation failed: ${safe(result.reason)}`)
     }
-  if (browser) await browser.close()
+  }
+  if (browser) {
+    await browser.close()
+  }
   await rm(dataDir, { recursive: true, force: true })
   clearTimeout(cleanupDeadline)
 }

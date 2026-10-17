@@ -29,6 +29,7 @@ export default [
   },
   {
     rules: {
+      curly: ['error', 'all'],
       'comma-dangle': 'off',
       'space-before-function-paren': 'off',
       'no-unused-vars': [

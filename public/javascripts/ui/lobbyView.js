@@ -51,7 +51,9 @@ export class LobbyView {
   }
 
   createGame(payload) {
-    if (this.pendingCreation) return
+    if (this.pendingCreation) {
+      return
+    }
     const requestId = Array.from(crypto.getRandomValues(new Uint8Array(12)))
       .map((value) => value.toString(16).padStart(2, '0'))
       .join('')
@@ -67,8 +69,9 @@ export class LobbyView {
       if (
         this.pendingCreation !== pending ||
         pending.generation !== network.generation
-      )
+      ) {
         return
+      }
       if (pending.attempts >= 3) {
         this.clearPendingCreation()
         this.clearLobbyError()
@@ -94,20 +97,28 @@ export class LobbyView {
   clearLobbyError() {
     clearTimeout(this.lobbyErrorTimer)
     this.lobbyErrorTimer = null
-    if (this.lobbyError) this.lobbyError.style.display = 'none'
+    if (this.lobbyError) {
+      this.lobbyError.style.display = 'none'
+    }
   }
 
   requestLobbyList() {
-    if (!network.isConnected() || !network.protocolReady) return
+    if (!network.isConnected() || !network.protocolReady) {
+      return
+    }
     const records = Object.entries(state.connectedGames).filter(([key]) =>
       /^[a-f0-9]{8}$/.test(key),
     )
     const signature = JSON.stringify([network.generation, records])
-    if (signature === this.lobbyClaimsSignature) return
+    if (signature === this.lobbyClaimsSignature) {
+      return
+    }
     this.lobbyClaimsSignature = signature
     this.pendingLobbyChecks.clear()
     for (const key of this.verifiedLobbyRecords.keys()) {
-      if (!state.connectedGames[key]) this.verifiedLobbyRecords.delete(key)
+      if (!state.connectedGames[key]) {
+        this.verifiedLobbyRecords.delete(key)
+      }
     }
     for (
       let offset = 0;
@@ -137,14 +148,19 @@ export class LobbyView {
   }
 
   receiveLobbyList(list, msg) {
-    if (!Array.isArray(list)) return
+    if (!Array.isArray(list)) {
+      return
+    }
     if (msg?.requestId !== undefined) {
       const pending = this.pendingLobbyChecks.get(msg.requestId)
-      if (!pending || pending.generation !== network.generation) return
+      if (!pending || pending.generation !== network.generation) {
+        return
+      }
       this.pendingLobbyChecks.delete(msg.requestId)
       for (const [key, record] of pending.snapshots) {
-        if (JSON.stringify(state.connectedGames[key]) === record)
+        if (JSON.stringify(state.connectedGames[key]) === record) {
           this.verifiedLobbyRecords.set(key, record)
+        }
       }
     }
     // Only an explicit server absence for an unchanged checked record retires
@@ -159,14 +175,18 @@ export class LobbyView {
       : []
     state.set('gamesList', list)
     if (missing.length) {
-      for (const key of missing) this.verifiedLobbyRecords.delete(key)
+      for (const key of missing) {
+        this.verifiedLobbyRecords.delete(key)
+      }
       state.removeConnectedGames(missing)
     }
     this.updateGamelistTable(list)
   }
 
   renderStatusRow(message, extraClass = 'fg-fg-muted') {
-    if (!this.bodyGamelistTable) return
+    if (!this.bodyGamelistTable) {
+      return
+    }
 
     while (this.bodyGamelistTable.firstChild) {
       this.bodyGamelistTable.removeChild(this.bodyGamelistTable.lastChild)
@@ -184,7 +204,9 @@ export class LobbyView {
   }
 
   updateGamelistTable(list) {
-    if (!this.bodyGamelistTable) return
+    if (!this.bodyGamelistTable) {
+      return
+    }
 
     const rooms = Array.isArray(list) ? list : []
     if (rooms.length === 0) {
@@ -258,8 +280,12 @@ export class LobbyView {
     this.unsubscribers.forEach((unsub) => unsub())
     this.unsubscribers = []
 
-    if (this.container) this.container.style.display = ''
-    if (this.footer) this.footer.style.display = ''
+    if (this.container) {
+      this.container.style.display = ''
+    }
+    if (this.footer) {
+      this.footer.style.display = ''
+    }
 
     if (!state.gamesList || state.gamesList.length === 0) {
       if (network.isConnected()) {
@@ -314,8 +340,9 @@ export class LobbyView {
           !/^[a-f0-9]{8}$/.test(created?.key) ||
           !/^[a-f0-9]{32}$/.test(created.ownerClientId) ||
           !/^[A-Za-z0-9_-]{43}$/.test(created.roomOwnerToken)
-        )
+        ) {
           return
+        }
         this.clearPendingCreation()
         state.saveRoomOwner(created.key, {
           ownerClientId: created.ownerClientId,
@@ -327,14 +354,17 @@ export class LobbyView {
 
     this.unsubscribers.push(
       network.on(MSG_TYPE.ERROR, (errorMessage, msg) => {
-        if (msg?.requestId === this.pendingCreation?.requestId)
+        if (msg?.requestId === this.pendingCreation?.requestId) {
           this.clearPendingCreation()
+        }
         this.clearLobbyError()
         if (this.lobbyError) {
           this.lobbyError.textContent = `[!] ${errorMessage}`
           this.lobbyError.style.display = 'block'
           const timer = setTimeout(() => {
-            if (this.lobbyErrorTimer !== timer) return
+            if (this.lobbyErrorTimer !== timer) {
+              return
+            }
             this.lobbyErrorTimer = null
             if (this.lobbyError) {
               this.lobbyError.style.display = 'none'
@@ -355,8 +385,12 @@ export class LobbyView {
     this.pendingLobbyChecks.clear()
     this.verifiedLobbyRecords.clear()
     this.lobbyClaimsSignature = null
-    if (this.container) this.container.style.display = 'none'
-    if (this.footer) this.footer.style.display = 'none'
+    if (this.container) {
+      this.container.style.display = 'none'
+    }
+    if (this.footer) {
+      this.footer.style.display = 'none'
+    }
 
     this.unsubscribers.forEach((unsub) => unsub())
     this.unsubscribers = []

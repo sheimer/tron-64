@@ -4,7 +4,9 @@ export const initDropdowns = () => {
   document.querySelectorAll('.dropdown').forEach((dropdown) => {
     dropdown.onclick = (evt) => {
       const content = dropdown.querySelector('.dropdown-content')
-      if (!content) return
+      if (!content) {
+        return
+      }
 
       if (content.contains(evt.target)) {
         return

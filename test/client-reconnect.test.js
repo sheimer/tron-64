@@ -39,7 +39,9 @@ class FakeSocket {
   }
 
   close() {
-    if (this.readyState === 3) return
+    if (this.readyState === 3) {
+      return
+    }
     this.readyState = 3
     this.dispatch('close')
   }
@@ -92,7 +94,9 @@ try {
   const reloadButton = {
     style: { display: 'none' },
     addEventListener(type, callback) {
-      if (type === 'click') this.click = callback
+      if (type === 'click') {
+        this.click = callback
+      }
     },
   }
   const storage = new Map()

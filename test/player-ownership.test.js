@@ -29,14 +29,18 @@ async function connect() {
   ws.messages = []
   ws.waiters = []
   ws.on('message', (data, binary) => {
-    if (binary) return
+    if (binary) {
+      return
+    }
     const msg = JSON.parse(data.toString())
     const waiter = ws.waiters.find((w) => w.predicate(msg))
     if (waiter) {
       ws.waiters.splice(ws.waiters.indexOf(waiter), 1)
       clearTimeout(waiter.timer)
       waiter.resolve(msg)
-    } else ws.messages.push(msg)
+    } else {
+      ws.messages.push(msg)
+    }
   })
   await once(ws, 'open')
   assert.equal(
@@ -48,7 +52,9 @@ async function connect() {
 
 function receive(ws, predicate) {
   const index = ws.messages.findIndex(predicate)
-  if (index >= 0) return Promise.resolve(ws.messages.splice(index, 1)[0])
+  if (index >= 0) {
+    return Promise.resolve(ws.messages.splice(index, 1)[0])
+  }
   return new Promise((resolve, reject) => {
     const waiter = { predicate, resolve, timer: null }
     waiter.timer = setTimeout(() => {
@@ -390,9 +396,13 @@ try {
   )
 } finally {
   for (const ws of sockets) {
-    if (ws.readyState === WebSocket.OPEN) ws.terminate()
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.terminate()
+    }
   }
-  for (const key of createdKeys) gameServer.getGame(key)?.destroy()
+  for (const key of createdKeys) {
+    gameServer.getGame(key)?.destroy()
+  }
   await new Promise((resolve) => server.close(resolve))
   rmSync(dataDir, { recursive: true, force: true })
 }

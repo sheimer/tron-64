@@ -182,13 +182,15 @@ try {
     { owner = false, bikes = false, round, played = false } = {},
   ) {
     state.setCurrentGame(key, key)
-    if (owner)
+    if (owner) {
       state.saveRoomOwner(key, {
         ownerClientId: 'a'.repeat(32),
         roomOwnerToken: 'A'.repeat(43),
       })
-    if (bikes)
+    }
+    if (bikes) {
       state.addLocalPlayer('one', { left: 65, right: 68 }, 'B'.repeat(43))
+    }
     app.joinGame(key)
     const request = socket.messages(MSG_TYPE.JOIN_GAME).at(-1)
     socket.receive(
@@ -343,10 +345,15 @@ try {
     stage(`reset-${operation}`, 'running')
     finish(`reset-${operation}`)
     const delayedReveal = callbacks.get(pending(1000).at(-1)[0])
-    if (operation === 'leave') app.leaveCurrentGame()
-    else if (operation === 'switch') join('replacement-room', { bikes: true })
-    else if (operation === 'close') socket.close()
-    else network.generation++
+    if (operation === 'leave') {
+      app.leaveCurrentGame()
+    } else if (operation === 'switch') {
+      join('replacement-room', { bikes: true })
+    } else if (operation === 'close') {
+      socket.close()
+    } else {
+      network.generation++
+    }
     const after = observed()
     const ready = socket.messages(MSG_TYPE.ARENA_READY).length
     delayedReset()

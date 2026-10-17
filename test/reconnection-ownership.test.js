@@ -28,7 +28,9 @@ const nextRequest = () => `test-${++requestNumber}`
 
 function receive(ws, predicate) {
   const index = ws.messages.findIndex(predicate)
-  if (index >= 0) return Promise.resolve(ws.messages.splice(index, 1)[0])
+  if (index >= 0) {
+    return Promise.resolve(ws.messages.splice(index, 1)[0])
+  }
   return new Promise((resolve, reject) => {
     const waiter = { predicate, resolve, timer: null }
     waiter.timer = setTimeout(() => {
@@ -45,14 +47,18 @@ async function connect() {
   ws.messages = []
   ws.waiters = []
   ws.on('message', (data, binary) => {
-    if (binary) return
+    if (binary) {
+      return
+    }
     const message = JSON.parse(data.toString())
     const index = ws.waiters.findIndex((w) => w.predicate(message))
     if (index >= 0) {
       const [waiter] = ws.waiters.splice(index, 1)
       clearTimeout(waiter.timer)
       waiter.resolve(message)
-    } else ws.messages.push(message)
+    } else {
+      ws.messages.push(message)
+    }
   })
   await once(ws, 'open')
   assert.equal(
@@ -268,7 +274,9 @@ try {
     const count = room === 42 ? 3 : 6
     for (let i = 0; i < count; i++) {
       const registered = await register(exhausted, `capacity-${room}-${i}`)
-      if (room === 42 && i === 0) assert.equal(registered.inputHandle, 252)
+      if (room === 42 && i === 0) {
+        assert.equal(registered.inputHandle, 252)
+      }
     }
   }
   const oldKey = keys.at(-1)
@@ -370,9 +378,13 @@ try {
   )
 } finally {
   for (const ws of sockets) {
-    if (ws.readyState === WebSocket.OPEN) ws.terminate()
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.terminate()
+    }
   }
-  for (const key of keys) gameServer.getGame(key)?.destroy()
+  for (const key of keys) {
+    gameServer.getGame(key)?.destroy()
+  }
   await new Promise((resolve) => server.close(resolve))
   rmSync(dataDir, { recursive: true, force: true })
 }

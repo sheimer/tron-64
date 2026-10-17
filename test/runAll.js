@@ -53,7 +53,9 @@ try {
         for (const { stream, chunk } of result.output) {
           process[stream].write(chunk)
         }
-        if (result.error) console.error(result.error.message)
+        if (result.error) {
+          console.error(result.error.message)
+        }
         const status = result.passed ? 'PASSED' : 'FAILED'
         const reason = result.timedOut
           ? 'timed out after 120000ms'

@@ -15,7 +15,9 @@ let playwright
 try {
   playwright = await import('playwright')
 } catch {
-  if (process.env.CI) throw new Error('Playwright is required in CI')
+  if (process.env.CI) {
+    throw new Error('Playwright is required in CI')
+  }
   console.log(
     '\n⏩ [SKIPPED] test/client-leak.test.js (playwright not installed)\n',
   )
@@ -62,7 +64,9 @@ try {
       ],
     })
   } catch (launchErr) {
-    if (process.env.CI) throw launchErr
+    if (process.env.CI) {
+      throw launchErr
+    }
     console.log(
       `\n⏩ [SKIPPED] test/client-leak.test.js (Chromium cannot launch in this environment: ${launchErr.message.split('\n')[0]})\n`,
     )
@@ -361,7 +365,7 @@ try {
     console.error('Client leak state:', client)
   }
   const room = gameServer.getGame(lifecycle?.roomKey)
-  if (room)
+  if (room) {
     console.error('Client leak server state:', {
       running: room.running,
       pending: Boolean(room.pendingStart),
@@ -369,11 +373,18 @@ try {
       eligiblePlayerCount: room.eligiblePlayerCount,
       completedRounds: room.stats.gamecount,
     })
+  }
   process.exitCode = 1
 } finally {
-  if (cdp) await cdp.detach().catch(() => {})
-  if (context) await context.close().catch(() => {})
-  if (browser) await browser.close().catch(() => {})
+  if (cdp) {
+    await cdp.detach().catch(() => {})
+  }
+  if (context) {
+    await context.close().catch(() => {})
+  }
+  if (browser) {
+    await browser.close().catch(() => {})
+  }
   if (server) {
     server.closeAllConnections?.()
     await new Promise((resolve) => server.close(resolve))

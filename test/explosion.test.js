@@ -219,7 +219,9 @@ assert.strictEqual(
 
 // Advance simulation until offline player explosion finishes
 for (let i = 0; i < 30; i++) {
-  if (arena.explosions.length === 0) break
+  if (arena.explosions.length === 0) {
+    break
+  }
   arena.run()
 }
 // Force expiry if any particles are lingering
@@ -257,7 +259,9 @@ clientFields[10][21] = CELL_TYPE.EXPLOSION
 let clientExplosions = 0
 for (let x = 0; x < GRID_SIZE.x; x++) {
   for (let y = 0; y < GRID_SIZE.y; y++) {
-    if (clientFields[x][y] === CELL_TYPE.EXPLOSION) clientExplosions++
+    if (clientFields[x][y] === CELL_TYPE.EXPLOSION) {
+      clientExplosions++
+    }
   }
 }
 assert.strictEqual(
@@ -288,7 +292,9 @@ for (let x = 0; x < GRID_SIZE.x; x++) {
 let residualClientExplosions = 0
 for (let x = 0; x < GRID_SIZE.x; x++) {
   for (let y = 0; y < GRID_SIZE.y; y++) {
-    if (clientFields[x][y] === CELL_TYPE.EXPLOSION) residualClientExplosions++
+    if (clientFields[x][y] === CELL_TYPE.EXPLOSION) {
+      residualClientExplosions++
+    }
   }
 }
 assert.strictEqual(

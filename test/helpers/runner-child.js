@@ -20,17 +20,21 @@ process.stdout.write(`stdout:${id}\n`)
 process.stderr.write(`stderr:${id}\n`)
 record('start')
 
-if (mode === 'fail') process.exit(7)
-else if (mode === 'signal') process.kill(process.pid, 'SIGTERM')
-else if (mode === 'hang') setInterval(() => {}, 60_000)
-else if (mode === 'descendant') {
+if (mode === 'fail') {
+  process.exit(7)
+} else if (mode === 'signal') {
+  process.kill(process.pid, 'SIGTERM')
+} else if (mode === 'hang') {
+  setInterval(() => {}, 60_000)
+} else if (mode === 'descendant') {
   // The immediate child exits successfully, but its descendant keeps the
   // captured pipes open. The runner's deadline must still reap that process.
   spawn(process.execPath, ['-e', 'setInterval(() => {}, 60000)'], {
     stdio: 'inherit',
   }).unref()
-} else if (mode === 'auto') record('end')
-else {
+} else if (mode === 'auto') {
+  record('end')
+} else {
   const release = path.join(directory, `release-${id}`)
   const watcher = fs.watch(directory, () => {
     if (fs.existsSync(release)) {

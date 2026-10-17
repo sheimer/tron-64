@@ -56,12 +56,13 @@ try {
     () => game.changeInterval(bikes, 40, () => true),
     'CREATOR_REQUIRED',
   )
-  for (const invalid of [9, 501, 25.5, '25', null, NaN, Infinity])
+  for (const invalid of [9, 501, 25.5, '25', null, NaN, Infinity]) {
     rejectsUnchanged(
       game,
       () => game.changeInterval(creator, invalid, () => true),
       'INVALID_INTERVAL',
     )
+  }
   rejectsUnchanged(
     game,
     () => game.changeInterval(creator, 40, () => false),
@@ -122,7 +123,9 @@ try {
     const next = game.beginRound(requester).pending
     assert.ok(next, 'Any joined client may request a later round')
     // Later spectator departure alone does not invalidate a valid attempt.
-    if (requester === spectator) requester.gameKey = null
+    if (requester === spectator) {
+      requester.gameKey = null
+    }
     assert.equal(
       game.launchRound(next, () => {
         throw new Error('Marker already durable')
@@ -141,8 +144,11 @@ try {
   for (const change of ['owner', 'bike']) {
     const { game: other, creator: initial, bikes: participant } = room()
     const attempt = other.beginRound(initial).pending
-    if (change === 'owner') other.roomOwner.bind(socket(other))
-    else participant.gameKey = 'elsewhere'
+    if (change === 'owner') {
+      other.roomOwner.bind(socket(other))
+    } else {
+      participant.gameKey = 'elsewhere'
+    }
     assert.equal(
       other.launchRound(attempt, () => true).code,
       change === 'owner' ? 'CREATOR_REQUIRED' : 'INSUFFICIENT_PLAYERS',
@@ -164,5 +170,9 @@ try {
     'Round authority domain: independent creator, eligibility, durable launch and rejection invariants passed',
   )
 } finally {
-  for (const game of games) if (game.arena) game.destroy()
+  for (const game of games) {
+    if (game.arena) {
+      game.destroy()
+    }
+  }
 }

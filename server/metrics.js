@@ -22,8 +22,11 @@ export const activeRoomsGauge = new client.Gauge({
     let priv = 0
     if (gameServerInstance && Array.isArray(gameServerInstance.games)) {
       for (const g of gameServerInstance.games) {
-        if (g.isPublic) pub++
-        else priv++
+        if (g.isPublic) {
+          pub++
+        } else {
+          priv++
+        }
       }
     }
     this.set({ visibility: 'public' }, pub)

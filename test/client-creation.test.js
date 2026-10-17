@@ -25,7 +25,9 @@ try {
   }
   const advance = (duration) => {
     const target = now + duration
-    while ([...timers.values()].some((timer) => timer.at <= target)) nextTimer()
+    while ([...timers.values()].some((timer) => timer.at <= target)) {
+      nextTimer()
+    }
     now = target
   }
   const saved = new Map()

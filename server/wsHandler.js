@@ -55,8 +55,9 @@ const controlErrors = {
 const releaseOwnedPlayers = (ws, game) => {
   // The room map is authoritative even if the socket index is stale.
   for (const [id, owner] of game?.ownership.owners ?? []) {
-    if (owner === ws && game.ownership.release(id, ws))
+    if (owner === ws && game.ownership.release(id, ws)) {
       game.disconnectPlayer(id)
+    }
   }
   game?.roomOwner.release(ws)
   game?.reconcilePendingStart()
@@ -67,7 +68,9 @@ const releaseOwnedPlayers = (ws, game) => {
 }
 
 const encodeBinaryDraw = (changes) => {
-  if (!changes || !changes.length) return null
+  if (!changes || !changes.length) {
+    return null
+  }
   const buf = Buffer.allocUnsafe(1 + changes.length * 5)
   buf.writeUInt8(BINARY_OPCODE.DRAW, 0)
   for (let i = 0; i < changes.length; i++) {
@@ -119,7 +122,9 @@ export const setupWebSocketServer = (server) => {
     for (const game of ws.lobbyRooms) {
       if (gameServer.getGame(game.key) !== game) {
         ws.lobbyRooms.delete(game)
-        if (!gameServer.getGame(game.key)) missingKeys.push(game.key)
+        if (!gameServer.getGame(game.key)) {
+          missingKeys.push(game.key)
+        }
       }
     }
     wsMessagesSentCounter.inc({ type: 'text' })
@@ -175,8 +180,9 @@ export const setupWebSocketServer = (server) => {
           raw.length !== 3 ||
           raw[0] !== BINARY_OPCODE.CHANGE_DIR ||
           raw[2] > 1
-        )
+        ) {
           return
+        }
         const game = gameServer.getGame(ws.gameKey)
         const id = ws.idsByHandle.get(raw[1])
         if (game && id !== undefined && game.ownership.owns(id, ws)) {
@@ -337,8 +343,9 @@ export const setupWebSocketServer = (server) => {
               response,
               game: gameServer.getGame(key),
             })
-            if (ws.creationRetries.size > retryLimit)
+            if (ws.creationRetries.size > retryLimit) {
               ws.creationRetries.delete(ws.creationRetries.keys().next().value)
+            }
             ws.send(JSON.stringify(response))
             broadcastLobbyList()
             break
@@ -417,13 +424,14 @@ export const setupWebSocketServer = (server) => {
             const accepted = []
             const rejected = []
             for (const claim of claims) {
-              if (game.ownership.verify(claim?.id, claim?.reconnectToken))
+              if (game.ownership.verify(claim?.id, claim?.reconnectToken)) {
                 accepted.push(claim.id)
-              else
+              } else {
                 rejected.push({
                   id: typeof claim?.id === 'string' ? claim.id : null,
                   code: 'INVALID_CREDENTIAL',
                 })
+              }
             }
             const allocations = accepted.filter(
               (id) =>
@@ -448,8 +456,9 @@ export const setupWebSocketServer = (server) => {
               const oldKey = ws.gameKey
               const oldGame = gameServer.getGame(oldKey)
               releaseOwnedPlayers(ws, oldGame)
-              if (oldGame)
+              if (oldGame) {
                 oldGame.clients = oldGame.clients.filter((c) => c !== ws)
+              }
               ws.gameKey = null
               if (oldGame) {
                 broadcastToRoom(oldKey, {
@@ -476,7 +485,9 @@ export const setupWebSocketServer = (server) => {
                   })
                 },
                 onstate: (transition) => {
-                  if (gameServer.getGame(gameKey) !== game) return
+                  if (gameServer.getGame(gameKey) !== game) {
+                    return
+                  }
                   broadcastToRoom(gameKey, {
                     type: MSG_TYPE.GAME_STATE,
                     payload: transition,
@@ -501,7 +512,7 @@ export const setupWebSocketServer = (server) => {
                 previous &&
                 previous !== ws &&
                 previous.readyState === WebSocket.OPEN
-              )
+              ) {
                 previous.send(
                   JSON.stringify({
                     type: MSG_TYPE.ROOM_OWNER_REVOKED,
@@ -512,6 +523,7 @@ export const setupWebSocketServer = (server) => {
                     },
                   }),
                 )
+              }
             }
             const revoked = new Map()
             const bindings = accepted.map((id) => {
@@ -521,7 +533,9 @@ export const setupWebSocketServer = (server) => {
                 previous !== ws &&
                 previous.readyState === WebSocket.OPEN
               ) {
-                if (!revoked.has(previous)) revoked.set(previous, [])
+                if (!revoked.has(previous)) {
+                  revoked.set(previous, [])
+                }
                 revoked.get(previous).push(id)
               }
               let inputHandle = ws.handlesById.get(id)
@@ -530,15 +544,18 @@ export const setupWebSocketServer = (server) => {
                 ws.handlesById.set(id, inputHandle)
                 ws.idsByHandle.set(inputHandle, id)
               }
-              if (!previous) game.reconnectPlayer(id)
+              if (!previous) {
+                game.reconnectPlayer(id)
+              }
               return { id, inputHandle }
             })
             // Compare after the whole successful claim set has committed.
             if (
               !game.sameRoundRoster(rosterBefore) ||
               creatorBefore !== game.roomOwner.socket
-            )
+            ) {
               game.reconcilePendingStart()
+            }
             for (const [previous, ids] of revoked) {
               previous.send(
                 JSON.stringify({
@@ -573,11 +590,12 @@ export const setupWebSocketServer = (server) => {
                 payload: gameInfo,
               }),
             )
-            if (bindings.length || ownerAccepted)
+            if (bindings.length || ownerAccepted) {
               broadcastToRoom(gameKey, {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(gameKey),
               })
+            }
 
             break
           }
@@ -587,7 +605,9 @@ export const setupWebSocketServer = (server) => {
               const gameKey = ws.gameKey
               const game = gameServer.getGame(gameKey)
               releaseOwnedPlayers(ws, game)
-              if (game) game.clients = game.clients.filter((c) => c !== ws)
+              if (game) {
+                game.clients = game.clients.filter((c) => c !== ws)
+              }
               ws.gameKey = null
               ws.protocolReady = false
               if (game) {
@@ -703,13 +723,14 @@ export const setupWebSocketServer = (server) => {
                 type: MSG_TYPE.GAME_INFO,
                 payload: gameServer.getGameInfo(ws.gameKey),
               })
-            } else
+            } else {
               sendError(
                 ws,
                 'INVALID_REGISTRATION',
                 'Invalid player registration.',
                 requestId,
               )
+            }
             break
           }
 
@@ -721,22 +742,24 @@ export const setupWebSocketServer = (server) => {
               save: () => gameServer.saveToStorage(),
               isCurrent: () => gameServer.getGame(gameKey) === game,
               onError: (failure) => {
-                if (ws.readyState === WebSocket.OPEN)
+                if (ws.readyState === WebSocket.OPEN) {
                   sendError(
                     ws,
                     failure.code,
                     controlErrors[failure.code] ?? 'The round was cancelled.',
                     msg.requestId,
                   )
+                }
               },
             }) ?? { ok: false, code: 'NOT_IN_ROOM' }
-            if (!result.ok)
+            if (!result.ok) {
               sendError(
                 ws,
                 result.code,
                 controlErrors[result.code],
                 msg.requestId,
               )
+            }
             break
           }
 

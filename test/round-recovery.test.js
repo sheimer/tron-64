@@ -24,7 +24,7 @@ async function serve() {
   process.on('message', ({ id, command, key, milliseconds }) => {
     const game = gameServer.getGame(key)
     let result
-    if (command === 'inspect')
+    if (command === 'inspect') {
       result = {
         info: gameServer.getGameInfo(key),
         acceptingPlayers: game.acceptingPlayers,
@@ -38,7 +38,7 @@ async function serve() {
           owner: game.roomOwner.owns(client),
         })),
       }
-    else if (command === 'tick') {
+    } else if (command === 'tick') {
       // Advance exactly to launch, leaving the first real physics tick queued.
       // The process crashes before a collision can manufacture completed scores.
       mock.timers.tick(milliseconds)
@@ -51,8 +51,11 @@ async function serve() {
   })
 }
 
-if (process.argv.includes('--recovery-child')) await serve()
-else await verify()
+if (process.argv.includes('--recovery-child')) {
+  await serve()
+} else {
+  await verify()
+}
 
 async function verify() {
   const dirs = []
@@ -154,7 +157,9 @@ async function verify() {
         reject(new Error(`Recovery child command ${command} timed out`))
       }, 4000)
       function receive(message) {
-        if (message.id !== id) return
+        if (message.id !== id) {
+          return
+        }
         clearTimeout(timer)
         child.off('message', receive)
         resolve(message.result)
@@ -170,8 +175,9 @@ async function verify() {
     })
     children.push(child)
     child.output = ''
-    for (const stream of [child.stdout, child.stderr])
+    for (const stream of [child.stdout, child.stderr]) {
       stream.on('data', (chunk) => (child.output += chunk.toString()))
+    }
     const { port } = await new Promise((resolve, reject) => {
       const timer = setTimeout(
         () => reject(new Error(`Recovery startup timed out: ${child.output}`)),
@@ -187,7 +193,9 @@ async function verify() {
   }
   function receive(ws, predicate) {
     const index = ws.queue.findIndex(predicate)
-    if (index >= 0) return Promise.resolve(ws.queue.splice(index, 1)[0])
+    if (index >= 0) {
+      return Promise.resolve(ws.queue.splice(index, 1)[0])
+    }
     return new Promise((resolve, reject) => {
       const waiter = { predicate, resolve }
       waiter.timer = setTimeout(() => {
@@ -204,12 +212,15 @@ async function verify() {
     ws.history = []
     ws.waiters = []
     ws.on('message', (data, binary) => {
-      if (binary) return
+      if (binary) {
+        return
+      }
       const message = JSON.parse(data.toString())
       ws.history.push(message)
       const index = ws.waiters.findIndex((waiter) => waiter.predicate(message))
-      if (index < 0) ws.queue.push(message)
-      else {
+      if (index < 0) {
+        ws.queue.push(message)
+      } else {
         const [waiter] = ws.waiters.splice(index, 1)
         clearTimeout(waiter.timer)
         waiter.resolve(message)
@@ -272,11 +283,18 @@ async function verify() {
     // transient fields deliberately challenge the cold-restore boundary.
     for (const marker of [false, true, undefined]) {
       for (const count of [0, undefined, 2, Number.MAX_SAFE_INTEGER]) {
-        if (marker === false && count > 0) continue
+        if (marker === false && count > 0) {
+          continue
+        }
         const record = baseRecord()
-        if (marker !== undefined) record.firstRoundStarted = marker
-        if (count === undefined) delete record.stats.gamecount
-        else record.stats.gamecount = count
+        if (marker !== undefined) {
+          record.firstRoundStarted = marker
+        }
+        if (count === undefined) {
+          delete record.stats.gamecount
+        } else {
+          record.stats.gamecount = count
+        }
         Object.assign(record, {
           pendingStart: { startId: 'do-not-restore' },
           startId: 'old',
@@ -315,7 +333,9 @@ async function verify() {
         [],
       ]) {
         const record = baseRecord()
-        if (marker !== undefined) record.firstRoundStarted = marker
+        if (marker !== undefined) {
+          record.firstRoundStarted = marker
+        }
         record.stats.gamecount = count
         invalid.push(record)
       }
@@ -478,8 +498,9 @@ async function verify() {
       'running',
       'clients',
       'handles',
-    ])
+    ]) {
       assert.equal(Object.hasOwn(launched.games[0], transient), false)
+    }
     assert.equal(
       readFileSync(snapshot(dir), 'utf8').includes(room.roomOwnerToken),
       false,
@@ -566,11 +587,12 @@ async function verify() {
         'CREATOR_REQUIRED',
       )
       if (history === 0) {
-        for (const ws of [recoveredRider, recoveredSpectator])
+        for (const ws of [recoveredRider, recoveredSpectator]) {
           assert.equal(
             (await request(ws, MSG_TYPE.START_GAME)).code,
             'CREATOR_REQUIRED',
           )
+        }
         assert.deepEqual(
           await rpc(recoveredServer.child, 'inspect', { key: room.key }),
           before,
@@ -596,7 +618,9 @@ async function verify() {
       `Round recovery: strict matrix (${invalid.length} invalid variants), snapshot-wide protection, independent proofs, legacy policy and real crash/restart passed`,
     )
   } finally {
-    for (const ws of sockets) ws.terminate()
+    for (const ws of sockets) {
+      ws.terminate()
+    }
     for (const child of children) {
       if (child.exitCode === null && child.signalCode === null) {
         const exited = once(child, 'exit')
@@ -604,8 +628,13 @@ async function verify() {
         await exited
       }
     }
-    for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
-    if (previousDataDir === undefined) delete process.env.DATA_DIR
-    else process.env.DATA_DIR = previousDataDir
+    for (const dir of dirs) {
+      rmSync(dir, { recursive: true, force: true })
+    }
+    if (previousDataDir === undefined) {
+      delete process.env.DATA_DIR
+    } else {
+      process.env.DATA_DIR = previousDataDir
+    }
   }
 }

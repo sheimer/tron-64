@@ -31,18 +31,23 @@ export class RoundLifecycle {
   initNetworkListeners() {
     const { state, network } = this
     network.on(MSG_TYPE.GAME_STATE, (transition) => {
-      if (!transition || transition.key !== this.getRoomKey()) return
-      if (transition.startId !== this.currentStartId) return
+      if (!transition || transition.key !== this.getRoomKey()) {
+        return
+      }
+      if (transition.startId !== this.currentStartId) {
+        return
+      }
       if (transition.reason) {
         this.clearRoundCallbacks()
         this.currentStartId = null
         this.roundStage = transition.stage
-        if (state.roundInfo)
+        if (state.roundInfo) {
           state.roundInfo = {
             ...state.roundInfo,
             running: false,
             round: { stage: transition.stage, startId: null },
           }
+        }
         this.renderer.clear()
         state.set('positions', {})
         this.setScreen(transition.stage === 'configuration' ? 'config' : 'game')
@@ -66,15 +71,18 @@ export class RoundLifecycle {
         return
       }
       this.roundStage = transition.stage
-      if (state.roundInfo)
+      if (state.roundInfo) {
         state.roundInfo = {
           ...state.roundInfo,
           running: transition.stage === 'running',
           round: { ...state.roundInfo.round, stage: transition.stage },
         }
-      if (transition.stage === 'running') this.setMatchState('running')
-      else if (['preparation', 'countdown'].includes(transition.stage))
+      }
+      if (transition.stage === 'running') {
+        this.setMatchState('running')
+      } else if (['preparation', 'countdown'].includes(transition.stage)) {
         this.setMatchState('start')
+      }
     })
 
     network.on(MSG_TYPE.GAME_RESET, (reset) => {
@@ -82,7 +90,9 @@ export class RoundLifecycle {
     })
 
     network.on(MSG_TYPE.GAME_DRAW, (changes) => {
-      if (!this.getRoomKey()) return
+      if (!this.getRoomKey()) {
+        return
+      }
       this.renderer.draw(changes)
     })
 
@@ -92,23 +102,27 @@ export class RoundLifecycle {
         result.key !== this.getRoomKey() ||
         typeof result.startId !== 'string' ||
         result.startId !== this.currentStartId
-      )
+      ) {
         return
+      }
       this.clearRoundCallbacks()
       this.roundStage = 'finished'
-      if (state.roundInfo)
+      if (state.roundInfo) {
         state.roundInfo = {
           ...state.roundInfo,
           running: false,
           round: { stage: 'finished', startId: result.startId },
         }
+      }
       state.set('scores', result.scores)
       this.gameView.updateScores(result.scores, state.players)
       this.renderer.clear()
       this.setMatchState('scores')
       const guard = this.roundCallbackGuard()
       this.scoreTimer = setTimeout(() => {
-        if (!guard()) return
+        if (!guard()) {
+          return
+        }
         this.scoreTimer = null
         this.setMatchState('finished')
       }, 1000)
@@ -144,18 +158,22 @@ export class RoundLifecycle {
       typeof round.startId !== 'string' ||
       !round.positions ||
       typeof round.positions !== 'object'
-    )
+    ) {
       return
-    if (this.currentStartId === round.startId) return
+    }
+    if (this.currentStartId === round.startId) {
+      return
+    }
     this.clearRoundCallbacks()
     this.currentStartId = round.startId
     this.roundStage = round.stage ?? 'preparation'
-    if (state.roundInfo)
+    if (state.roundInfo) {
       state.roundInfo = {
         ...state.roundInfo,
         running: false,
         round: { ...round, stage: this.roundStage },
       }
+    }
     this.showConnectionFeedback('')
     state.set('positions', round.positions)
     this.renderer.clear()
@@ -164,8 +182,9 @@ export class RoundLifecycle {
     this.gameView.updatePlayerPositions(state.players, round.positions)
     const guard = this.roundCallbackGuard()
     this.resetTimer = setTimeout(() => {
-      if (!guard() || !['preparation', 'countdown'].includes(this.roundStage))
+      if (!guard() || !['preparation', 'countdown'].includes(this.roundStage)) {
         return
+      }
       this.resetTimer = null
       this.renderer.resetGrid()
       if (
@@ -173,8 +192,9 @@ export class RoundLifecycle {
           (player) =>
             player.connected !== false && state.isLocalPlayer(player.id),
         )
-      )
+      ) {
         network.arenaReady(round.startId)
+      }
     }, 50)
   }
 
@@ -188,7 +208,9 @@ export class RoundLifecycle {
   applySnapshot(info) {
     const { state } = this
     const round = info.round
-    if (!round) return
+    if (!round) {
+      return
+    }
     if (['preparation', 'countdown'].includes(round.stage)) {
       this.prepareRound({ key: info.key, ...round })
       this.roundStage = round.stage
@@ -202,20 +224,27 @@ export class RoundLifecycle {
     } else if (round.stage === 'finished') {
       const revealing =
         this.currentStartId === round.startId && this.scoreTimer !== null
-      if (this.currentStartId !== round.startId) this.clearRoundCallbacks()
+      if (this.currentStartId !== round.startId) {
+        this.clearRoundCallbacks()
+      }
       this.currentStartId = round.startId
       this.roundStage = round.stage
       this.setScreen('game')
-      if (!revealing) this.setMatchState('finished')
-      if (info.firstRoundStarted && info.scores?.gamecount === 0)
+      if (!revealing) {
+        this.setMatchState('finished')
+      }
+      if (info.firstRoundStarted && info.scores?.gamecount === 0) {
         this.showConnectionFeedback(
           'The first round launch was saved, but no round completed. Registration is closed. Reconnect saved bikes to start the next round.',
         )
+      }
     } else if (round.stage === 'running') {
       const prepared =
         this.currentStartId === round.startId &&
         state.matchState !== 'scoresWaiting'
-      if (!prepared) this.clearRoundCallbacks()
+      if (!prepared) {
+        this.clearRoundCallbacks()
+      }
       this.currentStartId = round.startId
       this.roundStage = round.stage
       this.setScreen('game')

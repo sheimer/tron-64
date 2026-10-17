@@ -75,9 +75,13 @@ export class Storage {
    * @param {Array<import('./GameSession.js').GameSession>} games
    */
   saveGames(games) {
-    if (!Array.isArray(games) || this.readOnly) return false
+    if (!Array.isArray(games) || this.readOnly) {
+      return false
+    }
 
-    if (!this.ensureDir()) return false
+    if (!this.ensureDir()) {
+      return false
+    }
 
     try {
       const serialized = games.map((game) => ({
@@ -164,13 +168,14 @@ export class Storage {
       // The versioned schema is the only format allowed to restore verifiers.
       // Validate the entire snapshot before creating even one session. Only
       // absent fields migrate; malformed present metadata protects the file.
-      if (records && records.every(validRoomRecord))
+      if (records && records.every(validRoomRecord)) {
         return records.map((record) => ({
           ...record,
           stats: { ...record.stats, gamecount: record.stats.gamecount ?? 0 },
           firstRoundStarted:
             record.firstRoundStarted ?? (record.stats.gamecount ?? 0) > 0,
         }))
+      }
       this.readOnly = true
       this.loadError =
         parsed?.version === SNAPSHOT_VERSION || Array.isArray(parsed)

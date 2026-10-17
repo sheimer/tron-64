@@ -35,8 +35,9 @@ async function run() {
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     },
   )
-  for (const stream of [server.stdout, server.stderr])
+  for (const stream of [server.stdout, server.stderr]) {
     stream.on('data', (chunk) => diagnostics.push(chunk.toString()))
+  }
   const port = await new Promise((resolve, reject) => {
     server.once('message', resolve)
     server.once('error', reject)
@@ -52,10 +53,11 @@ async function run() {
       viewport: { width: 1280, height: 900 },
     })
     contexts.push(context)
-    if (records)
+    if (records) {
       await context.addInitScript((saved) => {
         sessionStorage.setItem('connectedGames', JSON.stringify(saved))
       }, records)
+    }
     const page = await context.newPage()
     pages.push({ label, page })
     page.setDefaultTimeout(10000)
@@ -130,8 +132,9 @@ async function run() {
   const [transferredId, retainedId] = registration.ids
   const saved = registration.records[key].localPlayers
   assert.equal(Object.keys(saved).length, 2)
-  for (const id of registration.ids)
+  for (const id of registration.ids) {
     assert.match(saved[id].reconnectToken, /^[A-Za-z0-9_-]{43}$/)
+  }
 
   // Exhaustion recovery uses the visible reload action and the ordinary
   // saved-credential rejoin path, without a parallel socket.
@@ -231,7 +234,9 @@ async function run() {
       const frames = []
       const original = network.socket.send.bind(network.socket)
       network.socket.send = (frame) => {
-        if (frame instanceof Uint8Array) frames.push([...frame])
+        if (frame instanceof Uint8Array) {
+          frames.push([...frame])
+        }
         return original(frame)
       }
       const rejected = network.changeDir({ id: lost, dir: 'left' })
@@ -253,7 +258,9 @@ async function run() {
     const frames = []
     const original = network.socket.send.bind(network.socket)
     network.socket.send = (frame) => {
-      if (frame instanceof Uint8Array) frames.push([...frame])
+      if (frame instanceof Uint8Array) {
+        frames.push([...frame])
+      }
       return original(frame)
     }
     const result = network.changeDir({ id, dir: 'left' })
@@ -284,16 +291,24 @@ async function run() {
       const ready = network.arenaReady.bind(network)
       network.arenaReady = (startId) => {
         probe.ready.push(startId)
-        if (!probe.hold) return ready(startId)
+        if (!probe.hold) {
+          return ready(startId)
+        }
       }
       const schedule = window.setTimeout.bind(window)
       window.setTimeout = (callback, delay, ...args) => {
-        if (delay === 50) probe.callbacks.push(callback)
-        if (delay === 1000) probe.scoreCallbacks.push(callback)
+        if (delay === 50) {
+          probe.callbacks.push(callback)
+        }
+        if (delay === 1000) {
+          probe.scoreCallbacks.push(callback)
+        }
         return schedule(callback, delay, ...args)
       }
       network.on(MSG_TYPE.GAME_STATE, (transition) => {
-        if (transition.reason) probe.cancellations.push(transition)
+        if (transition.reason) {
+          probe.cancellations.push(transition)
+        }
       })
     })
   }
@@ -621,7 +636,9 @@ try {
     `${error.stack}\n${diagnostics.join('\n')}`,
   )
   for (const { label, page } of pages) {
-    if (page.isClosed()) continue
+    if (page.isClosed()) {
+      continue
+    }
     await page
       .screenshot({
         path: path.join(artifacts, `${label}.png`),
@@ -638,8 +655,12 @@ try {
     server.kill('SIGKILL')
     await stopped
   }
-  if (browser) await browser.close()
-  for (const context of contexts) await context.close()
+  if (browser) {
+    await browser.close()
+  }
+  for (const context of contexts) {
+    await context.close()
+  }
   await rm(dataDir, { recursive: true, force: true })
   clearTimeout(cleanupDeadline)
 }

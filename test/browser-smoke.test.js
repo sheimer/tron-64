@@ -186,15 +186,18 @@ async function smokeTest() {
     window.smokeMovementFrames = []
     const send = network.socket.send.bind(network.socket)
     network.socket.send = (frame) => {
-      if (frame instanceof Uint8Array)
+      if (frame instanceof Uint8Array) {
         window.smokeMovementFrames.push(Array.from(frame))
+      }
       return send(frame)
     }
     window.smokePlayerDrawReceived = false
     const unsubscribe = network.on(MSG_TYPE.GAME_DRAW, (changes) => {
       let hasPlayerCell = false
       for (let offset = 1; offset + 5 <= changes.byteLength; offset += 5) {
-        if (changes.getInt8(offset + 4) >= 0) hasPlayerCell = true
+        if (changes.getInt8(offset + 4) >= 0) {
+          hasPlayerCell = true
+        }
       }
       if (hasPlayerCell) {
         window.smokePlayerDrawReceived = true
@@ -251,7 +254,9 @@ async function smokeTest() {
       const { GRID_WIDTH, GRID_HEIGHT } = window.browserFixture.constants
       const canvas = document.getElementById('arena')
       const { width, height } = canvas
-      if (!width || !height) return false
+      if (!width || !height) {
+        return false
+      }
       const insetX = Math.ceil(width / GRID_WIDTH)
       const insetY = Math.ceil(height / GRID_HEIGHT)
       const pixels = canvas
@@ -268,8 +273,9 @@ async function smokeTest() {
           pixels[i] !== pixels[0] ||
           pixels[i + 1] !== pixels[1] ||
           pixels[i + 2] !== pixels[2]
-        )
+        ) {
           return true
+        }
       }
       return false
     },
@@ -363,7 +369,9 @@ async function smokeTest() {
     const handle = network.inputHandles.get(id)
     const send = network.socket.send.bind(network.socket)
     network.socket.send = (frame) => {
-      if (frame instanceof Uint8Array) frames.push(Array.from(frame))
+      if (frame instanceof Uint8Array) {
+        frames.push(Array.from(frame))
+      }
       return send(frame)
     }
     network.changeDir({ id, dir: 'right' })
@@ -506,7 +514,7 @@ try {
     path.join(artifacts, 'diagnostics.log'),
     `${error.stack}\n${diagnostics.join('\n')}`,
   )
-  if (page)
+  if (page) {
     await page
       .screenshot({
         path: path.join(artifacts, 'failure.png'),
@@ -514,11 +522,13 @@ try {
         timeout: 5000,
       })
       .catch(console.error)
-  if (context)
+  }
+  if (context) {
     await bounded(
       context.tracing.stop({ path: path.join(artifacts, 'trace.zip') }),
       5000,
     ).catch(console.error)
+  }
 } finally {
   clearTimeout(deadline)
   const cleanupDeadline = setTimeout(() => process.exit(1), 10000)
@@ -528,7 +538,9 @@ try {
     server.kill('SIGKILL')
     await stopped
   }
-  if (browser) await browser.close()
+  if (browser) {
+    await browser.close()
+  }
   await rm(dataDir, { recursive: true, force: true })
   clearTimeout(cleanupDeadline)
 }

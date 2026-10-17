@@ -13,11 +13,12 @@ console.log('--- Testing Multi-Palette Color Schemes & Accessibility ---')
 // --------------------------------------------------------------------------
 function hexToRgb(hex) {
   hex = hex.replace('#', '')
-  if (hex.length === 3)
+  if (hex.length === 3) {
     hex = hex
       .split('')
       .map((c) => c + c)
       .join('')
+  }
   const num = parseInt(hex, 16)
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255]
 }
@@ -235,7 +236,9 @@ console.log(
   '4. Verifying perceptual color discriminability across player pairs...',
 )
 for (const id of EXPECTED_PALETTES) {
-  if (MONOCHROME_PALETTES.has(id)) continue
+  if (MONOCHROME_PALETTES.has(id)) {
+    continue
+  }
   const pal = palettes[id]
   for (const mode of ['light', 'dark']) {
     let minDeltaE = Infinity

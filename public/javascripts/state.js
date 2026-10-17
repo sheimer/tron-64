@@ -20,8 +20,9 @@ class State {
       !this.connectedGames ||
       typeof this.connectedGames !== 'object' ||
       Array.isArray(this.connectedGames)
-    )
+    ) {
       this.connectedGames = {}
+    }
     this.ownedPlayerIds = new Set()
     this.roomOwnerClientId = null
     this.roomOwnerBinding = null
@@ -88,7 +89,9 @@ class State {
     ) {
       const roomOwner = this.connectedGames[key]?.roomOwner
       this.connectedGames[key] = { localPlayers: Object.create(null) }
-      if (roomOwner) this.connectedGames[key].roomOwner = roomOwner
+      if (roomOwner) {
+        this.connectedGames[key].roomOwner = roomOwner
+      }
       this.saveConnectedGames()
     } else if (
       Object.getPrototypeOf(this.connectedGames[key].localPlayers) !== null
@@ -125,7 +128,9 @@ class State {
 
   getReconnectEntries(gameKey = this.currentGame.key, explicit = false) {
     const entries = this.connectedGames[gameKey]?.localPlayers
-    if (!entries || typeof entries !== 'object') return []
+    if (!entries || typeof entries !== 'object') {
+      return []
+    }
     return Object.entries(entries)
       .flatMap(([id, entry]) =>
         entry?.version === 2 &&
@@ -140,7 +145,9 @@ class State {
 
   acknowledgeReconnect(id, gameKey) {
     const entry = this.connectedGames[gameKey]?.localPlayers?.[id]
-    if (!entry || entry.version !== 2) return null
+    if (!entry || entry.version !== 2) {
+      return null
+    }
     entry.revoked = false
     this.ownedPlayerIds.add(id)
     this.saveConnectedGames()
@@ -151,13 +158,17 @@ class State {
     for (const id of ids) {
       this.ownedPlayerIds.delete(id)
       const entry = this.connectedGames[gameKey]?.localPlayers?.[id]
-      if (entry?.version === 2) entry.revoked = true
+      if (entry?.version === 2) {
+        entry.revoked = true
+      }
     }
     this.saveConnectedGames()
   }
 
   getLocalPlayerIds(gameKey = this.currentGame?.key) {
-    if (!gameKey || !this.connectedGames[gameKey]) return []
+    if (!gameKey || !this.connectedGames[gameKey]) {
+      return []
+    }
     return Object.keys(this.connectedGames[gameKey].localPlayers || {})
   }
 
@@ -193,7 +204,9 @@ class State {
 
   acknowledgeRoomOwner(key, ownerClientId) {
     const owner = this.connectedGames[key]?.roomOwner
-    if (owner?.ownerClientId !== ownerClientId) return false
+    if (owner?.ownerClientId !== ownerClientId) {
+      return false
+    }
     owner.revoked = false
     this.roomOwnerClientId = ownerClientId
     this.roomOwnerBinding = { ...this.roomSession, ownerClientId }
@@ -205,7 +218,9 @@ class State {
     this.roomOwnerClientId = null
     this.roomOwnerBinding = null
     const owner = this.connectedGames[key]?.roomOwner
-    if (owner) owner.revoked = true
+    if (owner) {
+      owner.revoked = true
+    }
     this.saveConnectedGames()
   }
 
@@ -254,46 +269,67 @@ class State {
   }
 
   ownerStatusText() {
-    if (!this.isJoinedRoom()) return 'Waiting for room authentication.'
+    if (!this.isJoinedRoom()) {
+      return 'Waiting for room authentication.'
+    }
     const status = this.roundInfo?.ownerStatus
-    if (this.isRoomOwner()) return 'You created this room. Creator present.'
-    if (status === 'unrecoverable')
+    if (this.isRoomOwner()) {
+      return 'You created this room. Creator present.'
+    }
+    if (status === 'unrecoverable') {
       return 'Creator unrecoverable. Original creator credentials are unavailable; create a new room for creator controls.'
-    if (status === 'away')
+    }
+    if (status === 'away') {
       return 'Creator away. The creator can rejoin with saved credentials.'
-    if (status === 'present') return 'Creator present on another connection.'
+    }
+    if (status === 'present') {
+      return 'Creator present on another connection.'
+    }
     return 'Waiting for creator status.'
   }
 
   startRoundReason() {
-    if (!this.isJoinedRoom())
+    if (!this.isJoinedRoom()) {
       return 'Join and authenticate this room before starting.'
+    }
     if (!this.roomIdle()) {
-      if (this.roundInfo?.running)
+      if (this.roundInfo?.running) {
         return 'Wait until the current round finishes.'
-      if (['preparation', 'countdown'].includes(this.roundInfo?.round?.stage))
+      }
+      if (['preparation', 'countdown'].includes(this.roundInfo?.round?.stage)) {
         return 'A round is being prepared. Wait for it to start.'
+      }
       return 'Waiting for room state.'
     }
     const eligible = this.roundInfo.eligiblePlayerCount
     const roster = `At least two authenticated, connected bikes are required (two on one keyboard is enough); up to six bike slots. ${eligible} eligible now.`
-    if (!this.roundInfo.firstRoundStarted && !this.isRoomOwner())
+    if (!this.roundInfo.firstRoundStarted && !this.isRoomOwner()) {
       return `Only the authenticated room creator can start the first round. ${this.ownerStatusText()} ${roster}`
-    if (this.players.length > 6)
+    }
+    if (this.players.length > 6) {
       return `This room has more than six registered bike slots. Create a new room. ${roster}`
-    if (eligible < 2 || eligible > 6) return roster
+    }
+    if (eligible < 2 || eligible > 6) {
+      return roster
+    }
     return this.roundInfo.firstRoundStarted
       ? `Any joined client, including spectators, can start the next round. ${roster}`
       : `You can start the first round without a bike of your own. ${roster}`
   }
 
   speedReason() {
-    if (!this.currentGame.key) return 'Personal speed preference for new rooms.'
-    if (!this.isJoinedRoom())
+    if (!this.currentGame.key) {
+      return 'Personal speed preference for new rooms.'
+    }
+    if (!this.isJoinedRoom()) {
       return 'Room speed is available after joining and authenticating.'
-    if (!this.isRoomOwner())
+    }
+    if (!this.isRoomOwner()) {
       return `Only the authenticated room creator can change speed between rounds. ${this.ownerStatusText()}`
-    if (!this.roomIdle()) return 'Speed can change only between rounds.'
+    }
+    if (!this.roomIdle()) {
+      return 'Speed can change only between rounds.'
+    }
     return 'You can change room speed between rounds. Your personal speed preference is kept.'
   }
 

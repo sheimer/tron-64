@@ -144,7 +144,9 @@ export class Arena {
 
   disconnectPlayer(playerId) {
     const index = this.players.findIndex((p) => p.id === playerId)
-    if (index === -1) return null
+    if (index === -1) {
+      return null
+    }
 
     const player = this.players[index]
     player.connected = false

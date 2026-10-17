@@ -46,7 +46,9 @@ export class AppCoordinator {
       callbacks: {
         clearRoundCallbacks: (retireAttempt) => {
           this.roundLifecycle.clearRoundCallbacks()
-          if (retireAttempt) this.roundLifecycle.currentStartId = null
+          if (retireAttempt) {
+            this.roundLifecycle.currentStartId = null
+          }
         },
         clearPendingInterval: () => {
           this.pendingInterval = null
@@ -236,12 +238,18 @@ export class AppCoordinator {
 
     const leftBtn = document.getElementById('btn-left')
     const rightBtn = document.getElementById('btn-right')
-    if (leftBtn) leftBtn.addEventListener('click', this.onButtonClick)
-    if (rightBtn) rightBtn.addEventListener('click', this.onButtonClick)
+    if (leftBtn) {
+      leftBtn.addEventListener('click', this.onButtonClick)
+    }
+    if (rightBtn) {
+      rightBtn.addEventListener('click', this.onButtonClick)
+    }
   }
 
   onKeyDown(evt) {
-    if (evt.repeat) return
+    if (evt.repeat) {
+      return
+    }
 
     this.roomSession.localPlayersConfig.forEach((cfg, playerId) => {
       if (typeof cfg.left === 'number') {
@@ -272,10 +280,12 @@ export class AppCoordinator {
 
   refreshRoomControls() {
     const inRoom = Boolean(this.roomSession.currentGameKey)
-    if (this.authorityContainer)
+    if (this.authorityContainer) {
       this.authorityContainer.style.display = inRoom ? '' : 'none'
-    if (this.ownerStatus)
+    }
+    if (this.ownerStatus) {
       this.ownerStatus.textContent = this.state.ownerStatusText()
+    }
     this.configView.updatePermissions()
     this.gameView.updatePermissions()
     this.settingsView.updateRoomControls(
@@ -287,7 +297,9 @@ export class AppCoordinator {
   }
 
   showControlFeedback(message) {
-    if (this.controlFeedback) this.controlFeedback.textContent = message
+    if (this.controlFeedback) {
+      this.controlFeedback.textContent = message
+    }
   }
 
   startRound() {
@@ -314,9 +326,12 @@ export class AppCoordinator {
   }
 
   showConnectionFeedback(message, offerReload = false) {
-    if (this.reloadButton)
+    if (this.reloadButton) {
       this.reloadButton.style.display = offerReload ? '' : 'none'
-    if (!this.connectionFeedback) return
+    }
+    if (!this.connectionFeedback) {
+      return
+    }
     this.connectionFeedback.textContent = message
     this.connectionFeedback.style.display = message ? '' : 'none'
   }

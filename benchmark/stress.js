@@ -86,7 +86,9 @@ Environment Variables:
  * Simulates server-side binary draw frame encoding as executed in production wsHandler.
  */
 function encodeBinaryDraw(changes) {
-  if (!changes || !changes.length) return null
+  if (!changes || !changes.length) {
+    return null
+  }
   const buf = Buffer.allocUnsafe(1 + changes.length * 5)
   buf.writeUInt8(BINARY_OPCODE.DRAW, 0)
   for (let i = 0; i < changes.length; i++) {

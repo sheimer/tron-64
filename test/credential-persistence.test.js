@@ -92,7 +92,9 @@ async function parentTest() {
         reject(new Error(`Child command ${command} timed out`))
       }, 3000)
       function onMessage(message) {
-        if (message.id !== id) return
+        if (message.id !== id) {
+          return
+        }
         clearTimeout(timer)
         child.off('message', onMessage)
         resolve(message.result)
@@ -126,7 +128,9 @@ async function parentTest() {
   }
 
   async function stop(child) {
-    if (child.exitCode !== null) return
+    if (child.exitCode !== null) {
+      return
+    }
     const exited = once(child, 'exit')
     await rpc(child, 'shutdown')
     await exited
@@ -134,7 +138,9 @@ async function parentTest() {
 
   function receive(ws, predicate) {
     const index = ws.queue.findIndex(predicate)
-    if (index >= 0) return Promise.resolve(ws.queue.splice(index, 1)[0])
+    if (index >= 0) {
+      return Promise.resolve(ws.queue.splice(index, 1)[0])
+    }
     return new Promise((resolve, reject) => {
       const waiter = { predicate, resolve, timer: null }
       waiter.timer = setTimeout(() => {
@@ -152,7 +158,9 @@ async function parentTest() {
     ws.waiters = []
     ws.history = []
     ws.on('message', (data, binary) => {
-      if (binary) return
+      if (binary) {
+        return
+      }
       const message = JSON.parse(data.toString())
       ws.history.push(message)
       const index = ws.waiters.findIndex((waiter) => waiter.predicate(message))
@@ -160,7 +168,9 @@ async function parentTest() {
         const [waiter] = ws.waiters.splice(index, 1)
         clearTimeout(waiter.timer)
         waiter.resolve(message)
-      } else ws.queue.push(message)
+      } else {
+        ws.queue.push(message)
+      }
     })
     await once(ws, 'open')
     const lobby = await receive(
@@ -554,14 +564,21 @@ async function parentTest() {
       'Credential persistence: cold restart, migration, rollback, and verifier isolation passed',
     )
   } finally {
-    for (const ws of sockets)
-      if (ws.readyState === WebSocket.OPEN) ws.terminate()
+    for (const ws of sockets) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.terminate()
+      }
+    }
     for (const child of children) {
-      if (child.exitCode !== null) continue
+      if (child.exitCode !== null) {
+        continue
+      }
       const exited = once(child, 'exit')
       child.kill('SIGKILL')
       await exited
     }
-    for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
+    for (const dir of dirs) {
+      rmSync(dir, { recursive: true, force: true })
+    }
   }
 }

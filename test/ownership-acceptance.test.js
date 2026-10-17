@@ -53,8 +53,11 @@ async function serve() {
   })
 }
 
-if (process.argv.includes('--ownership-child')) await serve()
-else await acceptance()
+if (process.argv.includes('--ownership-child')) {
+  await serve()
+} else {
+  await acceptance()
+}
 
 async function acceptance() {
   const dir = mkdtempSync(path.join(tmpdir(), 'bitcycles-acceptance-'))
@@ -75,8 +78,9 @@ async function acceptance() {
     })
     children.push(child)
     child.output = ''
-    for (const stream of [child.stdout, child.stderr])
+    for (const stream of [child.stdout, child.stderr]) {
       stream.on('data', (data) => (child.output += data.toString()))
+    }
     const startupController = new AbortController()
     let startupTimer
     let ready
@@ -112,7 +116,9 @@ async function acceptance() {
         3000,
       )
       const onMessage = (message) => {
-        if (message.id !== id) return
+        if (message.id !== id) {
+          return
+        }
         clearTimeout(timer)
         child.off('message', onMessage)
         resolve(message.result)
@@ -123,7 +129,9 @@ async function acceptance() {
   }
 
   async function stop(child) {
-    if (child.exitCode !== null) return
+    if (child.exitCode !== null) {
+      return
+    }
     const exited = once(child, 'exit')
     await rpc(child, 'shutdown')
     await exited
@@ -131,7 +139,9 @@ async function acceptance() {
 
   function receive(ws, predicate) {
     const index = ws.queue.findIndex(predicate)
-    if (index >= 0) return Promise.resolve(ws.queue.splice(index, 1)[0])
+    if (index >= 0) {
+      return Promise.resolve(ws.queue.splice(index, 1)[0])
+    }
     return new Promise((resolve, reject) => {
       const waiter = { predicate, resolve, reject }
       waiter.timer = setTimeout(() => {
@@ -156,8 +166,9 @@ async function acceptance() {
       const message = JSON.parse(raw)
       frames.push({ receiver: ws, binary: false, raw, message })
       const index = ws.waiters.findIndex((waiter) => waiter.predicate(message))
-      if (index < 0) ws.queue.push(message)
-      else {
+      if (index < 0) {
+        ws.queue.push(message)
+      } else {
         const [waiter] = ws.waiters.splice(index, 1)
         clearTimeout(waiter.timer)
         waiter.resolve(message)
@@ -231,11 +242,12 @@ async function acceptance() {
     const spectator = await connect(url)
     const created = await create(old)
     const { key, ...roomOwner } = created
-    for (const ws of [old, replacement, spectator])
+    for (const ws of [old, replacement, spectator]) {
       assert.equal(
         (await send(ws, MSG_TYPE.JOIN_GAME, { key })).type,
         MSG_TYPE.JOIN_RESULT,
       )
+    }
     const first = await register(old, 'string-first')
     const second = await register(old, 'string-second')
     assert.notEqual(first.reconnectToken, second.reconnectToken)
@@ -247,7 +259,9 @@ async function acceptance() {
     )
     assert.equal(privateRecord[first.id], verifiers[0])
     assert.equal(privateRecord[second.id], verifiers[1])
-    for (const secret of secrets) assert.equal(snapshot.includes(secret), false)
+    for (const secret of secrets) {
+      assert.equal(snapshot.includes(secret), false)
+    }
 
     const idOnly = await send(spectator, MSG_TYPE.JOIN_GAME, {
       key,
@@ -359,7 +373,7 @@ async function acceptance() {
       replacement,
       (m) => m.type === MSG_TYPE.GAME_RESET,
     )
-    for (const ws of [replacement, spectator])
+    for (const ws of [replacement, spectator]) {
       ws.send(
         JSON.stringify({
           type: MSG_TYPE.ARENA_READY,
@@ -367,6 +381,7 @@ async function acceptance() {
           protocolVersion: PROTOCOL_VERSION,
         }),
       )
+    }
     await receive(replacement, (m) => m.type === MSG_TYPE.GAME_STATE)
     await receive(
       replacement,
@@ -438,39 +453,50 @@ async function acceptance() {
     )
     for (const frame of frames) {
       if (frame.binary) {
-        for (const secret of [...secrets, ...verifiers])
+        for (const secret of [...secrets, ...verifiers]) {
           assert.equal(frame.data.includes(Buffer.from(secret)), false)
+        }
         continue
       }
-      for (const verifier of verifiers)
+      for (const verifier of verifiers) {
         assert.equal(frame.raw.includes(verifier), false, frame.message.type)
+      }
       if (frame.message.type === MSG_TYPE.PLAYER_REGISTERED) {
         assert.equal(frame.receiver, old)
         assert.equal(
           frame.raw.includes(frame.message.payload.reconnectToken),
           true,
         )
-        for (const secret of secrets)
+        for (const secret of secrets) {
           assert.equal(
             frame.raw.includes(secret),
             frame.message.payload.reconnectToken === secret,
           )
+        }
       } else {
-        for (const secret of secrets)
+        for (const secret of secrets) {
           assert.equal(frame.raw.includes(secret), false, frame.message.type)
+        }
       }
     }
-    for (const child of children)
-      for (const secret of [...secrets, ...verifiers])
+    for (const child of children) {
+      for (const secret of [...secrets, ...verifiers]) {
         assert.equal(child.output.includes(secret), false)
+      }
+    }
     console.log(
       'Ownership acceptance: integrated sockets, restart, outbound secrets passed',
     )
   } finally {
-    for (const ws of sockets)
-      if (ws.readyState === WebSocket.OPEN) ws.terminate()
+    for (const ws of sockets) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.terminate()
+      }
+    }
     for (const child of children) {
-      if (child.exitCode !== null) continue
+      if (child.exitCode !== null) {
+        continue
+      }
       const exited = once(child, 'exit')
       child.kill('SIGKILL')
       await exited

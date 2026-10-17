@@ -58,11 +58,17 @@ export function sortScoreboardPlayers(players) {
 
   const sorted = [...players].sort((a, b) => {
     const totalDiff = (b.total ?? 0) - (a.total ?? 0)
-    if (totalDiff !== 0) return totalDiff
+    if (totalDiff !== 0) {
+      return totalDiff
+    }
     const killsDiff = (b.kills ?? 0) - (a.kills ?? 0)
-    if (killsDiff !== 0) return killsDiff
+    if (killsDiff !== 0) {
+      return killsDiff
+    }
     const escapedDiff = (b.escaped ?? 0) - (a.escaped ?? 0)
-    if (escapedDiff !== 0) return escapedDiff
+    if (escapedDiff !== 0) {
+      return escapedDiff
+    }
     return String(a.id ?? '').localeCompare(String(b.id ?? ''))
   })
 

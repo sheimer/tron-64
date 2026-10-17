@@ -70,7 +70,9 @@ export class Renderer {
    * Automatically adjusts canvas dimensions and repaints the buffer.
    */
   setupPixelRatioListener() {
-    if (typeof window === 'undefined' || !window.matchMedia) return
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      return
+    }
 
     this.onPixelRatioChange = () => {
       if (this.dprMediaQuery && this.onPixelRatioChange) {
@@ -118,10 +120,18 @@ export class Renderer {
   }
 
   setColors({ bgColor, bordercolor, explosioncolor, playercolors }) {
-    if (bgColor) this.bgColor = bgColor
-    if (bordercolor) this.bordercolor = bordercolor
-    if (explosioncolor) this.explosioncolor = explosioncolor
-    if (playercolors) this.playercolors = playercolors
+    if (bgColor) {
+      this.bgColor = bgColor
+    }
+    if (bordercolor) {
+      this.bordercolor = bordercolor
+    }
+    if (explosioncolor) {
+      this.explosioncolor = explosioncolor
+    }
+    if (playercolors) {
+      this.playercolors = playercolors
+    }
 
     this.redrawAll()
   }
@@ -184,8 +194,9 @@ export class Renderer {
           value !== CELL_TYPE.BORDER &&
           value !== CELL_TYPE.EXPLOSION &&
           !(value >= 0 && value < this.playercolors.length))
-      )
+      ) {
         return
+      }
     }
     for (let offset = 1; offset < len; offset += 5) {
       this.drawCell(
@@ -201,7 +212,9 @@ export class Renderer {
    * Used for theme changes, zoom/resize events, or spectator reconnects.
    */
   redrawAll() {
-    if (!this.canvas) return
+    if (!this.canvas) {
+      return
+    }
 
     this.canvas.fillStyle = this.bgColor
     this.canvas.fillRect(0, 0, this.width, this.height)
@@ -212,7 +225,9 @@ export class Renderer {
       const cx = x * bs
       for (let y = 0; y < this.size.y; y++) {
         const val = col[y]
-        if (val === CELL_TYPE.EMPTY) continue
+        if (val === CELL_TYPE.EMPTY) {
+          continue
+        }
 
         const cy = y * bs
         if (val === CELL_TYPE.BORDER) {
