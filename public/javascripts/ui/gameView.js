@@ -107,7 +107,9 @@ export class GameView {
     // Reset log
     if (state === 'start') {
       const logEl = document.getElementById('log')
-      if (logEl) logEl.innerHTML = ''
+      if (logEl) {
+        logEl.innerHTML = ''
+      }
     }
   }
 
@@ -135,7 +137,9 @@ export class GameView {
   }
 
   updateScores(scores, players = []) {
-    if (!this.bodyScoreTable) return
+    if (!this.bodyScoreTable) {
+      return
+    }
 
     const colors = settings.coloredPlayers
       ? PLAYER_COLOR_KEYS
@@ -156,9 +160,10 @@ export class GameView {
         ),
       )
     }
-    if (this.roundResultsLabel)
+    if (this.roundResultsLabel) {
       this.roundResultsLabel.textContent =
         scores.gamecount === 0 ? '' : " game's results..."
+    }
 
     if (this.gameMessages) {
       this.gameMessages.innerHTML = ''
@@ -264,11 +269,14 @@ export class GameView {
       this.startBtn.disabled = !canStart
       // Restore native Enter/Space activation once scores are ready, including
       // eligibility restored by reconnect, without refocusing on every update.
-      if (startAvailable && !this.startAvailable) this.startBtn.focus()
+      if (startAvailable && !this.startAvailable) {
+        this.startBtn.focus()
+      }
     }
     this.startAvailable = startAvailable
-    if (this.startFeedback)
+    if (this.startFeedback) {
       this.startFeedback.textContent = appState.startRoundReason()
+    }
     // Touch control buttons
     if (this.leftBtn && this.rightBtn) {
       if (
@@ -287,19 +295,37 @@ export class GameView {
   }
 
   show() {
-    if (this.arenaCanvas) this.arenaCanvas.style.display = 'block'
-    if (this.playernames) this.playernames.style.display = ''
-    if (this.footer) this.footer.style.display = ''
-    if (this.startBtn) this.startBtn.style.display = ''
+    if (this.arenaCanvas) {
+      this.arenaCanvas.style.display = 'block'
+    }
+    if (this.playernames) {
+      this.playernames.style.display = ''
+    }
+    if (this.footer) {
+      this.footer.style.display = ''
+    }
+    if (this.startBtn) {
+      this.startBtn.style.display = ''
+    }
     this.updatePermissions()
   }
 
   hide() {
     this.startAvailable = false
-    if (this.arenaCanvas) this.arenaCanvas.style.display = 'none'
-    if (this.playernames) this.playernames.style.display = 'none'
-    if (this.scores) this.scores.style.display = 'none'
-    if (this.scoresWaiting) this.scoresWaiting.style.display = 'none'
-    if (this.footer) this.footer.style.display = 'none'
+    if (this.arenaCanvas) {
+      this.arenaCanvas.style.display = 'none'
+    }
+    if (this.playernames) {
+      this.playernames.style.display = 'none'
+    }
+    if (this.scores) {
+      this.scores.style.display = 'none'
+    }
+    if (this.scoresWaiting) {
+      this.scoresWaiting.style.display = 'none'
+    }
+    if (this.footer) {
+      this.footer.style.display = 'none'
+    }
   }
 }

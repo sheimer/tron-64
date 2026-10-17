@@ -24,14 +24,18 @@ const keys = []
 
 function receive(ws, predicate) {
   const index = ws.messages.findIndex(predicate)
-  if (index >= 0) return Promise.resolve(ws.messages.splice(index, 1)[0])
+  if (index >= 0) {
+    return Promise.resolve(ws.messages.splice(index, 1)[0])
+  }
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('Socket reply timed out')),
       3000,
     )
     ws.waiters.push((msg) => {
-      if (!predicate(msg)) return false
+      if (!predicate(msg)) {
+        return false
+      }
       clearTimeout(timer)
       resolve(msg)
       return true
@@ -44,11 +48,16 @@ async function connect() {
   ws.messages = []
   ws.waiters = []
   ws.on('message', (data, binary) => {
-    if (binary) return
+    if (binary) {
+      return
+    }
     const msg = JSON.parse(data.toString())
     const index = ws.waiters.findIndex((waiter) => waiter(msg))
-    if (index >= 0) ws.waiters.splice(index, 1)
-    else ws.messages.push(msg)
+    if (index >= 0) {
+      ws.waiters.splice(index, 1)
+    } else {
+      ws.messages.push(msg)
+    }
   })
   await once(ws, 'open')
   await receive(ws, (m) => m.type === MSG_TYPE.LOBBY_LIST)
@@ -186,8 +195,14 @@ try {
     'Authenticated per-player reconnect and owner-safe handover passed',
   )
 } finally {
-  for (const ws of sockets) if (ws.readyState === WebSocket.OPEN) ws.terminate()
-  for (const key of keys) gameServer.getGame(key)?.destroy()
+  for (const ws of sockets) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.terminate()
+    }
+  }
+  for (const key of keys) {
+    gameServer.getGame(key)?.destroy()
+  }
   await new Promise((resolve) => server.close(resolve))
   rmSync(dataDir, { recursive: true, force: true })
 }

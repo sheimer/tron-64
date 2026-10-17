@@ -44,8 +44,9 @@ export class RoomSession {
         this.pendingRegistrations.get(requestId) !== pending ||
         pending.generation !== network.generation ||
         pending.key !== this.currentGameKey
-      )
+      ) {
         return
+      }
       if (pending.attempts >= 3) {
         this.pendingRegistrations.delete(requestId)
         this.callbacks.showRegistrationFeedback(
@@ -83,7 +84,9 @@ export class RoomSession {
 
     network.on('close', () => {
       this.callbacks.clearRoundCallbacks(false)
-      if (this.currentGameKey) this.recoveryNotice = true
+      if (this.currentGameKey) {
+        this.recoveryNotice = true
+      }
       this.clearPendingRegistrations()
       this.pendingJoin = null
       this.localPlayersConfig.clear()
@@ -111,8 +114,9 @@ export class RoomSession {
         !Number.isInteger(binding.inputHandle) ||
         binding.inputHandle < 0 ||
         binding.inputHandle > 255
-      )
+      ) {
         return
+      }
       network.bindPlayer(binding.id, binding.inputHandle)
       clearTimeout(pending.timer)
       this.pendingRegistrations.delete(msg.requestId)
@@ -151,8 +155,9 @@ export class RoomSession {
         result?.key !== pending.key ||
         !Array.isArray(result.accepted) ||
         !Array.isArray(result.rejected)
-      )
+      ) {
         return
+      }
       const accepted = result.accepted
       const rejectedBindings = result.rejected
       const validRecord = (binding) =>
@@ -176,8 +181,9 @@ export class RoomSession {
           (binding) =>
             !validRecord(binding) || binding.code !== 'INVALID_CREDENTIAL',
         )
-      )
+      ) {
         return
+      }
       const handles = new Set(accepted.map((binding) => binding.inputHandle))
       const allBindings = [...accepted, ...rejectedBindings]
       const ids = new Set(allBindings.map((binding) => binding.id))
@@ -197,19 +203,23 @@ export class RoomSession {
         ids.size !== pending.ids.size ||
         handles.size !== accepted.length ||
         accepted.length > 6
-      )
+      ) {
         return
+      }
       this.pendingJoin = null
       state.acknowledgeRoomJoin(pending.key, pending.generation)
       if (
         pending.roomOwner &&
         result.roomOwner?.accepted === true &&
         result.roomOwner.ownerClientId === pending.roomOwner.ownerClientId
-      )
+      ) {
         state.acknowledgeRoomOwner(pending.key, result.roomOwner.ownerClientId)
+      }
       for (const binding of accepted) {
         const config = state.acknowledgeReconnect(binding.id, pending.key)
-        if (!config) continue
+        if (!config) {
+          continue
+        }
         network.bindPlayer(binding.id, binding.inputHandle)
         this.localPlayersConfig.set(binding.id, config)
       }
@@ -226,7 +236,9 @@ export class RoomSession {
         this.callbacks.showConnectionFeedback(
           `${pending.missing} saved player${pending.missing === 1 ? '' : 's'} had no usable credential.`,
         )
-      } else this.callbacks.showConnectionFeedback('')
+      } else {
+        this.callbacks.showConnectionFeedback('')
+      }
       this.recoveryNotice = false
       state.set(
         'players',
@@ -243,8 +255,9 @@ export class RoomSession {
       if (
         notice?.key !== this.currentGameKey ||
         notice.ownerClientId !== state.roomOwnerClientId
-      )
+      ) {
         return
+      }
       state.revokeRoomOwner(notice.key)
       this.callbacks.updatePlayersTable(state.players)
       this.callbacks.refreshRoomControls()
@@ -254,11 +267,14 @@ export class RoomSession {
     })
 
     network.on(MSG_TYPE.OWNERSHIP_REVOKED, (notice) => {
-      if (notice?.key !== this.currentGameKey || !Array.isArray(notice.ids))
+      if (notice?.key !== this.currentGameKey || !Array.isArray(notice.ids)) {
         return
+      }
       state.revokeOwnership(notice.ids, notice.key)
       network.revokePlayers(notice.ids)
-      for (const id of notice.ids) this.localPlayersConfig.delete(id)
+      for (const id of notice.ids) {
+        this.localPlayersConfig.delete(id)
+      }
       state.set(
         'players',
         state.players.map((p) => ({
@@ -325,8 +341,9 @@ export class RoomSession {
     })
 
     network.on(MSG_TYPE.GAME_INFO, (info) => {
-      if (!info || !this.currentGameKey || info.key !== this.currentGameKey)
+      if (!info || !this.currentGameKey || info.key !== this.currentGameKey) {
         return
+      }
       if (this.recoveryNotice) {
         this.callbacks.showConnectionFeedback(
           'Connected. Waiting for saved player authentication.',
@@ -386,8 +403,9 @@ export class RoomSession {
   }
 
   clearPendingRegistrations() {
-    for (const pending of this.pendingRegistrations.values())
+    for (const pending of this.pendingRegistrations.values()) {
       clearTimeout(pending.timer)
+    }
     this.pendingRegistrations.clear()
   }
 

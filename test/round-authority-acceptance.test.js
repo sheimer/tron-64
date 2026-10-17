@@ -29,8 +29,12 @@ async function serve() {
   const timerIds = new WeakMap()
   let nextTimerId = 0
   const timerId = (timer) => {
-    if (!timer) return null
-    if (!timerIds.has(timer)) timerIds.set(timer, ++nextTimerId)
+    if (!timer) {
+      return null
+    }
+    if (!timerIds.has(timer)) {
+      timerIds.set(timer, ++nextTimerId)
+    }
     return timerIds.get(timer)
   }
   process.on(
@@ -67,9 +71,9 @@ async function serve() {
               })),
             }
           : null
-      } else if (command === 'games')
+      } else if (command === 'games') {
         result = gameServer.games.map((g) => g.key)
-      else if (command === 'failWrites') {
+      } else if (command === 'failWrites') {
         storage.saveGames = enabled ? () => false : originalSave
         result = true
       } else if (command === 'exhaustHandles') {
@@ -94,8 +98,11 @@ async function serve() {
   )
 }
 
-if (process.argv.includes('--round-authority-child')) await serve()
-else await acceptance()
+if (process.argv.includes('--round-authority-child')) {
+  await serve()
+} else {
+  await acceptance()
+}
 
 async function acceptance() {
   const dir = mkdtempSync(path.join(tmpdir(), 'bitcycles-round-authority-'))
@@ -129,7 +136,9 @@ async function acceptance() {
         reject(new Error(`Server command ${command} timed out`))
       }, 4000)
       function onMessage(message) {
-        if (message.id !== id) return
+        if (message.id !== id) {
+          return
+        }
         clearTimeout(timer)
         child.off('message', onMessage)
         resolve(message.result)
@@ -141,7 +150,9 @@ async function acceptance() {
 
   function receive(ws, predicate) {
     const index = ws.queue.findIndex(predicate)
-    if (index >= 0) return Promise.resolve(ws.queue.splice(index, 1)[0])
+    if (index >= 0) {
+      return Promise.resolve(ws.queue.splice(index, 1)[0])
+    }
     return new Promise((resolve, reject) => {
       const waiter = { predicate, resolve }
       waiter.timer = setTimeout(() => {
@@ -159,12 +170,15 @@ async function acceptance() {
     ws.waiters = []
     ws.history = []
     ws.on('message', (data, binary) => {
-      if (binary) return
+      if (binary) {
+        return
+      }
       const message = JSON.parse(data.toString())
       ws.history.push(message)
       const index = ws.waiters.findIndex((w) => w.predicate(message))
-      if (index < 0) ws.queue.push(message)
-      else {
+      if (index < 0) {
+        ws.queue.push(message)
+      } else {
         const [waiter] = ws.waiters.splice(index, 1)
         clearTimeout(waiter.timer)
         waiter.resolve(message)
@@ -278,8 +292,9 @@ async function acceptance() {
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     })
     child.output = ''
-    for (const stream of [child.stdout, child.stderr])
+    for (const stream of [child.stdout, child.stderr]) {
       stream.on('data', (data) => (child.output += data.toString()))
+    }
     const ready = await new Promise((resolve, reject) => {
       const timer = setTimeout(
         () => reject(new Error('Server startup timed out')),
@@ -443,7 +458,7 @@ async function acceptance() {
         'CREATOR_REQUIRED',
       )
     }
-    for (const interval of [9, 501, 10.5, '20', null])
+    for (const interval of [9, 501, 10.5, '20', null]) {
       await assertRejectedUnchanged(
         creator,
         room.key,
@@ -451,6 +466,7 @@ async function acceptance() {
         interval,
         'INVALID_INTERVAL',
       )
+    }
     for (const interval of [10, 500, 40]) {
       transmit(creator, MSG_TYPE.SET_INTERVAL, interval)
       await fence(creator)
@@ -875,15 +891,17 @@ async function acceptance() {
     // A socket cannot retain unbounded private creation acknowledgements.
     const pressureClient = await connect(url)
     const pressureRooms = []
-    for (let i = 0; i < 33; i++)
+    for (let i = 0; i < 33; i++) {
       pressureRooms.push(await create(pressureClient, `Bounded retry ${i}`))
+    }
     const latestCreation = pressureRooms.at(-1)
     await join(pressureClient, latestCreation)
     const retryEntries = (await rpc('inspect', { key: latestCreation.key }))
       .clients[0].creationRetries
     assert.ok(retryEntries > 0 && retryEntries <= 32)
-    for (const creation of pressureRooms)
+    for (const creation of pressureRooms) {
       await rpc('destroy', { key: creation.key })
+    }
 
     // Only correlated private credential acknowledgements may contain tokens;
     // verifier material never appears in any outbound frame or log.
@@ -891,8 +909,9 @@ async function acceptance() {
       await fence(ws)
       for (const message of ws.history) {
         const raw = JSON.stringify(message)
-        for (const verifier of verifiers)
+        for (const verifier of verifiers) {
           assert.equal(raw.includes(verifier), false, message.type)
+        }
         for (const secret of secrets) {
           const acknowledged =
             (message.type === MSG_TYPE.GAME_CREATED &&
@@ -907,15 +926,20 @@ async function acceptance() {
         }
       }
     }
-    for (const secret of [...secrets, ...verifiers])
+    for (const secret of [...secrets, ...verifiers]) {
       assert.equal(child.output.includes(secret), false)
+    }
     console.log(
       'Round authority acceptance: durable creation/retry, mixed claims, preflight rollback, creator/spectator admission, controlled launch and rejection safety passed',
     )
   } finally {
     for (const ws of sockets) {
-      for (const waiter of ws.waiters) clearTimeout(waiter.timer)
-      if (ws.readyState === WebSocket.OPEN) ws.terminate()
+      for (const waiter of ws.waiters) {
+        clearTimeout(waiter.timer)
+      }
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.terminate()
+      }
     }
     if (child?.exitCode === null) {
       const exited = once(child, 'exit')

@@ -41,7 +41,9 @@ class FakeSocket {
   }
 
   close() {
-    if (this.readyState === 3) return
+    if (this.readyState === 3) {
+      return
+    }
     this.readyState = 3
     this.dispatch('close')
   }

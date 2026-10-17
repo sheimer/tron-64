@@ -51,28 +51,39 @@ function publish(game) {
     payload: gameServer.getGameInfo(game.key),
     protocolVersion: PROTOCOL_VERSION,
   })
-  for (const client of game.clients)
-    if (client.readyState === 1) client.send(data)
+  for (const client of game.clients) {
+    if (client.readyState === 1) {
+      client.send(data)
+    }
+  }
 }
 process.on('message', ({ id, command, key, milliseconds, value }) => {
   try {
     const game = gameServer.getGame(key)
-    if (!game) throw new Error('Fixture room missing')
-    if (command === 'tick') mock.timers.tick(milliseconds)
-    else if (command === 'interval') {
+    if (!game) {
+      throw new Error('Fixture room missing')
+    }
+    if (command === 'tick') {
+      mock.timers.tick(milliseconds)
+    } else if (command === 'interval') {
       game.setInterval(value)
       publish(game)
     } else if (command === 'public') {
       game.isPublic = value
       game.onChange()
-    } else if (command === 'failWrite') failedWrites = 1
-    else if (command === 'finishPhysics') {
+    } else if (command === 'failWrite') {
+      failedWrites = 1
+    } else if (command === 'finishPhysics') {
       // Run the real queued physics to a real collision/finish; never addStats.
-      for (let ticks = 0; game.running && ticks < 2500; ticks++)
+      for (let ticks = 0; game.running && ticks < 2500; ticks++) {
         mock.timers.tick(game.interval)
-      if (game.running)
+      }
+      if (game.running) {
         throw new Error('Real physics did not finish within bound')
-    } else if (command !== 'inspect') throw new Error('Unknown fixture command')
+      }
+    } else if (command !== 'inspect') {
+      throw new Error('Unknown fixture command')
+    }
     process.send({ id, result: inspect(game) })
   } catch (error) {
     process.send({ id, error: error.message })

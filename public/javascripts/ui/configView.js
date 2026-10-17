@@ -144,7 +144,9 @@ export class ConfigView {
   }
 
   updatePlayersTable(players) {
-    if (!this.bodyPlayersTable) return
+    if (!this.bodyPlayersTable) {
+      return
+    }
 
     while (this.bodyPlayersTable.firstChild) {
       this.bodyPlayersTable.removeChild(this.bodyPlayersTable.lastChild)
@@ -194,18 +196,24 @@ export class ConfigView {
   }
 
   updatePermissions() {
-    if (this.btnInitGame) this.btnInitGame.disabled = !state.canStartRound()
-    if (this.startFeedback)
+    if (this.btnInitGame) {
+      this.btnInitGame.disabled = !state.canStartRound()
+    }
+    if (this.startFeedback) {
       this.startFeedback.textContent = state.startRoundReason()
+    }
     const canRegister =
       state.isJoinedRoom() &&
       state.roundInfo?.acceptingPlayers === true &&
       state.players.length < 6
-    if (this.inputPlayerName) this.inputPlayerName.disabled = !canRegister
-    if (this.selectKeycodes)
+    if (this.inputPlayerName) {
+      this.inputPlayerName.disabled = !canRegister
+    }
+    if (this.selectKeycodes) {
       this.selectKeycodes.disabled = !canRegister || !canHover
+    }
     this.updateAddButtonState()
-    if (this.registrationPermissionFeedback)
+    if (this.registrationPermissionFeedback) {
       this.registrationPermissionFeedback.textContent = !state.isJoinedRoom()
         ? 'Join and authenticate this room before adding bikes.'
         : state.players.length >= 6
@@ -213,16 +221,22 @@ export class ConfigView {
           : !state.roundInfo?.acceptingPlayers
             ? 'Bike registration is closed. Saved bikes can rejoin; new clients can spectate.'
             : `${state.players.length} of six bike slots occupied. Register bikes here, including several on one keyboard.`
+    }
   }
 
   showFeedback(message) {
-    if (this.registrationFeedback)
+    if (this.registrationFeedback) {
       this.registrationFeedback.textContent = message
+    }
   }
 
   show(currentGame) {
-    if (this.container) this.container.style.display = ''
-    if (this.footer) this.footer.style.display = ''
+    if (this.container) {
+      this.container.style.display = ''
+    }
+    if (this.footer) {
+      this.footer.style.display = ''
+    }
 
     if (this.gameIdSpan && currentGame?.key) {
       this.gameIdSpan.textContent = currentGame.key
@@ -237,7 +251,11 @@ export class ConfigView {
   }
 
   hide() {
-    if (this.container) this.container.style.display = 'none'
-    if (this.footer) this.footer.style.display = 'none'
+    if (this.container) {
+      this.container.style.display = 'none'
+    }
+    if (this.footer) {
+      this.footer.style.display = 'none'
+    }
   }
 }

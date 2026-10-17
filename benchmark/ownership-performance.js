@@ -13,10 +13,11 @@ import { GameSession } from '../server/GameSession.js'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const baselineIndex = process.argv.indexOf('--baseline')
 const baseline = baselineIndex < 0 ? null : process.argv[baselineIndex + 1]
-if (baselineIndex >= 0 && !baseline)
+if (baselineIndex >= 0 && !baseline) {
   throw new Error(
     'Usage: node benchmark/ownership-performance.js [--baseline HEAD]',
   )
+}
 
 function summarize(values) {
   const sorted = [...values].sort((a, b) => a - b)
@@ -43,7 +44,7 @@ async function rendering() {
         ),
       },
     ]
-    if (baseline)
+    if (baseline) {
       versions.unshift({
         label: baseline,
         source: execFileSync(
@@ -52,6 +53,7 @@ async function rendering() {
           { cwd: root, encoding: 'utf8' },
         ),
       })
+    }
     const results = await page.evaluate(async (versions) => {
       const renderers = []
       for (const { label, source } of versions) {
@@ -78,8 +80,11 @@ async function rendering() {
           packet.setInt8(offset + 4, i % 2 ? -3 : i % 6)
         }
         const batchSize = cells >= 64000 ? 1 : 10
-        for (const { renderer } of renderers)
-          for (let i = 0; i < batchSize * 10; i++) renderer.draw(packet)
+        for (const { renderer } of renderers) {
+          for (let i = 0; i < batchSize * 10; i++) {
+            renderer.draw(packet)
+          }
+        }
         const samples = renderers.map(() => [])
         // Alternate order to reduce warm-up/order bias. Batches avoid timer
         // resolution overwhelming the smallest frames; no per-frame allocation.
@@ -88,19 +93,23 @@ async function rendering() {
             trial % 2 ? [...renderers.keys()].reverse() : [...renderers.keys()]
           for (const index of order) {
             const start = performance.now()
-            for (let i = 0; i < batchSize; i++)
+            for (let i = 0; i < batchSize; i++) {
               renderers[index].renderer.draw(packet)
+            }
             samples[index].push((performance.now() - start) / batchSize)
           }
         }
-        for (let index = 0; index < renderers.length; index++)
+        for (let index = 0; index < renderers.length; index++) {
           results.push({
             version: renderers[index].label,
             cells,
             samples: samples[index],
           })
+        }
       }
-      for (const { renderer } of renderers) renderer.destroy()
+      for (const { renderer } of renderers) {
+        renderer.destroy()
+      }
       return results
     }, versions)
     console.log(
@@ -153,14 +162,17 @@ async function persistence() {
               },
               { deferChange: true },
             )
-            if (!result.ok) throw new Error(result.code)
+            if (!result.ok) {
+              throw new Error(result.code)
+            }
             game.ownership.register(id, socket)
           }
           // Same synchronous persistence callback used by the server, without
           // lobby serialization or network traffic. This isolates save cost.
           game.onChange = () => {
-            if (!storage.saveGames(games))
+            if (!storage.saveGames(games)) {
               throw new Error('Snapshot save failed')
+            }
           }
         }
         for (const players of [1, 2, 6]) {
@@ -192,7 +204,9 @@ async function persistence() {
           })
         }
       } finally {
-        for (const game of games) game.destroy()
+        for (const game of games) {
+          game.destroy()
+        }
       }
     }
     console.log('Reconnect snapshot cost (ms/batch; current per-player saves):')

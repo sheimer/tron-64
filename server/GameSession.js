@@ -144,11 +144,15 @@ export class GameSession {
     this.clients = this.clients.filter((c) => c?.readyState === WebSocket.OPEN)
     this.clients.push(client)
     this.allDisconnected = null
-    if (!this.onstate) this.onstate = onstate
+    if (!this.onstate) {
+      this.onstate = onstate
+    }
     this.arena.addHandler({
       ondraw,
       onfinish: (stats) => {
-        if (!this.running) return
+        if (!this.running) {
+          return
+        }
         this.stop()
         this.stage = 'finished'
         this.addStats(stats)
@@ -157,9 +161,12 @@ export class GameSession {
         }
       },
       onreset: (positions) => {
-        if (this.pendingStart) this.pendingStart.positions = positions
-        if (typeof onreset === 'function')
+        if (this.pendingStart) {
+          this.pendingStart.positions = positions
+        }
+        if (typeof onreset === 'function') {
           onreset({ key: this.key, startId: this.startId, positions })
+        }
       },
     })
   }
@@ -190,23 +197,29 @@ export class GameSession {
   }
 
   validateRound(client, { launching = false } = {}) {
-    if (!launching && !this.isJoined(client))
+    if (!launching && !this.isJoined(client)) {
       return { ok: false, code: 'NOT_IN_ROOM' }
+    }
     if (
       !this.firstRoundStarted &&
       (!this.isJoined(client) || !this.roomOwner.owns(client))
-    )
+    ) {
       return { ok: false, code: 'CREATOR_REQUIRED' }
-    if (this.running) return { ok: false, code: 'ROUND_RUNNING' }
-    if (!launching && this.pendingStart)
+    }
+    if (this.running) {
+      return { ok: false, code: 'ROUND_RUNNING' }
+    }
+    if (!launching && this.pendingStart) {
       return { ok: false, code: 'ROUND_PENDING' }
+    }
     if (
       !this.arena ||
       this.arena.players.length < MIN_PLAYERS ||
       this.arena.players.length > MAX_PLAYERS ||
       this.eligiblePlayerCount < MIN_PLAYERS
-    )
+    ) {
       return { ok: false, code: 'INSUFFICIENT_PLAYERS' }
+    }
     return { ok: true }
   }
 
@@ -245,13 +258,17 @@ export class GameSession {
 
   reconcilePendingStart(reason = 'PARTICIPANTS_CHANGED') {
     const pending = this.pendingStart
-    if (!pending) return
-    if (!this.sameRoundRoster(pending.roster)) this.cancelPendingStart(reason)
-    else if (
+    if (!pending) {
+      return
+    }
+    if (!this.sameRoundRoster(pending.roster)) {
+      this.cancelPendingStart(reason)
+    } else if (
       !this.firstRoundStarted &&
       (!this.isJoined(pending.creator) || !this.roomOwner.owns(pending.creator))
-    )
+    ) {
       this.cancelPendingStart('CREATOR_CHANGED')
+    }
   }
 
   beginRound(
@@ -259,7 +276,9 @@ export class GameSession {
     { save = () => true, isCurrent = () => true, onError, requestId } = {},
   ) {
     const result = this.validateRound(client)
-    if (!result.ok) return result
+    if (!result.ok) {
+      return result
+    }
     const roster = this.captureRoundRoster()
     const pending = {
       startId: randomBytes(16).toString('hex'),
@@ -288,10 +307,13 @@ export class GameSession {
         !isCurrent() ||
         this.pendingStart !== pending ||
         this.stage !== 'preparation'
-      )
+      ) {
         return
+      }
       this.reconcilePendingStart()
-      if (this.pendingStart !== pending) return
+      if (this.pendingStart !== pending) {
+        return
+      }
       pending.countdownStarted = true
       clearTimeout(pending.fallbackTimer)
       pending.fallbackTimer = null
@@ -302,10 +324,13 @@ export class GameSession {
           !isCurrent() ||
           this.pendingStart !== pending ||
           this.stage !== 'countdown'
-        )
+        ) {
           return
+        }
         const launched = this.launchRound(pending, save, isCurrent)
-        if (!launched.ok) onError?.(launched)
+        if (!launched.ok) {
+          onError?.(launched)
+        }
       }, 1000)
       pending.startTimer?.unref?.()
     }
@@ -323,13 +348,17 @@ export class GameSession {
       !pending.isCurrent() ||
       !pending.expectedClients.has(client) ||
       !this.isJoined(client)
-    )
+    ) {
       return false
+    }
     this.reconcilePendingStart()
-    if (this.pendingStart !== pending) return false
+    if (this.pendingStart !== pending) {
+      return false
+    }
     pending.readyClients.add(client)
-    if (pending.readyClients.size === pending.expectedClients.size)
+    if (pending.readyClients.size === pending.expectedClients.size) {
       pending.launchCountdown()
+    }
     return true
   }
 
@@ -339,8 +368,9 @@ export class GameSession {
       !isCurrent() ||
       this.pendingStart !== pending ||
       !['preparation', 'countdown'].includes(this.stage)
-    )
+    ) {
       return { ok: false, code: 'ROUND_PENDING' }
+    }
     const result = this.validateRound(pending.requester, { launching: true })
     if (!result.ok) {
       this.cancelPendingStart(result.code)
@@ -375,13 +405,21 @@ export class GameSession {
   }
 
   changeInterval(client, interval, save) {
-    if (!this.isJoined(client)) return { ok: false, code: 'NOT_IN_ROOM' }
-    if (!this.roomOwner.owns(client))
+    if (!this.isJoined(client)) {
+      return { ok: false, code: 'NOT_IN_ROOM' }
+    }
+    if (!this.roomOwner.owns(client)) {
       return { ok: false, code: 'CREATOR_REQUIRED' }
-    if (this.running) return { ok: false, code: 'ROUND_RUNNING' }
-    if (this.pendingStart) return { ok: false, code: 'ROUND_PENDING' }
-    if (!Number.isInteger(interval) || interval < 10 || interval > 500)
+    }
+    if (this.running) {
+      return { ok: false, code: 'ROUND_RUNNING' }
+    }
+    if (this.pendingStart) {
+      return { ok: false, code: 'ROUND_PENDING' }
+    }
+    if (!Number.isInteger(interval) || interval < 10 || interval > 500) {
       return { ok: false, code: 'INVALID_INTERVAL' }
+    }
     const previous = this.interval
     this.interval = interval
     if (!save()) {
@@ -393,7 +431,9 @@ export class GameSession {
 
   cancelPendingStart(reason = 'CANCELLED') {
     const pending = this.pendingStart
-    if (!pending) return false
+    if (!pending) {
+      return false
+    }
     clearTimeout(pending.fallbackTimer)
     clearTimeout(pending.startTimer)
     pending.fallbackTimer = null
@@ -492,7 +532,9 @@ export class GameSession {
     // every saved snapshot respects the same marker/count invariant.
     this.firstRoundStarted = true
     this.acceptingPlayers = false
-    if (!this.running && !this.pendingStart) this.stage = 'finished'
+    if (!this.running && !this.pendingStart) {
+      this.stage = 'finished'
+    }
     this.stats.gamecount++
     roundsPlayedCounter.inc()
     this.stats.messages = []
@@ -612,7 +654,9 @@ export class GameSession {
     this.physicsGeneration++
     this.cancelPendingStart()
     this.running = false
-    if (this.stage === 'running') this.stage = 'finished'
+    if (this.stage === 'running') {
+      this.stage = 'finished'
+    }
     if (this.timer !== null) {
       clearTimeout(this.timer)
       this.timer = null
@@ -638,8 +682,9 @@ export class GameSession {
         generation !== this.physicsGeneration ||
         this.timer !== timer ||
         !this.activeRoundIsCurrent()
-      )
+      ) {
         return
+      }
 
       const endTimer = tickDurationSummary.startTimer()
       this.arena.run()

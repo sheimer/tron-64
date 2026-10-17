@@ -21,8 +21,11 @@ const dataDir = mkdtempSync(path.join(tmpdir(), 'tron-round-lifecycle-'))
 const previousDataDir = process.env.DATA_DIR
 process.env.DATA_DIR = dataDir
 const { GameServer } = await import('../server/GameServer.js')
-if (previousDataDir === undefined) delete process.env.DATA_DIR
-else process.env.DATA_DIR = previousDataDir
+if (previousDataDir === undefined) {
+  delete process.env.DATA_DIR
+} else {
+  process.env.DATA_DIR = previousDataDir
+}
 const publicInfo = (game) =>
   GameServer.prototype.getGameInfo.call({ getGame: () => game }, game.key)
 globalThis.setTimeout = (callback, delay) => {
@@ -38,7 +41,9 @@ function advance(ms) {
   for (;;) {
     const next = [...timers].filter(([, timer]) => timer.at <= until)
     next.sort((a, b) => a[1].at - b[1].at || a[0] - b[0])
-    if (!next.length) break
+    if (!next.length) {
+      break
+    }
     const [id, timer] = next[0]
     now = timer.at
     timers.delete(id)
@@ -69,13 +74,14 @@ function fixture({
   const bikes = socket(game)
   const second = split ? socket(game) : bikes
   const spectator = socket(game)
-  for (const client of new Set([creator, bikes, second, spectator]))
+  for (const client of new Set([creator, bikes, second, spectator])) {
     game.connect({
       client,
       onstate: (event) => events.states.push(structuredClone(event)),
       onreset: (event) => events.resets.push(structuredClone(event)),
       onfinish: (event) => events.finishes.push(structuredClone(event)),
     })
+  }
   game.roomOwner.create()
   game.roomOwner.bind(creator)
   for (const id of [
@@ -100,7 +106,9 @@ function fixture({
   }
   // Physics scheduling is observed without allowing incidental collisions to
   // end a round while the controlled clock exercises preparation/countdown.
-  if (!physics) game.scheduleNextTick = () => {}
+  if (!physics) {
+    game.scheduleNextTick = () => {}
+  }
   let saves = 0
   let current = true
   const errors = []
@@ -267,27 +275,32 @@ try {
     ]) {
       const other = fixture({ disconnected: mutation === 'late-admit' })
       other.begin()
-      if (stage === 'countdown')
+      if (stage === 'countdown') {
         other.game.acknowledgeReady(other.bikes, other.game.startId)
+      }
       const stale = pendingCallbacks(other.game)
       const stats = scoreSnapshot(other.game)
       if (mutation === 'leave') {
         other.game.ownership.release('one', other.bikes)
         other.game.disconnectPlayer('one')
-      } else if (mutation === 'switch') other.bikes.gameKey = 'replacement-room'
-      else if (mutation === 'close') other.bikes.readyState = WebSocket.CLOSED
-      else if (mutation === 'handover')
+      } else if (mutation === 'switch') {
+        other.bikes.gameKey = 'replacement-room'
+      } else if (mutation === 'close') {
+        other.bikes.readyState = WebSocket.CLOSED
+      } else if (mutation === 'handover') {
         other.game.ownership.transfer('one', other.spectator)
-      else if (mutation === 'late-admit') {
+      } else if (mutation === 'late-admit') {
         other.game.ownership.transfer('away', other.spectator)
         other.game.reconnectPlayer('away')
-      } else if (mutation === 'creator-release')
+      } else if (mutation === 'creator-release') {
         other.game.roomOwner.release(other.creator)
-      else if (mutation === 'creator-switch')
+      } else if (mutation === 'creator-switch') {
         other.creator.gameKey = 'other-room'
-      else if (mutation === 'creator-close')
+      } else if (mutation === 'creator-close') {
         other.creator.readyState = WebSocket.CLOSED
-      else other.game.roomOwner.bind(other.spectator)
+      } else {
+        other.game.roomOwner.bind(other.spectator)
+      }
       other.game.reconcilePendingStart()
       idleAfterCancel(other, stats)
       assert.equal(
@@ -299,7 +312,9 @@ try {
         other.events.states.at(-1).reason,
         `${mutation} explains cancellation`,
       )
-      for (const callback of stale) callback()
+      for (const callback of stale) {
+        callback()
+      }
       advance(4000)
       assert.equal(
         other.launches(),
@@ -320,7 +335,9 @@ try {
   const pristineRetry = observable(retry.game)
   const retryEvents = JSON.stringify(retry.events)
   retry.game.acknowledgeReady(retry.bikes, retired.id)
-  for (const callback of [...oldPreparation, ...oldCountdown]) callback()
+  for (const callback of [...oldPreparation, ...oldCountdown]) {
+    callback()
+  }
   assert.equal(observable(retry.game), pristineRetry)
   assert.equal(JSON.stringify(retry.events), retryEvents)
   retry.game.stop()
@@ -329,16 +346,22 @@ try {
     for (const operation of ['reset', 'stop', 'destroy']) {
       const other = fixture()
       other.begin()
-      if (stage === 'countdown')
+      if (stage === 'countdown') {
         other.game.acknowledgeReady(other.bikes, other.game.startId)
+      }
       const stale = pendingCallbacks(other.game)
       const stats = scoreSnapshot(other.game)
       other.game[operation]()
-      if (operation === 'destroy') assert.equal(other.game.stage, 'destroyed')
-      else idleAfterCancel(other, stats)
+      if (operation === 'destroy') {
+        assert.equal(other.game.stage, 'destroyed')
+      } else {
+        idleAfterCancel(other, stats)
+      }
       const state = observable(other.game)
       const events = JSON.stringify(other.events)
-      for (const callback of stale) callback()
+      for (const callback of stale) {
+        callback()
+      }
       advance(4000)
       assert.equal(observable(other.game), state)
       assert.equal(
@@ -381,8 +404,9 @@ try {
   for (const stage of ['preparation', 'countdown']) {
     const rejected = fixture()
     rejected.begin()
-    if (stage === 'countdown')
+    if (stage === 'countdown') {
       rejected.game.acknowledgeReady(rejected.bikes, rejected.game.startId)
+    }
     const pending = rejected.game.pendingStart
     const before = observable(rejected.game)
     const timerEntries = [...timers]
@@ -527,10 +551,13 @@ try {
     const final = fixture()
     final.begin()
     final.game.acknowledgeReady(final.bikes, final.game.startId)
-    if (mutation === 'room-replaced') final.supersede()
-    else if (mutation === 'roster-changed')
+    if (mutation === 'room-replaced') {
+      final.supersede()
+    } else if (mutation === 'roster-changed') {
       final.game.ownership.transfer('one', final.spectator)
-    else final.game.roomOwner.bind(final.spectator)
+    } else {
+      final.game.roomOwner.bind(final.spectator)
+    }
     advance(1000)
     assert.equal(
       final.launches(),
@@ -543,7 +570,11 @@ try {
     'Round lifecycle: controlled readiness, cancellation, final authority and exactly-once durable launch passed',
   )
 } finally {
-  for (const game of rooms) if (game.arena) game.destroy()
+  for (const game of rooms) {
+    if (game.arena) {
+      game.destroy()
+    }
+  }
   globalThis.setTimeout = original.setTimeout
   globalThis.clearTimeout = original.clearTimeout
   Date.now = original.now

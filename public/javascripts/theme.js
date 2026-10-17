@@ -3,8 +3,12 @@ import { AUTO, DARK, LIGHT, DEFAULT_PALETTE, settings } from './settings.js'
 const darkThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
 
 export const isDarkMode = () => {
-  if (settings.theme === DARK) return true
-  if (settings.theme === LIGHT) return false
+  if (settings.theme === DARK) {
+    return true
+  }
+  if (settings.theme === LIGHT) {
+    return false
+  }
   return darkThemeMq.matches
 }
 
@@ -23,9 +27,11 @@ const resolveLightDark = (value, isDark) => {
   let depth = 0
   let splitIdx = -1
   for (let i = 0; i < inner.length; i++) {
-    if (inner[i] === '(') depth++
-    else if (inner[i] === ')') depth--
-    else if (inner[i] === ',' && depth === 0) {
+    if (inner[i] === '(') {
+      depth++
+    } else if (inner[i] === ')') {
+      depth--
+    } else if (inner[i] === ',' && depth === 0) {
       splitIdx = i
       break
     }

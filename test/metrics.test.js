@@ -140,7 +140,9 @@ console.log('4. Verifying tick duration summary timer...')
 const endTimer = tickDurationSummary.startTimer()
 // simulate minimal computation
 let sum = 0
-for (let i = 0; i < 1000; i++) sum += i
+for (let i = 0; i < 1000; i++) {
+  sum += i
+}
 endTimer()
 assert.ok(sum > 0, 'Computation completed')
 

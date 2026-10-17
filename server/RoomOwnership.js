@@ -32,8 +32,9 @@ export class RoomOwnership {
       claim?.ownerClientId !== this.clientId ||
       typeof claim.roomOwnerToken !== 'string' ||
       !/^[A-Za-z0-9_-]{43}$/.test(claim.roomOwnerToken)
-    )
+    ) {
       return false
+    }
     return timingSafeEqual(
       this.verifier,
       createHash('sha256').update(claim.roomOwnerToken).digest(),
@@ -56,7 +57,9 @@ export class RoomOwnership {
   }
 
   release(socket) {
-    if (this.socket !== socket) return false
+    if (this.socket !== socket) {
+      return false
+    }
     this.socket = null
     return true
   }

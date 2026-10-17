@@ -41,12 +41,16 @@ class NetworkClient {
     socket.binaryType = 'arraybuffer'
 
     socket.addEventListener('open', () => {
-      if (socket !== this.socket) return
+      if (socket !== this.socket) {
+        return
+      }
       this.reconnectAttempts = 0
     })
 
     socket.addEventListener('close', () => {
-      if (socket !== this.socket) return
+      if (socket !== this.socket) {
+        return
+      }
       this.inputHandles.clear()
       this.protocolReady = false
       this.stopPing()
@@ -70,7 +74,9 @@ class NetworkClient {
     })
 
     socket.addEventListener('message', (event) => {
-      if (socket !== this.socket) return
+      if (socket !== this.socket) {
+        return
+      }
       if (typeof event.data !== 'string') {
         if (this.protocolReady && event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
@@ -121,7 +127,9 @@ class NetworkClient {
         }
 
         // Drawing deltas are binary-only and cannot reach the renderer as JSON.
-        if (type === MSG_TYPE.GAME_DRAW) return
+        if (type === MSG_TYPE.GAME_DRAW) {
+          return
+        }
 
         if (type === MSG_TYPE.PONG) {
           const latency = Date.now() - (msg.t || 0)
@@ -159,7 +167,9 @@ class NetworkClient {
     })
 
     socket.addEventListener('error', (err) => {
-      if (socket !== this.socket) return
+      if (socket !== this.socket) {
+        return
+      }
       this.emit('error', err)
     })
   }
@@ -168,7 +178,9 @@ class NetworkClient {
     if (!this.cqiElement) {
       this.cqiElement = document.getElementById('cqi')
     }
-    if (!this.cqiElement) return
+    if (!this.cqiElement) {
+      return
+    }
 
     this.cqiElement.className = ''
     if (latency === null || typeof latency === 'undefined') {
@@ -308,10 +320,13 @@ class NetworkClient {
   }
 
   changeDir({ id, dir }) {
-    if (!this.isConnected() || !this.protocolReady) return false
-    const inputHandle = this.inputHandles.get(id)
-    if (inputHandle === undefined || (dir !== 'left' && dir !== 'right'))
+    if (!this.isConnected() || !this.protocolReady) {
       return false
+    }
+    const inputHandle = this.inputHandles.get(id)
+    if (inputHandle === undefined || (dir !== 'left' && dir !== 'right')) {
+      return false
+    }
     this.socket.send(
       new Uint8Array([
         BINARY_OPCODE.CHANGE_DIR,

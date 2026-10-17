@@ -113,11 +113,15 @@ try {
     assert(event.gc, 'every fixture receives --expose-gc')
     if (event.event === 'start') {
       assert(!active.has('exclusive'))
-      if (event.id === 'exclusive') assert.equal(active.size, 0)
+      if (event.id === 'exclusive') {
+        assert.equal(active.size, 0)
+      }
       active.add(event.id)
       maximum = Math.max(maximum, active.size)
       dataDirs.add(event.dataDir)
-    } else active.delete(event.id)
+    } else {
+      active.delete(event.id)
+    }
   }
   assert.equal(maximum, 2)
   assert.equal(active.size, 0)

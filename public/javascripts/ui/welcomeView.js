@@ -19,7 +19,9 @@ export class WelcomeView {
   }
 
   hydrateMailLinks() {
-    if (typeof document === 'undefined' || !document.querySelectorAll) return
+    if (typeof document === 'undefined' || !document.querySelectorAll) {
+      return
+    }
     document.querySelectorAll('.mail-link').forEach((el) => {
       const user = el.getAttribute
         ? el.getAttribute('data-user')
@@ -45,7 +47,9 @@ export class WelcomeView {
   initEvents() {
     if (this.btnHeaderEnterLobby) {
       this.btnHeaderEnterLobby.addEventListener('click', () => {
-        if (this.onEnterLobby) this.onEnterLobby()
+        if (this.onEnterLobby) {
+          this.onEnterLobby()
+        }
       })
     }
 
@@ -95,27 +99,48 @@ export class WelcomeView {
 
   openModal(modal) {
     this.closeModals()
-    if (modal) modal.style.display = 'flex'
+    if (modal) {
+      modal.style.display = 'flex'
+    }
   }
 
   closeModals() {
-    if (this.modalLegal) this.modalLegal.style.display = 'none'
-    if (this.modalPrivacy) this.modalPrivacy.style.display = 'none'
+    if (this.modalLegal) {
+      this.modalLegal.style.display = 'none'
+    }
+    if (this.modalPrivacy) {
+      this.modalPrivacy.style.display = 'none'
+    }
   }
 
   show() {
-    if (this.layout) this.layout.classList.add('screen-welcome')
-    if (this.container) this.container.style.display = ''
-    if (this.btnHeaderEnterLobby) this.btnHeaderEnterLobby.style.display = ''
-    if (this.btnInfo) this.btnInfo.style.display = 'none'
+    if (this.layout) {
+      this.layout.classList.add('screen-welcome')
+    }
+    if (this.container) {
+      this.container.style.display = ''
+    }
+    if (this.btnHeaderEnterLobby) {
+      this.btnHeaderEnterLobby.style.display = ''
+    }
+    if (this.btnInfo) {
+      this.btnInfo.style.display = 'none'
+    }
   }
 
   hide() {
-    if (this.layout) this.layout.classList.remove('screen-welcome')
-    if (this.container) this.container.style.display = 'none'
-    if (this.btnHeaderEnterLobby)
+    if (this.layout) {
+      this.layout.classList.remove('screen-welcome')
+    }
+    if (this.container) {
+      this.container.style.display = 'none'
+    }
+    if (this.btnHeaderEnterLobby) {
       this.btnHeaderEnterLobby.style.display = 'none'
-    if (this.btnInfo) this.btnInfo.style.display = ''
+    }
+    if (this.btnInfo) {
+      this.btnInfo.style.display = ''
+    }
     this.closeModals()
   }
 }

@@ -20,7 +20,9 @@ export class GameServer {
 
     saved.forEach((record) => {
       try {
-        if (!record || typeof record.key !== 'string' || !record.key) return
+        if (!record || typeof record.key !== 'string' || !record.key) {
+          return
+        }
         const session = new GameSession({
           key: record.key,
           name: record.name,
@@ -94,7 +96,9 @@ export class GameServer {
       const game = this.games.pop()
       game.onDestroy = null
       game.destroy()
-      if (creator) creator.credentials = null
+      if (creator) {
+        creator.credentials = null
+      }
       return null
     }
     return key
@@ -127,7 +131,9 @@ export class GameServer {
 
   getGameInfo(key) {
     const game = this.getGame(key)
-    if (!game) return null
+    if (!game) {
+      return null
+    }
     return {
       key: game.key,
       name: game.name,

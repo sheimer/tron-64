@@ -96,13 +96,20 @@ export class SettingsView {
     if (this.elements.speed) {
       this.elements.speed.onchange = (evt) => {
         const speed = SPEED[evt.target.value]
-        if (!speed) return
-        if (this.inRoom) this.onChangeRoomInterval(Math.round(1000 / speed))
-        else settings.set('speed', speed)
+        if (!speed) {
+          return
+        }
+        if (this.inRoom) {
+          this.onChangeRoomInterval(Math.round(1000 / speed))
+        } else {
+          settings.set('speed', speed)
+        }
       }
     }
     settings.addListener('speed', (speed) => {
-      if (!this.inRoom) this.updateSpeed(speed)
+      if (!this.inRoom) {
+        this.updateSpeed(speed)
+      }
     })
   }
 
@@ -111,7 +118,9 @@ export class SettingsView {
   }
 
   updateInterval(interval) {
-    if (!this.elements.speed) return
+    if (!this.elements.speed) {
+      return
+    }
     const preset = Object.entries(SPEED).find(
       ([, fps]) => Math.round(1000 / fps) === interval,
     )?.[0]
@@ -123,24 +132,31 @@ export class SettingsView {
   }
 
   setSpectatorMode(disabled) {
-    if (this.elements.speed) this.elements.speed.disabled = disabled
+    if (this.elements.speed) {
+      this.elements.speed.disabled = disabled
+    }
   }
 
   updateRoomControls(inRoom, enabled, reason, interval) {
     this.inRoom = inRoom
     if (inRoom) {
-      if (Number.isInteger(interval)) this.updateInterval(interval)
+      if (Number.isInteger(interval)) {
+        this.updateInterval(interval)
+      }
       this.setSpectatorMode(!enabled)
     } else {
       this.updateSpeed(settings.speed)
       this.setSpectatorMode(false)
     }
-    if (this.elements.speedFeedback)
+    if (this.elements.speedFeedback) {
       this.elements.speedFeedback.textContent =
         inRoom && Number.isInteger(interval)
           ? `${interval} ms per step. ${reason}`
           : reason
-    if (this.elements.speed) this.elements.speed.title = reason
+    }
+    if (this.elements.speed) {
+      this.elements.speed.title = reason
+    }
   }
 
   initVisibilityListeners() {

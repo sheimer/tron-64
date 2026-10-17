@@ -18,15 +18,21 @@ export class PlayerOwnership {
   }
 
   restore(verifiers, playerIds) {
-    if (!verifiers || typeof verifiers !== 'object' || Array.isArray(verifiers))
+    if (
+      !verifiers ||
+      typeof verifiers !== 'object' ||
+      Array.isArray(verifiers)
+    ) {
       return
+    }
     for (const [id, digest] of Object.entries(verifiers)) {
       if (
         playerIds.has(id) &&
         typeof digest === 'string' &&
         /^[a-f0-9]{64}$/.test(digest)
-      )
+      ) {
         this.verifiers.set(id, Buffer.from(digest, 'hex'))
+      }
     }
   }
 
@@ -37,7 +43,9 @@ export class PlayerOwnership {
   }
 
   remove(id, socket) {
-    if (!this.release(id, socket)) return false
+    if (!this.release(id, socket)) {
+      return false
+    }
     this.verifiers.delete(id)
     return true
   }
@@ -51,8 +59,9 @@ export class PlayerOwnership {
       typeof id !== 'string' ||
       typeof token !== 'string' ||
       !/^[A-Za-z0-9_-]{43}$/.test(token)
-    )
+    ) {
       return false
+    }
     const expected = this.verifiers.get(id)
     const actual = createHash('sha256').update(token).digest()
     return Boolean(expected && timingSafeEqual(expected, actual))
@@ -64,7 +73,9 @@ export class PlayerOwnership {
       previous.playerIds.delete(id)
       const handle = previous.handlesById.get(id)
       previous.handlesById.delete(id)
-      if (handle !== undefined) previous.idsByHandle.delete(handle)
+      if (handle !== undefined) {
+        previous.idsByHandle.delete(handle)
+      }
     }
     this.owners.set(id, socket)
     socket.playerIds.add(id)
@@ -72,12 +83,16 @@ export class PlayerOwnership {
   }
 
   release(id, socket) {
-    if (!this.owns(id, socket)) return false
+    if (!this.owns(id, socket)) {
+      return false
+    }
     this.owners.delete(id)
     socket.playerIds.delete(id)
     const handle = socket.handlesById.get(id)
     socket.handlesById.delete(id)
-    if (handle !== undefined) socket.idsByHandle.delete(handle)
+    if (handle !== undefined) {
+      socket.idsByHandle.delete(handle)
+    }
     return true
   }
 
@@ -86,7 +101,9 @@ export class PlayerOwnership {
       socket.playerIds.delete(id)
       const handle = socket.handlesById.get(id)
       socket.handlesById.delete(id)
-      if (handle !== undefined) socket.idsByHandle.delete(handle)
+      if (handle !== undefined) {
+        socket.idsByHandle.delete(handle)
+      }
     }
     this.owners.clear()
     this.verifiers.clear()

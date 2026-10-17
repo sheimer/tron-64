@@ -31,7 +31,9 @@ async function next(socket, predicate) {
   const deadline = Date.now() + 3000
   while (Date.now() < deadline) {
     const index = socket.frames.findIndex(predicate)
-    if (index >= 0) return socket.frames.splice(index, 1)[0]
+    if (index >= 0) {
+      return socket.frames.splice(index, 1)[0]
+    }
     await new Promise((resolve) => setTimeout(resolve, 5))
   }
   throw new Error('Lobby response timed out')
@@ -150,12 +152,13 @@ try {
     creator.credentials.roomOwnerToken,
     credentials[0].reconnectToken,
     ...Object.values(game.ownership.serializeVerifiers()),
-  ])
+  ]) {
     assert.equal(
       serialized.includes(secret),
       false,
       'Discovery never returns credentials',
     )
+  }
 
   const gone =
     'ffffffff' === privateKey || 'ffffffff' === publicKey
@@ -230,8 +233,12 @@ try {
     'Lobby discovery: private visibility, read-only checks, isolated broadcasts, expiry and bounded queries passed',
   )
 } finally {
-  for (const socket of sockets) socket.terminate()
-  for (const game of [...gameServer.games]) game.destroy()
+  for (const socket of sockets) {
+    socket.terminate()
+  }
+  for (const game of [...gameServer.games]) {
+    game.destroy()
+  }
   await new Promise((resolve) => server.close(resolve))
   await rm(dataDir, { recursive: true, force: true })
 }

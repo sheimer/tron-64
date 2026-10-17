@@ -44,14 +44,21 @@ function runSuite(suite, { cwd, env, executable, timeoutMs, signal }) {
       })
     }
     const kill = () => {
-      if (!child?.pid) return
+      if (!child?.pid) {
+        return
+      }
       try {
         // Suites may launch server/browser descendants. Reap the whole process
         // group on timeout or interruption before admitting another suite.
-        if (process.platform === 'win32') child.kill('SIGKILL')
-        else process.kill(-child.pid, 'SIGKILL')
+        if (process.platform === 'win32') {
+          child.kill('SIGKILL')
+        } else {
+          process.kill(-child.pid, 'SIGKILL')
+        }
       } catch (killError) {
-        if (killError.code !== 'ESRCH') error ||= killError
+        if (killError.code !== 'ESRCH') {
+          error ||= killError
+        }
       }
     }
     const abort = () => {
@@ -84,7 +91,9 @@ function runSuite(suite, { cwd, env, executable, timeoutMs, signal }) {
         kill()
       }, timeoutMs)
       signal?.addEventListener('abort', abort, { once: true })
-      if (signal?.aborted) abort()
+      if (signal?.aborted) {
+        abort()
+      }
     } catch (spawnError) {
       error = spawnError
       finish(null, null)
@@ -142,9 +151,13 @@ export async function runSuites(
         signal,
       }).then((result) => ({ index, result }))
       active.set(index, { suite, promise })
-      if (suite.exclusive) break
+      if (suite.exclusive) {
+        break
+      }
     }
-    if (!active.size) continue
+    if (!active.size) {
+      continue
+    }
     const { index, result } = await Promise.race(
       [...active.values()].map(({ promise }) => promise),
     )

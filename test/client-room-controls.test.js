@@ -156,7 +156,9 @@ try {
   globalThis.document = {
     getElementById: (id) => elements.get(id) ?? null,
     querySelector: (selector) => {
-      if (!checkbox.has(selector)) checkbox.set(selector, new Element())
+      if (!checkbox.has(selector)) {
+        checkbox.set(selector, new Element())
+      }
       return checkbox.get(selector)
     },
     createElement: () => new Element(),
@@ -317,14 +319,18 @@ try {
   wireSocket = new RealWebSocket(`ws://127.0.0.1:${startup[0].port}/ws`)
   const packets = []
   wireSocket.on('message', (bytes, binary) => {
-    if (!binary) packets.push(JSON.parse(bytes.toString()))
+    if (!binary) {
+      packets.push(JSON.parse(bytes.toString()))
+    }
   })
   await once(wireSocket, 'open')
   const waitPacket = async (predicate, after = 0) => {
     const expires = Date.now() + 5000
     do {
       const packet = packets.slice(after).find(predicate)
-      if (packet) return packet
+      if (packet) {
+        return packet
+      }
       await new Promise((resolve) => setTimeout(resolve, 10))
     } while (Date.now() < expires)
     throw new Error('Actual wire packet deadline exceeded')
@@ -768,7 +774,9 @@ try {
     wireServer.kill('SIGKILL')
     await exited
   }
-  if (wireDataDir) await rm(wireDataDir, { recursive: true, force: true })
+  if (wireDataDir) {
+    await rm(wireDataDir, { recursive: true, force: true })
+  }
   app?.roundLifecycle.clearRoundCallbacks()
   app?.roomSession.clearPendingRegistrations()
   app?.lobbyView.hide()
@@ -777,5 +785,7 @@ try {
     network.stopPing()
     network.socket?.close()
   }
-  for (const [key, value] of Object.entries(original)) globalThis[key] = value
+  for (const [key, value] of Object.entries(original)) {
+    globalThis[key] = value
+  }
 }
