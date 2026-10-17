@@ -118,6 +118,9 @@ JavaScript creates the changing children of those stable containers:
 - [LobbyView](../../public/javascripts/ui/lobbyView.js) builds room rows and their
   join buttons from the current room list. Its loading, empty, and connection
   status rows replace that same table content according to runtime state.
+  Transient errors keep their eight-second display window; a replacement error
+  cancels the old timer, and hiding/reinitializing the view releases it. Stale
+  callbacks cannot hide newer feedback or persistent lost-acknowledgement guidance.
 - [ConfigView](../../public/javascripts/ui/configView.js) and
   [GameView](../../public/javascripts/ui/gameView.js) build player and scoreboard
   rows from the current roster and scores.

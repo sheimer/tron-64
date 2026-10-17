@@ -8,10 +8,24 @@
 
 All automated tests are executed via `npm test` (`node test/runAll.js`):
 
-- **Process Isolation:** Spawns each `test/*.test.js` file in a dedicated, isolated Node.js child process (`spawnSync`).
+- **Process Isolation:** Spawns each `test/*.test.js` file in a dedicated Node.js child process. Each child receives a fresh temporary `DATA_DIR`; the runner never modifies the caller's inherited data directory. Suites with their own fixture directories retain them; those paths and browser artifact directories are distinct between suites.
+- **Bounded Parallelism:** Runs up to two independent suites concurrently by default. Set `TEST_CONCURRENCY=1 npm test` for a serial run or choose an integer from 1 to 8. Ordinary suites run first; the two leak suites and `lobby-discovery.test.js` then run exclusively, with no other suites active. This protects heap/GC measurements and the discovery test's real preparation-timer checks.
 - **Forced Garbage Collection Flag:** Automatically passes `['--expose-gc', filePath]` to child processes so memory leak tests can invoke `global.gc()`.
-- **Per-suite Timeout:** Each child is killed after 120 seconds and reported as failed, preventing hanging suites from blocking CI indefinitely.
-- **Summary Reporting:** Formats execution times, assertions, and pass/fail counts.
+- **Per-suite Timeout:** Each child is killed after 120 seconds and reported as failed, preventing hanging suites from blocking CI indefinitely. On POSIX systems, timeout/interruption kills the suite's process group, including descendants that share that group. Startup errors, signals and interruptions remain failures, and normal test failures do not skip the remaining suites.
+- **Summary Reporting:** Buffers each suite's stdout/stderr and reports them together when it completes, with elapsed time and failure details. The final summary counts every suite and reports total wall time. No assertions, cycle counts or failure deadlines are reduced for parallel execution.
+
+The scheduler lives in [test-runner.js](../../test/helpers/test-runner.js).
+[test-runner.test.js](../../test/test-runner.test.js) uses synchronized child
+fixtures to verify concurrency limits, exclusive scheduling, serial operation,
+data isolation, output retention, startup failures, signals, deadlines and
+interruption. Keep new resource-sensitive suites in the exclusive group and
+audit fixture paths and listening ports before introducing shared resources.
+
+Fixture startup races clear their deadline timers and temporary event listeners
+after either outcome. UI fixtures also close their views: lobby feedback keeps
+its full eight-second display deadline while visible, cancels superseded timers,
+and releases its timer on hide/reinitialization. A completed assertion sequence
+does not wait for obsolete startup or feedback timers before the child exits.
 
 Client coordinator tests import the named `AppCoordinator` class directly from
 [appCoordinator.js](../../public/javascripts/appCoordinator.js) and supply isolated
