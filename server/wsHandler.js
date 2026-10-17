@@ -60,6 +60,7 @@ const leaveRoom = (ws) => {
   // A missing room may still have routing/handle indexes on its old socket.
   const changed = ws.gameKey !== null
   ws.gameKey = null
+  ws.gameSession = null
   ws.protocolReady = false
   ws.playerIds.clear()
   ws.handlesById.clear()
@@ -146,6 +147,26 @@ export const setupWebSocketServer = (server) => {
     })
   }
 
+  gameServer.setDestroyHandler((game) => {
+    for (const client of wss.clients) {
+      const wasVisible = client.lobbyRooms.delete(game)
+      for (const [requestId, retry] of client.creationRetries) {
+        if (retry.game === game) {
+          // Keep a bounded request-ID tombstone: an expired retry must still
+          // conflict, without retaining the room or its credential response.
+          client.creationRetries.set(requestId, { game: null })
+        }
+      }
+      // Also clear routing-only references; another room's indexes survive.
+      game.clearClientRouting(client)
+      if (wasVisible && client.readyState === WebSocket.OPEN) {
+        // Retire checked credentials before the ordinary broadcast loses the
+        // deleted grant. Unrelated clients must not learn private room keys.
+        sendLobbyList(client, {}, [game.key])
+      }
+    }
+  })
+
   gameServer.setChangeHandler(() => {
     broadcastLobbyList()
   })
@@ -153,6 +174,7 @@ export const setupWebSocketServer = (server) => {
   wss.on('connection', (ws) => {
     wsClientsGauge.set(wss.clients.size)
     ws.gameKey = null
+    ws.gameSession = null
     ws.playerIds = new Set()
     ws.handlesById = new Map()
     ws.idsByHandle = new Map()
@@ -288,6 +310,7 @@ export const setupWebSocketServer = (server) => {
             const cached = ws.creationRetries.get(requestId)
             if (cached) {
               if (
+                cached.game &&
                 cached.fingerprint === fingerprint &&
                 gameServer.getGame(cached.response.payload.key) === cached.game
               ) {
@@ -795,6 +818,7 @@ export const setupWebSocketServer = (server) => {
       ws.protocolReady = false
       ws.playerIds.clear()
       ws.lobbyRooms.clear()
+      ws.creationRetries.clear()
     })
   })
 }

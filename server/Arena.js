@@ -39,6 +39,11 @@ export class Arena {
     this.ondraw = null
     this.onreset = null
     this.onfinish = null
+    this.players = []
+    this.explosions = []
+    this.fields = null
+    this.fieldChanges = null
+    this.escaped = null
   }
 
   addHandler({ ondraw, onfinish, onreset }) {

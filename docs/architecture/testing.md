@@ -50,6 +50,7 @@ the same timer and hidden arena before showing the next prepared round.
 | :------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
 | `test/lobby-discovery.test.js` and `test/lobby-rejoin.test.js`            | Verify server-personalized public/private discovery, read-only credential checks, isolated broadcasts, expiry cleanup, bounded batches and stale-response protection. | Real WebSocket clients and actual lobby/state modules; assert unchanged ownership, membership, pending rounds and inactivity.          |
 | `test/room-membership.test.js`                                            | Verifies deduplicated membership, capacity and rejected admission, safe leave/switch/close/termination/pruning, partial handover and former-room delivery isolation.  | Real WebSocket clients, protocol barriers, binary and JSON events, authoritative owner checks and injected stale indexes.              |
+| `test/room-cleanup.test.js`                                               | Verifies membership-driven idle windows, complete disposal, exact-instance protection, snapshot deletion/failure and external-reference cleanup.                      | Controlled clock, captured queued timers/arena hooks, actual disk snapshots and real WebSocket discovery/switch/deletion.              |
 | `test/concurrency.test.js`                                                | Verifies `MAX_ACTIVE_GAMES` limits and room creation guardrails.                                                                                                      | Rapid allocation past limit and validation of room rejection errors.                                                                   |
 | `test/disconnect.test.js`                                                 | Verifies the 4 phases of disconnected client handling and trail ghosting.                                                                                             | Mock WebSocket drops, mid-round elimination checks, and zero-trail restart verification.                                               |
 | `test/explosion.test.js`                                                  | Verifies explosion particle cleanup, `Arena.reset()` flushing, wall breaches, client `Int8Array` buffer resets, and persistence isolation.                            | Mid-round crash simulation, expiration force-timeouts, border restoration, client buffer reset checks, and cold reboot disk isolation. |
@@ -77,8 +78,23 @@ preflights, monotonically allocated handles across departure/rejoin, retained
 rosters/scores/verifiers, repeated cleanup, server-side termination and defensive
 pruning before close. Stale old-room owner records cannot clear a different
 current room's handles. Both binary draws and JSON room events reach each live
-member once and exclude switched or routing-only sockets. Controlled idle expiry
-and complete destruction are separate follow-up coverage.
+member once and exclude switched or routing-only sockets.
+
+The cleanup regression uses controlled clocks around production sessions and
+registries: initial emptiness, cold restore, last departure, spectator retention,
+rejoin/reset, repeated cleanup, defensive dead-peer pruning and the inclusive
+five-minute boundary. It checks the single unreferenced 60-second status timer,
+then invokes captured callbacks after preparation/countdown/running disposal to
+prove they cannot emit events or schedule work. Explicit/session/idle removal,
+old-instance replacement and stale same-ID owners cannot clear another room's
+indexes. Actual isolated snapshot files prove successful deletion and capacity
+recovery; forced write failure preserves the old bytes, emits only the existing
+safe diagnostic and leaves no failed-creation timer. Real sockets prove external
+discovery/creation references expire, personalized missing-room notices remain
+private, switched sockets keep their new membership, deleted-room joins fail and
+captured old hooks cannot send into same-key replacements. These Node checks do
+not substitute for the separate required browser journeys. The server GC suite
+retains its original cycle count and heap threshold.
 
 ## 3. Playwright Headless Browser Testing
 

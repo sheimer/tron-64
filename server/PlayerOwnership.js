@@ -3,10 +3,18 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 // Room-scoped authority. Socket indexes and handles are only accelerators;
 // every connection-originated operation checks owners again.
 export class PlayerOwnership {
-  constructor(roomKey) {
+  constructor(roomKey, room = null) {
+    this.room = room
     this.roomKey = roomKey
     this.owners = new Map()
     this.verifiers = new Map()
+  }
+
+  hasSocketIndexes(socket) {
+    return (
+      socket.gameKey === this.roomKey &&
+      (!this.room || !socket.gameSession || socket.gameSession === this.room)
+    )
   }
 
   register(id, socket) {
@@ -69,7 +77,7 @@ export class PlayerOwnership {
 
   transfer(id, socket) {
     const previous = this.owners.get(id)
-    if (previous && previous !== socket && previous.gameKey === this.roomKey) {
+    if (previous && previous !== socket && this.hasSocketIndexes(previous)) {
       previous.playerIds.delete(id)
       const handle = previous.handlesById.get(id)
       previous.handlesById.delete(id)
@@ -89,7 +97,7 @@ export class PlayerOwnership {
       return false
     }
     this.owners.delete(id)
-    if (socket.gameKey === this.roomKey) {
+    if (this.hasSocketIndexes(socket)) {
       socket.playerIds.delete(id)
       const handle = socket.handlesById.get(id)
       socket.handlesById.delete(id)
@@ -102,12 +110,7 @@ export class PlayerOwnership {
 
   clear() {
     for (const [id, socket] of this.owners) {
-      socket.playerIds.delete(id)
-      const handle = socket.handlesById.get(id)
-      socket.handlesById.delete(id)
-      if (handle !== undefined) {
-        socket.idsByHandle.delete(handle)
-      }
+      this.release(id, socket)
     }
     this.owners.clear()
     this.verifiers.clear()

@@ -263,19 +263,51 @@ Rejected snapshots restore no rooms, preserve original bytes, and block writes a
 
 ## 7. Room Inactivity and Destruction
 
-`GameSession.checkConnectionStatus()` periodically prunes closed or stale room
-members through the ordinary departure path, releasing their current room
-bindings rather than only dropping references. When no live members remain in
-the room, it records the start of inactivity. A later check destroys the room once inactivity exceeds `IDLE_ROOM_TIMEOUT_MS` (five minutes); reconnecting clears that inactivity timestamp.
+A room's live membership is the activity source: each open joined socket counts
+once, including spectators and creators with no bikes. The last live departure
+starts `allDisconnected` immediately, including when defensive pruning observes
+a dead or stale member. Repeated cleanup preserves that timestamp. Creation and
+cold restoration start a fresh empty window; the timestamp is process-local and
+is never saved. Rejoining clears it, and a later last departure starts a new
+window. An open former member in the lobby or another room, offline roster,
+creator proof, creation retry or read-only credential discovery cannot extend it.
 
-The periodic `statusTimer` uses `unref()`, so it does not keep the Node.js process alive by itself. When `game.destroy()` runs:
+`GameSession.checkConnectionStatus()` prunes stale members through the ordinary
+departure path and destroys an empty room at or after `IDLE_ROOM_TIMEOUT_MS`
+(five minutes) on the next 60-second check. Expiry is therefore checked
+periodically, rather than promised at an exact second. Each session has one
+`statusTimer`, which uses `unref()` and cannot keep Node.js alive by itself.
 
-- Timers and physics tick loops are cleared.
-- Grid buffers, player references, and room ownership/credential state are released.
-- The room is removed from `gameServer.games` and snapshots on disk.
+`GameSession.destroy()` and `GameServer.destroyGame()` use one idempotent
+lifecycle for explicit deletion, idle expiry and failed-creation rollback:
 
-Idle-window transition timing, complete direct-removal disposal and external
-reference cleanup remain tracked in the [roadmap](../../ROADMAP.md#accurate-room-membership-and-cleanup).
+- Invalidate pending preparation/countdown, physics and status callbacks before
+  releasing room data. Captured queued callbacks and arena/event hooks become
+  inert; repeated destruction emits no room events, writes or timers.
+- Release arena buffers, player/score data, handlers, live membership, ownership
+  and credential verifiers. Clear affected socket routing, registration retries
+  and input handles without closing the connection or resetting its monotonically
+  increasing handle counter. Other rooms' ownership and handles survive.
+- Remove only the exact registered instance. A stale callback or disposal of an
+  old object cannot remove a replacement with the same key. The socket's
+  `gameSession` instance index protects replacement-room bindings alongside
+  `gameKey`; neither routing index independently grants membership.
+- Purge socket discovery grants and creation-retry references to that instance.
+  The bounded creation cache retains only a request-ID tombstone, preserving
+  `REQUEST_ID_CONFLICT` for an expired retry without retaining its room or secret
+  response. Checked clients receive personalized `missingKeys` deletion notices; unrelated
+  clients learn no private-room keys. Successful snapshot writes remove the room
+  from disk, and runtime removal immediately frees server room capacity.
+
+The existing storage policy still applies: failed deletion writes emit a safe
+storage diagnostic but do not restore the runtime room or retry automatically.
+The previous snapshot may restore that room after a restart. Read-only snapshots
+remain protected. Failed creation is not acknowledged and disposes its exact
+transient instance without another write or lobby announcement. No stronger disk
+durability or deletion guarantee is implied after a failed snapshot write.
+
+Browser membership acceptance and the final roadmap audit remain tracked in the
+[approved plan](../plans/2026-10-17-accurate-room-membership-and-cleanup.md).
 
 ---
 

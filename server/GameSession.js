@@ -49,7 +49,8 @@ export class GameSession {
           players: [],
           messages: [],
         }
-    this.ownership = new PlayerOwnership(key)
+    this.destroyed = false
+    this.ownership = new PlayerOwnership(key, this)
     this.roomOwner = new RoomOwnership(key, privateData?.roomOwner)
     this.firstRoundStarted =
       firstRoundStarted === true || this.stats.gamecount > 0
@@ -84,76 +85,139 @@ export class GameSession {
       this.arena.players.length < MAX_PLAYERS &&
       this.stats.players.length < MAX_PLAYERS
     this.clients = new Set()
-    this.allDisconnected = null
+    this.allDisconnected = Date.now()
     this.statusTimer = null
     this.checkConnectionStatus()
   }
 
   destroy() {
-    this.stop()
-    this.stage = 'destroyed'
+    if (this.destroyed) {
+      return false
+    }
+    // Invalidate captured callbacks before cancellation or releasing room data.
+    this.destroyed = true
+    const onDestroy = this.onDestroy
+    this.onDestroy = null
     this.onstate = null
     this.onleave = null
+    this.onChange = null
+    this.stop()
+    this.stage = 'destroyed'
+    this.activeRoundIsCurrent = () => false
     if (this.statusTimer !== null) {
       clearTimeout(this.statusTimer)
       this.statusTimer = null
     }
-    if (typeof this.arena?.destroy === 'function') {
-      this.arena.destroy()
-    }
-    this.arena = null
-    this.onChange = null
-    this.clients.clear()
+    const sockets = new Set([
+      ...this.clients,
+      ...this.ownership.owners.values(),
+      this.roomOwner.socket,
+    ])
     this.ownership.clear()
     this.roomOwner.clear()
-
-    if (typeof this.onDestroy === 'function') {
-      this.onDestroy()
-      this.onDestroy = null
+    for (const client of sockets) {
+      this.clearClientRouting(client)
     }
+    this.clients.clear()
+    this.arena?.destroy()
+    this.arena = null
+    this.stats = null
+    this.startId = null
+    this.acceptingPlayers = false
+    onDestroy?.(this)
+    return true
   }
 
   checkConnectionStatus() {
-    this.pruneClients()
-
-    if (this.liveClients.length > 0) {
-      this.allDisconnected = null
-    } else {
-      if (this.allDisconnected === null) {
-        this.allDisconnected = Date.now()
-      }
-      if (Date.now() - this.allDisconnected > IDLE_ROOM_TIMEOUT_MS) {
-        this.destroy()
-        return
-      }
+    if (this.destroyed) {
+      return
     }
-    this.statusTimer = setTimeout(() => {
-      if (this.arena) {
+    // Manual checks replace the existing timer rather than creating parallel loops.
+    if (this.statusTimer !== null) {
+      clearTimeout(this.statusTimer)
+      this.statusTimer = null
+    }
+    this.pruneClients()
+    this.updateActivity()
+    if (
+      this.allDisconnected !== null &&
+      Date.now() - this.allDisconnected >= IDLE_ROOM_TIMEOUT_MS
+    ) {
+      this.destroy()
+      return
+    }
+    const timer = setTimeout(() => {
+      if (!this.destroyed && this.statusTimer === timer) {
         this.checkConnectionStatus()
       }
     }, 60 * 1000)
-    if (this.statusTimer?.unref) {
-      this.statusTimer.unref()
+    this.statusTimer = timer
+    timer?.unref?.()
+  }
+
+  updateActivity() {
+    if (this.liveClients.length > 0) {
+      this.allDisconnected = null
+    } else if (this.allDisconnected === null) {
+      this.allDisconnected = Date.now()
     }
   }
 
+  clearClientRouting(client) {
+    if (client?.gameSession === this && client.gameKey !== this.key) {
+      // Drop a stale instance pointer without touching a different room's indexes.
+      client.gameSession = null
+      return true
+    }
+    if (
+      client?.gameKey !== this.key ||
+      (client.gameSession && client.gameSession !== this)
+    ) {
+      return false
+    }
+    client.gameKey = null
+    client.gameSession = null
+    client.protocolReady = false
+    client.playerIds?.clear()
+    client.handlesById?.clear()
+    client.idsByHandle?.clear()
+    client.registrationRetries?.clear()
+    return true
+  }
+
   connect({ client, ondraw, onfinish, onreset, onstate, onleave }) {
+    if (this.destroyed) {
+      return
+    }
     this.pruneClients()
     if (this.clients.has(client)) {
       return
     }
     this.clients.add(client)
-    this.allDisconnected = null
-    if (!this.onstate) {
-      this.onstate = onstate
+    client.gameSession = this
+    this.updateActivity()
+    if (!this.onstate && typeof onstate === 'function') {
+      this.onstate = (...args) => {
+        if (!this.destroyed) {
+          onstate?.(...args)
+        }
+      }
     }
-    if (!this.onleave) {
-      this.onleave = onleave
+    if (!this.onleave && typeof onleave === 'function') {
+      this.onleave = () => {
+        if (!this.destroyed) {
+          onleave?.()
+        }
+      }
     }
     this.arena.addHandler({
-      ondraw,
+      ondraw: (changes) => {
+        if (!this.destroyed) {
+          ondraw?.(changes)
+        }
+      },
       onfinish: (stats) => {
-        if (!this.running) {
+        if (this.destroyed || !this.running) {
           return
         }
         this.stop()
@@ -164,6 +228,9 @@ export class GameSession {
         }
       },
       onreset: (positions) => {
+        if (this.destroyed) {
+          return
+        }
         if (this.pendingStart) {
           this.pendingStart.positions = positions
         }
@@ -184,7 +251,9 @@ export class GameSession {
 
   isJoined(client) {
     return Boolean(
+      !this.destroyed &&
       client?.readyState === WebSocket.OPEN &&
+      (!client.gameSession || client.gameSession === this) &&
       client.gameKey === this.key &&
       this.clients.has(client),
     )
@@ -203,9 +272,13 @@ export class GameSession {
   }
 
   disconnect(client) {
+    if (this.destroyed) {
+      return false
+    }
     // Remove membership first: departure effects and cancellation packets must
     // reach only the remaining live members, including during defensive pruning.
     let changed = this.clients.delete(client)
+    this.updateActivity()
     for (const [id, owner] of this.ownership.owners) {
       if (owner === client && this.ownership.release(id, client)) {
         changed = true
@@ -215,15 +288,7 @@ export class GameSession {
     changed = this.roomOwner.release(client) || changed
     // A stale old-room member may already belong to another room. Its current
     // handles/indexes belong to that room and must survive old-room cleanup.
-    if (client?.gameKey === this.key) {
-      client.gameKey = null
-      client.protocolReady = false
-      client.playerIds?.clear()
-      client.handlesById?.clear()
-      client.idsByHandle?.clear()
-      client.registrationRetries?.clear()
-      changed = true
-    }
+    changed = this.clearClientRouting(client) || changed
     if (changed) {
       this.reconcilePendingStart()
       this.onleave?.()
