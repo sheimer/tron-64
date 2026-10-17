@@ -160,18 +160,18 @@ No additional product decision is required with these defaults.
 
 ### Phase 1 — One live membership model and safe departure
 
-- [ ] Introduce deduplicated membership and shared live-member operations in
+- [x] Introduce deduplicated membership and shared live-member operations in
       `GameSession`; migrate direct consumers, fixtures and relevant benchmarks
       from array assumptions.
-- [ ] Integrate idempotent admission/departure in `wsHandler`, preserving target
+- [x] Integrate idempotent admission/departure in `wsHandler`, preserving target
       preflights, connection-local handle lifetime and current-owner release.
-- [ ] Route room broadcasts through membership and prune dead/stale members
+- [x] Route room broadcasts through membership and prune dead/stale members
       through safe cleanup. Keep room event hooks independent of visitor count.
-- [ ] Add `test/room-membership.test.js` with real WebSocket joins, capacity,
+- [x] Add `test/room-membership.test.js` with real WebSocket joins, capacity,
       rejection atomicity, leave/switch/close/termination, multi-bike partial
       handover and delivery-isolation cases. Include stale-index and duplicate
       cleanup assertions; retain round authority/cancellation regressions.
-- [ ] Update the membership/departure sections of the lifecycle guide and add
+- [x] Update the membership/departure sections of the lifecycle guide and add
       accurate Unreleased notes for the implemented behavior.
 
 Dependencies: none beyond the completed ownership/round-authority foundation.

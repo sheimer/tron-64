@@ -14,26 +14,26 @@
 - Branch: `feat/accurate-room-membership-and-cleanup`; base `main` at `30f0356068bcc873fdc92b8e5c78fc776baf60b4`.
 - Starting head: `c006c4822bb23abef74d829ab9c44d5abce635d7` (approved roadmap rationale documentation).
 - Existing PR/dependency: none at preparation.
-- Latest implementation candidate: none.
-- Last verified implementation candidate: none. Approval checkpoint `c3c3af6` passed Tests run `39074867491` / job `117519804698`, with 34 suites and real Chromium journeys.
-- Status: Phase 1 candidate ready; exact-candidate CI pending.
+- Latest implementation candidate: `c1b38ca5dd9a19bb88bcdfa17cee9af50d2e9700` (Phase 1).
+- Last verified implementation candidate: `c1b38ca5dd9a19bb88bcdfa17cee9af50d2e9700` (Phase 1). Approval checkpoint `c3c3af6` passed Tests run `39074867491` / job `117519804698`, with 34 suites and real Chromium journeys.
+- Status: Phase 1 verified; publishing its administrative checkpoint before Phase 2.
 - Local dependencies: `npm ci` succeeded on Node 24.19.0. Shell Git pushes lack authentication; supported GitHub connector writes are available and already proven. Preserve unrelated files and symlink modes in connector commits.
 
 ## Evidence by phase
 
-| Phase                                   | Candidate | Local results | CI evidence | Independent review | Status      |
-| --------------------------------------- | --------- | ------------- | ----------- | ------------------ | ----------- |
-| 1: Membership and departure             | Pending   | Pending       | Pending     | Pending            | Not started |
-| 2: Expiry and destruction               | Pending   | Pending       | Pending     | Pending            | Not started |
-| 3: Browser acceptance and documentation | Pending   | Pending       | Pending     | Pending            | Not started |
+| Phase                                   | Candidate | Local results                                                                                         | CI evidence                                                                                                  | Independent review                                 | Status      |
+| --------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ----------- |
+| 1: Membership and departure             | `c1b38ca` | All Node suites passed; required local browser launch unavailable; scoped checks and benchmark passed | Tests `39075570744` / job `117521894492`: 35 suites passed, zero failed; required Chromium journeys executed | P1-T strengthened tests; P1-R no blocking findings | Verified    |
+| 2: Expiry and destruction               | Pending   | Pending                                                                                               | Pending                                                                                                      | Pending                                            | Not started |
+| 3: Browser acceptance and documentation | Pending   | Pending                                                                                               | Pending                                                                                                      | Pending                                            | Not started |
 
 ## Blockers and next action
 
-Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. P1-I implementation, P1-T independent tests and P1-R independent review are complete. Next: push the Phase 1 candidate and inspect exact-candidate CI/browser results. Global JavaScript lint, documentation links and diff whitespace also passed. No product decision is pending.
+Baseline `c006c48`: Tests push run `39074615251`, job `117519091953`, passed 34 suites with zero failures; inspected logs prove ownership and round-authority Chromium journeys. Local Chromium launch failed because its executable is missing; download returned invalid/truncated archives. Use local Node checks and exact-candidate CI for required browser coverage. P1-I implementation, P1-T independent tests and P1-R independent review are complete. Phase 1 candidate `c1b38ca` passed exact-candidate CI with 35 suites, zero failures and real Chromium journeys. Next: verify this administrative checkpoint CI, then implement Phase 2. Global JavaScript lint, documentation links and diff whitespace also passed. No product decision is pending.
 
 ## Final acceptance audit
 
-Pending implementation. Use the plan's acceptance matrix; no requirement is marked complete yet.
+Phase 1 membership/admission/departure and packet-isolation requirements are verified by the strengthened real-socket suite, existing ownership/authority regressions, and exact-candidate CI. Expiry/destruction remain Phase 2; new browser membership journeys remain Phase 3.
 
 ## Task execution records
 
