@@ -35,20 +35,7 @@ Use one current, explicitly versioned client/server wire protocol throughout cod
 
 Complete this work before a larger influx of unfamiliar players. Keep account-free local multiplayer and cross-device play.
 
-Completed [ownership and reconnection](#player-ownership-and-reconnection) and [registration invariants and round authority](#registration-invariants-and-round-authority) are recorded in the implemented milestones below.
-
-### Accurate room membership and cleanup
-
-Capacity checks, room messages, and idle cleanup currently use separate views of which sockets belong to a room. Keeping them consistent should prevent departed visitors from occupying slots, receiving old-room game messages, or keeping an empty room alive, while preserving their bikes and scores for authenticated rejoin until the room expires.
-
-- [ ] Make joins idempotent with one membership record per socket, using a Set or equivalent deduplicated structure.
-- [ ] Explicitly remove membership on leave, room switch, close, and dead-peer termination; disconnect only players that the connection actually owns.
-- Preserve registered bikes, scores, and reconnect credentials when removing live socket membership. A client may leave, visit another room, and rejoin the original room while it still exists. Offline bikes remain marked `[disconnected]` and explode at their starting positions each round; membership cleanup must not remove them from the roster.
-- [ ] Use the same membership source for capacity checks, broadcasts, and inactivity detection.
-- [ ] Reap empty rooms even when former visitors remain connected to the lobby or another room.
-- [ ] Stop room timers and release callbacks when a room is removed; preserve the intended player-reconnection policy separately from socket membership.
-
-Reference plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnected-client-lifecycle.md), [Capacity limits](docs/plans/2026-08-23-server-concurrency-capacity-limits.md), [Spectator permissions and speed sync](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md).
+Completed [ownership and reconnection](#player-ownership-and-reconnection), [registration invariants and round authority](#registration-invariants-and-round-authority), and [accurate room membership and cleanup](#accurate-room-membership-and-cleanup) are recorded in the implemented milestones below.
 
 ### Scoring and collision correctness
 
@@ -75,7 +62,7 @@ Monitoring should be available only through the intended access policy. Bounded 
 
 - [ ] Local WebSocket regressions prove that spectators cannot steer, claim, or disconnect other players, take creator-only first-start authority, or change owner-controlled speed; joined spectators may start subsequent eligible rounds between rounds.
 - [ ] Empty/duplicate IDs, over-capacity registration, and invalid round starts leave the room usable.
-- [ ] Repeated joins, room switches, reconnection handover, and open-socket leaves maintain correct capacity and eventually permit idle cleanup.
+- [x] Repeated joins, room switches, reconnection handover, and open-socket leaves maintain correct capacity and eventually permit idle cleanup. Verified in the [membership acceptance evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md).
 - [ ] Multi-kill scoring credits every victim; collision and explosion regressions pass.
 - [ ] Spoofed forwarding headers and invalid credentials cannot bypass the documented metrics policy.
 - [ ] Excess input and slow/dead connections stay within configured bounds without disrupting normal local multiplayer.
@@ -245,6 +232,21 @@ Plan: [Mobile landscape layout](docs/plans/2026-08-17-mobile-landscape-layout.md
 
 These features exist or were recorded as completed in the previous roadmap. They describe the foundation, not blanket verification of security, deployment, accessibility, or every supported device. Open work above takes precedence where it strengthens or corrects an existing feature.
 
+### Accurate room membership and cleanup
+
+Live membership now gives capacity checks, room messages and idle cleanup one view of which sockets belong to a room. Departed visitors stop occupying slots and receiving old-room game events; their bikes, scores and credentials remain available for authenticated rejoin until the empty room expires.
+
+- [x] Make joins idempotent with one membership record per socket, using a Set or equivalent deduplicated structure.
+- [x] Explicitly remove membership on leave, room switch, close, and dead-peer termination; disconnect only players that the connection actually owns.
+- Preserve registered bikes, scores, and reconnect credentials when removing live socket membership. A client may leave, visit another room, and rejoin the original room while it still exists. Offline bikes remain marked `[disconnected]` and explode at their starting positions each round; membership cleanup must not remove them from the roster.
+- [x] Use the same membership source for capacity checks, broadcasts, and inactivity detection.
+- [x] Reap empty rooms even when former visitors remain connected to the lobby or another room.
+- [x] Stop room timers and release callbacks when a room is removed; preserve the intended player-reconnection policy separately from socket membership.
+
+Verified in all three phases: [implementation plan](docs/plans/2026-10-17-accurate-room-membership-and-cleanup.md), [acceptance and CI evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md), and [Unreleased notes](CHANGELOG.md#unreleased).
+
+Earlier related plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnected-client-lifecycle.md), [Capacity limits](docs/plans/2026-08-23-server-concurrency-capacity-limits.md), [Spectator permissions and speed sync](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md).
+
 ### Registration invariants and round authority
 
 Shared registration prerequisites—domain validation of IDs/controls/state/six-player limit and private acknowledgement before local bindings—are complete with [ownership and reconnection](#player-ownership-and-reconnection). Round authority is now verified under the client ownership policy below.
@@ -281,10 +283,10 @@ Reference: [Lobby loading state](docs/plans/2026-08-21-lobby-loading-state.md).
 ### Server simulation, storage, and tests
 
 - Timestamp-based round scheduling with a lag recovery guard.
-- Configurable room-count limits and per-room client limits; accurate membership and broader traffic bounds remain open.
+- Configurable room-count limits and per-room client limits with [accurate live membership and idle cleanup](#accurate-room-membership-and-cleanup); broader traffic bounds remain open.
 - Versioned atomic JSON snapshots for room metadata, rosters, scores, and private credential verifiers. Restore starts disconnected. This does not restore in-progress physics or guarantee durability without file/directory fsync.
 - Server GC/lifecycle tests, browser memory-test tooling, and concurrency benchmark tooling. Publish measured results with environment and workload; distinguish skipped browser tests from executed verification.
-- Spectator UI restrictions and verified per-player ownership checks; creator-client ownership and round-control authorization remain open.
+- Spectator UI restrictions and verified per-player ownership checks, plus [creator-client ownership and round-control authorization](#registration-invariants-and-round-authority).
 
 ### Welcome screen and project identity
 

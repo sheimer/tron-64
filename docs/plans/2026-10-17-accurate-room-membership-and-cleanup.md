@@ -1,7 +1,7 @@
 # Accurate room membership and cleanup — Implementation plan
 
 - Date: 2026-10-17
-- Status: Approved for autonomous implementation on 2026-10-18; see [approval evidence and progress](2026-10-17-accurate-room-membership-and-cleanup-progress.md)
+- Status: All three phases implemented and verified on 2026-10-18; see [approval evidence and progress](2026-10-17-accurate-room-membership-and-cleanup-progress.md)
 - Roadmap section: [Accurate room membership and cleanup](../../ROADMAP.md#accurate-room-membership-and-cleanup)
 - Branch: `feat/accurate-room-membership-and-cleanup`
 - Base: `main` at `30f0356068bcc873fdc92b8e5c78fc776baf60b4`
@@ -204,21 +204,21 @@ Phase 3; no new heartbeat detector is supplied.
 
 ### Phase 3 — Browser acceptance and roadmap completion
 
-- [ ] Extend an existing browser journey or add
+- [x] Extend an existing browser journey or add
       `test/room-membership-flow.test.js` using independent Chromium contexts.
       Exercise repeated join, shared-keyboard bikes, spectator/creator presence,
       leave to an open lobby, switch to another room and explicit saved rejoin.
-- [ ] Verify saved roster/scores/credentials survive before expiry, offline bikes
+- [x] Verify saved roster/scores/credentials survive before expiry, offline bikes
       remain disconnected, and former-room packets cannot change the new screen.
-- [ ] Drive server expiry deterministically through an isolated fixture around
+- [x] Drive server expiry deterministically through an isolated fixture around
       the production cleanup path; verify lobby deletion and the existing saved
       credential retirement flow. Add no public test-only endpoint or five-minute
       real-time wait. Check an expired-room join returns `GAME_NOT_FOUND`.
-- [ ] Run the complete acceptance matrix and required suites; update the testing
+- [x] Run the complete acceptance matrix and required suites; update the testing
       guide and final lifecycle contracts. Move only this completed roadmap
       section to implemented history, link plan/progress/Changelog evidence and
       mark only the membership-related acceptance item verified.
-- [ ] Finish the progress evidence and model-efficiency observations; create or
+- [x] Finish the progress evidence and model-efficiency observations; create or
       update the final PR for user review after required final-head CI passes.
 
 Dependencies: Phases 1–2 verified.
