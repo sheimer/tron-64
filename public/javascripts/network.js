@@ -253,8 +253,12 @@ class NetworkClient {
   }
 
   // High-level Actions
-  requestLobbyList() {
-    this.send(MSG_TYPE.LOBBY_LIST)
+  requestLobbyList(rooms, requestId) {
+    return this.send(
+      MSG_TYPE.LOBBY_LIST,
+      rooms === undefined ? null : { rooms },
+      { requestId },
+    )
   }
 
   createGame({ name, size, interval, isPublic = true }, requestId) {

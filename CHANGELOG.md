@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Personalize the lobby on the server: show public rooms and authenticated saved private rooms with their real details and a private label. Automatically remove confirmed expired saved rooms without joining or taking controls.
 - Default to “fast (C-64 original)” for players without a saved speed preference and place speed feedback spacing below the explanation to group it with the speed control.
 - Room speed changes require the authenticated creator between rounds, accept integer intervals from 10 to 500 ms, and preserve the previous speed if saving fails. Duplicate pending starts and active-round starts are rejected without resetting or rescoring.
 - Matching client/server builds now use strict wire protocol version 4. Stale cached pages still receive reload guidance; older wire formats are not accepted.

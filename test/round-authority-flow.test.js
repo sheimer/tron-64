@@ -241,7 +241,7 @@ async function joined(page, key) {
 }
 async function explicitJoin(page, key) {
   // The ordinary selection path sets both coordinator and state room identity.
-  // Leave first to expose the saved row, including revoked/private owner proof.
+  // Leave first to discover the room, including revoked/private owner proof.
   if (
     await page.evaluate(() => Boolean(window.browserFixture.app.currentGameKey))
   )
@@ -332,8 +332,8 @@ async function run() {
   await creator.locator('#btn-header-lobby').click()
   await creator.waitForFunction(
     (roomKey) =>
-      !window.browserFixture.state.gamesList.some(
-        (room) => room.key === roomKey,
+      window.browserFixture.state.gamesList.some(
+        (room) => room.key === roomKey && room.isPublic === false,
       ),
     key,
   )
@@ -341,7 +341,16 @@ async function run() {
     .locator('#body-gamelisttable tr')
     .filter({ hasText: key })
   await savedRow.getByRole('button', { name: 'rejoin' }).waitFor()
-  assert.match(await savedRow.textContent(), /saved.*rejoin to check/i)
+  assert.match(
+    await savedRow.textContent(),
+    /Authority acceptance.*private; registration open.*rejoin/i,
+  )
+  assert.equal((await stateOf(creator)).owner, false)
+  assert.equal(
+    (await rpc('inspect', key)).creatorBound,
+    false,
+    'Private lobby discovery must not reclaim creator controls',
+  )
   assert.deepEqual(
     await creator.evaluate(() =>
       JSON.parse(sessionStorage.getItem('connectedGames')),
