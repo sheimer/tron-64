@@ -109,14 +109,15 @@ export class GameServer {
     }
   }
 
-  getGameList() {
+  getGameList(visibleRooms = new Set()) {
     return this.games
-      .filter((game) => game.isPublic)
+      .filter((game) => game.isPublic || visibleRooms.has(game))
       .map((game) => ({
         key: game.key,
         name: game.name,
         numPlayers: game.arena.players.length,
         acceptingPlayers: game.acceptingPlayers,
+        isPublic: game.isPublic,
       }))
   }
 

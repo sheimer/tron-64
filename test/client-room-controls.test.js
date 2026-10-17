@@ -13,6 +13,7 @@ import {
   PLAYER_COLOR_KEYS,
   GRID_SIZE,
   BLOCK_SIZE,
+  LOBBY_CHECK_BATCH_SIZE,
 } from '../shared/constants.js'
 import { ordinalSuffixOf, sortScoreboardPlayers } from '../shared/utils.js'
 
@@ -213,6 +214,7 @@ try {
     PLAYER_COLOR_KEYS,
     GRID_SIZE,
     BLOCK_SIZE,
+    LOBBY_CHECK_BATCH_SIZE,
     MSG_TYPE,
     ordinalSuffixOf,
     sortScoreboardPlayers,
@@ -446,15 +448,30 @@ try {
   socket.receive(MSG_TYPE.LOBBY_LIST, [])
   const table = el('body-gamelisttable')
   assert.equal(table.children.length, 1)
-  assert.match(
-    table.textContent,
-    /Saved room 11223344.*saved; rejoin to check.*rejoin/,
-  )
+  assert.match(table.textContent, /No active games found/)
   assert.equal(saved.get('connectedGames'), bytes)
   assert.equal(
     socket.messages(MSG_TYPE.JOIN_GAME).length,
     initialJoinCount,
-    'Saved private room is never probed from public omission',
+    'Read-only lobby discovery must never join a saved private room',
+  )
+  const lobbyCheck = socket.messages(MSG_TYPE.LOBBY_LIST).at(-1)
+  socket.receive(
+    MSG_TYPE.LOBBY_LIST,
+    [
+      {
+        key: room,
+        name: 'Private room',
+        numPlayers: 0,
+        acceptingPlayers: true,
+        isPublic: false,
+      },
+    ],
+    { requestId: lobbyCheck.requestId, missingKeys: [] },
+  )
+  assert.match(
+    table.textContent,
+    /Private room.*private; registration open.*rejoin/,
   )
   table.children[0].children[4].children[0].onclick()
   assert.deepEqual(currentRequest().payload.reconnect, [])
@@ -709,13 +726,13 @@ try {
   )
   assert.equal(socket.messages(MSG_TYPE.SET_INTERVAL).length, 1)
 
-  // Proof omission preserves saved rows; only explicit correlated missing does
-  // remove the visible row. Ordinary record retirement refreshes it immediately.
+  // A public greeting cannot retire saved proof or fabricate a room row.
+  // Explicit correlated missing-room joins still remove the saved credentials.
   state.saveRoomOwner(room, owner)
   socket.readyState = Socket.OPEN
   network.protocolReady = true
   socket.receive(MSG_TYPE.LOBBY_LIST, [])
-  assert.match(table.textContent, /Saved room 11223344/)
+  assert.doesNotMatch(table.textContent, /11223344/)
   state.removeConnectedGames([room])
   assert.doesNotMatch(table.textContent, /11223344/)
   state.saveRoomOwner(room, owner)

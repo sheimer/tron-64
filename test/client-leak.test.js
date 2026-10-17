@@ -232,20 +232,18 @@ try {
 
     // Verify the live room is listed before its trusted fixture teardown,
     // so the later absence proves that the reap's lobby broadcast arrived.
-    const { savedRecord: beforeSavedRecord, ...beforeReap } =
-      await page.evaluate(async (key) => {
-        const { state } = await import('/javascripts/state.js')
-        const persisted = JSON.parse(sessionStorage.getItem('connectedGames'))
-        return {
-          listed: state.gamesList.some((game) => game.key === key),
-          ownerProof: Boolean(state.getRoomOwnerClaim(key, true)),
-          bikeProofs: state.getReconnectEntries(key, true).length,
-          savedRecord: JSON.stringify(state.connectedGames[key]),
-          persisted:
-            JSON.stringify(persisted[key]) ===
-            JSON.stringify(state.connectedGames[key]),
-        }
-      }, roomKey)
+    const beforeReap = await page.evaluate(async (key) => {
+      const { state } = await import('/javascripts/state.js')
+      const persisted = JSON.parse(sessionStorage.getItem('connectedGames'))
+      return {
+        listed: state.gamesList.some((game) => game.key === key),
+        ownerProof: Boolean(state.getRoomOwnerClaim(key, true)),
+        bikeProofs: state.getReconnectEntries(key, true).length,
+        persisted:
+          JSON.stringify(persisted[key]) ===
+          JSON.stringify(state.connectedGames[key]),
+      }
+    }, roomKey)
     assert.deepEqual(beforeReap, {
       listed: true,
       ownerProof: true,
@@ -253,8 +251,8 @@ try {
       persisted: true,
     })
 
-    // Simulate the normal idle room reap after all owners leave. Public-list
-    // absence must preserve saved proof; it cannot prove a private room is gone.
+    // Simulate the idle reap. Personalized discovery confirms deletion and
+    // retires saved proof automatically without joining or taking controls.
     const room = gameServer.getGame(roomKey)
     assert.ok(room, 'Fixture room must exist before teardown')
     const releaseDeadline = Date.now() + 3000
@@ -265,82 +263,14 @@ try {
     room.destroy()
     await page.waitForFunction((key) => {
       const { state } = window.browserFixture
-      return !state.gamesList.some((game) => game.key === key)
-    }, roomKey)
-    const { savedRecord: afterSavedRecord, ...afterReap } = await page.evaluate(
-      async (key) => {
-        const { state } = await import('/javascripts/state.js')
-        const persisted = JSON.parse(sessionStorage.getItem('connectedGames'))
-        return {
-          ownerProof: Boolean(state.getRoomOwnerClaim(key, true)),
-          bikeProofs: state.getReconnectEntries(key, true).length,
-          savedRecord: JSON.stringify(state.connectedGames[key]),
-          persisted:
-            JSON.stringify(persisted[key]) ===
-            JSON.stringify(state.connectedGames[key]),
-        }
-      },
-      roomKey,
-    )
-    assert.deepEqual(afterReap, {
-      ownerProof: true,
-      bikeProofs: 2,
-      persisted: true,
-    })
-    assert.equal(
-      afterSavedRecord === beforeSavedRecord,
-      true,
-      'Public-list disappearance must preserve the exact saved creator and bike proof',
-    )
-    const savedRows = await page.evaluate((key) => {
-      return [...document.querySelectorAll('#body-gamelisttable tr')]
-        .filter((row) => row.cells[0]?.textContent === key)
-        .map((row) => ({
-          name: row.cells[1]?.textContent,
-          status: row.cells[3]?.textContent,
-          action: row.cells[4]?.querySelector('button')?.textContent.trim(),
-          disabled: row.cells[4]?.querySelector('button')?.disabled,
-        }))
-    }, roomKey)
-    assert.deepEqual(
-      savedRows,
-      [
-        {
-          name: `Saved room ${roomKey}`,
-          status: 'saved; rejoin to check',
-          action: 'rejoin',
-          disabled: false,
-        },
-      ],
-      'Public omission must leave only the explicit saved-room rejoin row',
-    )
-
-    // Only this trusted test knows the room was destroyed. Retire its saved
-    // fixture record explicitly before the next GC baseline, without adding
-    // product cleanup behavior or relaxing any heap/DOM/listener thresholds.
-    const fixtureRemoved = await page.evaluate(async (key) => {
-      const { state } = await import('/javascripts/state.js')
-      state.removeConnectedGames([key])
       const persisted = JSON.parse(sessionStorage.getItem('connectedGames'))
       return (
-        state.connectedGames[key] === undefined && persisted[key] === undefined
+        !state.gamesList.some((game) => game.key === key) &&
+        state.connectedGames[key] === undefined &&
+        persisted[key] === undefined &&
+        !document.getElementById('body-gamelisttable').textContent.includes(key)
       )
     }, roomKey)
-    assert.equal(
-      fixtureRemoved,
-      true,
-      'Trusted teardown must retire its fixture record',
-    )
-
-    // Removing the known destroyed fixture must refresh the saved-room row
-    // before measuring the original lobby baseline.
-    await page.waitForFunction(
-      (key) =>
-        !document
-          .querySelector('#body-gamelisttable')
-          ?.textContent?.includes(key),
-      roomKey,
-    )
 
     // Step H: Measure client metrics after GC
     lifecycle.step = 'measuring lobby baseline'

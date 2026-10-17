@@ -11,6 +11,7 @@ import {
   GRID_SIZE,
   MAX_ACTIVE_GAMES,
   MAX_CLIENTS_PER_ROOM,
+  LOBBY_CHECK_BATCH_SIZE,
 } from '../shared/constants.js'
 import {
   wsClientsGauge,
@@ -114,16 +115,29 @@ export const setupWebSocketServer = (server) => {
     })
   }
 
+  const sendLobbyList = (ws, extra = {}, missingKeys = []) => {
+    for (const game of ws.lobbyRooms) {
+      if (gameServer.getGame(game.key) !== game) {
+        ws.lobbyRooms.delete(game)
+        if (!gameServer.getGame(game.key)) missingKeys.push(game.key)
+      }
+    }
+    wsMessagesSentCounter.inc({ type: 'text' })
+    ws.send(
+      JSON.stringify({
+        type: MSG_TYPE.LOBBY_LIST,
+        payload: gameServer.getGameList(ws.lobbyRooms),
+        missingKeys: [...new Set(missingKeys)],
+        protocolVersion: PROTOCOL_VERSION,
+        ...extra,
+      }),
+    )
+  }
+
   const broadcastLobbyList = () => {
-    const message = JSON.stringify({
-      type: MSG_TYPE.LOBBY_LIST,
-      payload: gameServer.getGameList(),
-      protocolVersion: PROTOCOL_VERSION,
-    })
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        wsMessagesSentCounter.inc({ type: 'text' })
-        client.send(message)
+        sendLobbyList(client)
       }
     })
   }
@@ -142,16 +156,12 @@ export const setupWebSocketServer = (server) => {
     ws.registrationRetries = new Map()
     ws.creationRetries = new Map()
     ws.protocolReady = false
+    // Read-only discovery grants reference live room instances, never tokens or
+    // socket ownership. They expire with the connection or room instance.
+    ws.lobbyRooms = new Set()
 
     // Send initial lobby list
-    wsMessagesSentCounter.inc({ type: 'text' })
-    ws.send(
-      JSON.stringify({
-        type: MSG_TYPE.LOBBY_LIST,
-        payload: gameServer.getGameList(),
-        protocolVersion: PROTOCOL_VERSION,
-      }),
-    )
+    sendLobbyList(ws)
 
     ws.on('message', (raw, isBinary) => {
       wsMessagesReceivedCounter.inc({
@@ -202,13 +212,50 @@ export const setupWebSocketServer = (server) => {
           }
 
           case MSG_TYPE.LOBBY_LIST: {
-            ws.send(
-              JSON.stringify({
-                type: MSG_TYPE.LOBBY_LIST,
-                payload: gameServer.getGameList(),
-                protocolVersion: PROTOCOL_VERSION,
-              }),
-            )
+            if (payload === null || payload === undefined) {
+              sendLobbyList(ws)
+              break
+            }
+            const rooms = payload.rooms
+            if (
+              typeof msg.requestId !== 'string' ||
+              !requestIdPattern.test(msg.requestId) ||
+              !Array.isArray(rooms) ||
+              rooms.length > LOBBY_CHECK_BATCH_SIZE ||
+              rooms.some(
+                (room) =>
+                  typeof room?.key !== 'string' ||
+                  !/^[a-f0-9]{8}$/.test(room.key) ||
+                  (room.reconnect !== undefined &&
+                    (!Array.isArray(room.reconnect) ||
+                      room.reconnect.length > 6)),
+              )
+            ) {
+              sendError(
+                ws,
+                'INVALID_LOBBY_QUERY',
+                'Invalid saved-room check.',
+                msg.requestId,
+              )
+              break
+            }
+            const missingKeys = []
+            for (const claim of rooms) {
+              const game = gameServer.getGame(claim.key)
+              if (!game) {
+                missingKeys.push(claim.key)
+                continue
+              }
+              if (
+                game.roomOwner.verify(claim.roomOwner) ||
+                (claim.reconnect ?? []).some((entry) =>
+                  game.ownership.verify(entry?.id, entry?.reconnectToken),
+                )
+              ) {
+                ws.lobbyRooms.add(game)
+              }
+            }
+            sendLobbyList(ws, { requestId: msg.requestId }, missingKeys)
             break
           }
 
@@ -753,6 +800,7 @@ export const setupWebSocketServer = (server) => {
       ws.gameKey = null
       ws.protocolReady = false
       ws.playerIds.clear()
+      ws.lobbyRooms.clear()
     })
   })
 }

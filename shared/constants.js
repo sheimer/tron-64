@@ -18,6 +18,7 @@ export const MAX_ACTIVE_GAMES =
     ? parseInt(process.env.MAX_ACTIVE_GAMES, 10) || 50
     : 50
 export const MAX_CLIENTS_PER_ROOM = 32
+export const LOBBY_CHECK_BATCH_SIZE = 50
 export const IDLE_ROOM_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes inactivity cleanup
 
 export const EXPLOSION_MAX_MS_RUNNING = 6000 // Max explosion duration while players are still alive

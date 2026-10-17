@@ -2,13 +2,16 @@ import { network } from '../network.js'
 import { state } from '../state.js'
 import { settings } from '../settings.js'
 import { MSG_TYPE } from '/shared/protocol.js'
-import { GRID_SIZE } from '/shared/constants.js'
+import { GRID_SIZE, LOBBY_CHECK_BATCH_SIZE } from '/shared/constants.js'
 
 export class LobbyView {
   constructor({ onSelectGame }) {
     this.onSelectGame = onSelectGame
     this.unsubscribers = []
     this.pendingCreation = null
+    this.pendingLobbyChecks = new Map()
+    this.verifiedLobbyRecords = new Map()
+    this.lobbyClaimsSignature = null
 
     this.container = document.getElementById('lobby')
     this.footer = document.getElementById('footer-lobby')
@@ -86,6 +89,74 @@ export class LobbyView {
     this.pendingCreation = null
   }
 
+  requestLobbyList() {
+    if (!network.isConnected() || !network.protocolReady) return
+    const records = Object.entries(state.connectedGames).filter(([key]) =>
+      /^[a-f0-9]{8}$/.test(key),
+    )
+    const signature = JSON.stringify([network.generation, records])
+    if (signature === this.lobbyClaimsSignature) return
+    this.lobbyClaimsSignature = signature
+    this.pendingLobbyChecks.clear()
+    for (const key of this.verifiedLobbyRecords.keys()) {
+      if (!state.connectedGames[key]) this.verifiedLobbyRecords.delete(key)
+    }
+    for (
+      let offset = 0;
+      offset < Math.max(1, records.length);
+      offset += LOBBY_CHECK_BATCH_SIZE
+    ) {
+      const batch = records.slice(offset, offset + LOBBY_CHECK_BATCH_SIZE)
+      const requestId = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+        .map((value) => value.toString(16).padStart(2, '0'))
+        .join('')
+      const snapshots = new Map(
+        batch.map(([key, record]) => [key, JSON.stringify(record)]),
+      )
+      this.pendingLobbyChecks.set(requestId, {
+        generation: network.generation,
+        snapshots,
+      })
+      network.requestLobbyList(
+        batch.map(([key]) => ({
+          key,
+          roomOwner: state.getRoomOwnerClaim(key, true),
+          reconnect: state.getReconnectEntries(key, true),
+        })),
+        requestId,
+      )
+    }
+  }
+
+  receiveLobbyList(list, msg) {
+    if (!Array.isArray(list)) return
+    if (msg?.requestId !== undefined) {
+      const pending = this.pendingLobbyChecks.get(msg.requestId)
+      if (!pending || pending.generation !== network.generation) return
+      this.pendingLobbyChecks.delete(msg.requestId)
+      for (const [key, record] of pending.snapshots) {
+        if (JSON.stringify(state.connectedGames[key]) === record)
+          this.verifiedLobbyRecords.set(key, record)
+      }
+    }
+    // Only an explicit server absence for an unchanged checked record retires
+    // credentials. A public-only greeting or a rejected proof cannot do so.
+    const missing = Array.isArray(msg?.missingKeys)
+      ? msg.missingKeys.filter(
+          (key) =>
+            this.verifiedLobbyRecords.has(key) &&
+            this.verifiedLobbyRecords.get(key) ===
+              JSON.stringify(state.connectedGames[key]),
+        )
+      : []
+    state.set('gamesList', list)
+    if (missing.length) {
+      for (const key of missing) this.verifiedLobbyRecords.delete(key)
+      state.removeConnectedGames(missing)
+    }
+    this.updateGamelistTable(list)
+  }
+
   renderStatusRow(message, extraClass = 'fg-fg-muted') {
     if (!this.bodyGamelistTable) return
 
@@ -107,23 +178,7 @@ export class LobbyView {
   updateGamelistTable(list) {
     if (!this.bodyGamelistTable) return
 
-    const publicRooms = Array.isArray(list) ? list : []
-    const publicKeys = new Set(publicRooms.map((room) => room.key))
-    const savedRooms = Object.keys(state.connectedGames)
-      .filter(
-        (key) =>
-          /^[a-f0-9]{8}$/.test(key) &&
-          !publicKeys.has(key) &&
-          (state.getRoomOwnerClaim(key, true) ||
-            state.getReconnectEntries(key, true).length > 0),
-      )
-      .map((key) => ({
-        key,
-        name: `Saved room ${key}`,
-        numPlayers: '—',
-        saved: true,
-      }))
-    const rooms = [...publicRooms, ...savedRooms]
+    const rooms = Array.isArray(list) ? list : []
     if (rooms.length === 0) {
       this.renderStatusRow(
         'No active games found. Create one above to get started!',
@@ -158,11 +213,9 @@ export class LobbyView {
       const tdStatus = document.createElement('td')
       tdStatus.appendChild(
         document.createTextNode(
-          item.saved
-            ? 'saved; rejoin to check'
-            : item.acceptingPlayers
-              ? 'registration open'
-              : 'registration closed',
+          `${item.isPublic === false ? 'private; ' : ''}${
+            item.acceptingPlayers ? 'registration open' : 'registration closed'
+          }`,
         ),
       )
       tr.appendChild(tdStatus)
@@ -199,14 +252,7 @@ export class LobbyView {
     if (this.container) this.container.style.display = ''
     if (this.footer) this.footer.style.display = ''
 
-    if (
-      (!state.gamesList || state.gamesList.length === 0) &&
-      !Object.keys(state.connectedGames).some(
-        (key) =>
-          state.getRoomOwnerClaim(key, true) ||
-          state.getReconnectEntries(key, true).length,
-      )
-    ) {
+    if (!state.gamesList || state.gamesList.length === 0) {
       if (network.isConnected()) {
         this.renderStatusRow('Fetching active games...')
       } else {
@@ -219,12 +265,16 @@ export class LobbyView {
     this.unsubscribers.push(
       state.subscribe('connectedGames', () => {
         this.updateGamelistTable(state.gamesList)
+        this.requestLobbyList()
       }),
     )
 
     this.unsubscribers.push(
       network.on('close', () => {
         this.clearPendingCreation()
+        this.pendingLobbyChecks.clear()
+        this.verifiedLobbyRecords.clear()
+        this.lobbyClaimsSignature = null
         this.renderStatusRow(
           'Connection lost. Reconnecting to server...',
           'fg-rose-muted',
@@ -235,17 +285,14 @@ export class LobbyView {
     this.unsubscribers.push(
       network.on('open', () => {
         this.renderStatusRow('Fetching active games...')
-        network.requestLobbyList()
+        this.requestLobbyList()
       }),
     )
 
     this.unsubscribers.push(
-      network.on(MSG_TYPE.LOBBY_LIST, (list) => {
-        if (!Array.isArray(list)) return
-        // A public-only listing cannot establish that a saved private room is gone.
-        state.set('gamesList', list)
-        this.updateGamelistTable(list)
-      }),
+      network.on(MSG_TYPE.LOBBY_LIST, (list, msg) =>
+        this.receiveLobbyList(list, msg),
+      ),
     )
 
     this.unsubscribers.push(
@@ -285,11 +332,15 @@ export class LobbyView {
       }),
     )
 
-    network.requestLobbyList()
+    this.lobbyClaimsSignature = null
+    this.requestLobbyList()
   }
 
   hide() {
     this.clearPendingCreation()
+    this.pendingLobbyChecks.clear()
+    this.verifiedLobbyRecords.clear()
+    this.lobbyClaimsSignature = null
     if (this.container) this.container.style.display = 'none'
     if (this.footer) this.footer.style.display = 'none'
 
