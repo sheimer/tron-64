@@ -30,6 +30,7 @@ Implementation and executed acceptance evidence: [approved plan](docs/plans/2026
 
 ### Fixed
 
+- Keep the arena hidden when room updates arrive during the score reveal, so the scoreboard stays in place.
 - Cancel outdated lobby error timers so they cannot hide newer feedback or remain active after leaving the lobby.
 - Show player names before movement during round preparation and the one-second countdown, then fade them out when the round starts.
 - Allow selecting score-screen text through the invisible player-name overlay while preserving arena paint synchronization.

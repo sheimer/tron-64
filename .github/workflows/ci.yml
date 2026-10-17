@@ -29,8 +29,8 @@ jobs:
         run: npm ci
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
-      - name: Check CI test code
-        run: npx eslint test/browser-smoke.test.js test/ownership-flow.test.js test/round-authority-flow.test.js test/client-leak.test.js test/helpers/browser-client.js test/helpers/round-authority-server.js test/helpers/test-runner.js test/helpers/runner-child.js test/test-runner.test.js test/runAll.js
+      - name: Lint all JavaScript
+        run: npm run lint
       - name: Run all suites including required browser journeys
         shell: bash
         run: |

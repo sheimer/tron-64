@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { MSG_TYPE, PROTOCOL_VERSION } from '../shared/protocol.js'
 import { ordinalSuffixOf, sortScoreboardPlayers } from '../shared/utils.js'
-import { LOBBY_CHECK_BATCH_SIZE } from '../shared/constants.js'
+import { LobbyView } from '../public/javascripts/ui/lobbyView.js'
 
 const original = {
   window: globalThis.window,
@@ -175,17 +175,9 @@ async function fixture({ search = '', saved = {} } = {}) {
     MSG_TYPE,
     PLAYER_COLOR_KEYS: ['water'],
     GRID_SIZE: 100,
-    LOBBY_CHECK_BATCH_SIZE,
     BLOCK_SIZE: 4,
   }
   globalThis.__ownerRecoveryFixture = bindings
-  const lobbySource = readFileSync(
-    new URL('../public/javascripts/ui/lobbyView.js', import.meta.url),
-    'utf8',
-  ).replace(/^import .*\n/gm, '')
-  const { LobbyView } = await import(
-    `data:text/javascript,${encodeURIComponent(`const { state, network, settings, MSG_TYPE, GRID_SIZE, LOBBY_CHECK_BATCH_SIZE } = globalThis.__ownerRecoveryFixture;\n${lobbySource}\n// fixture ${tag}`)}`
-  )
   bindings.LobbyView = LobbyView
   const gameSource = readFileSync(
     new URL('../public/javascripts/ui/gameView.js', import.meta.url),

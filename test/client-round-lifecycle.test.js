@@ -9,6 +9,7 @@ const original = {
   document: globalThis.document,
   WebSocket: globalThis.WebSocket,
   sessionStorage: globalThis.sessionStorage,
+  localStorage: globalThis.localStorage,
   setTimeout: globalThis.setTimeout,
   clearTimeout: globalThis.clearTimeout,
 }
@@ -115,6 +116,7 @@ try {
   globalThis.window = {
     location: { protocol: 'http:', hostname: 'localhost', port: '3000' },
     addEventListener() {},
+    matchMedia: () => ({ matches: true }),
   }
   globalThis.WebSocket = FakeSocket
   const protocolUrl = pathToFileURL(
@@ -395,6 +397,72 @@ try {
       )
     }
   }
+  // Use the actual view to catch visibility side effects of repeated screen
+  // routing while the score-reveal timer deliberately preserves matchState.
+  globalThis.localStorage = { getItem: () => null }
+  let gameViewSource = readFileSync(
+    new URL('../public/javascripts/ui/gameView.js', import.meta.url),
+    'utf8',
+  )
+  for (const [specifier, relative] of [
+    ['../settings.js', '../public/javascripts/settings.js'],
+    ['../state.js', '../public/javascripts/state.js?round-lifecycle'],
+    ['/shared/constants.js', '../shared/constants.js'],
+    ['/shared/utils.js', '../shared/utils.js'],
+  ]) {
+    gameViewSource = gameViewSource.replace(
+      `from '${specifier}'`,
+      `from '${new URL(relative, import.meta.url).href}'`,
+    )
+  }
+  const { GameView } = await import(
+    `data:text/javascript,${encodeURIComponent(gameViewSource)}`
+  )
+  const elements = new Map(
+    ['arena', 'scores', 'scores-waiting', 'playernames'].map((id) => [
+      id,
+      { style: {}, classList: { add() {}, remove() {} } },
+    ]),
+  )
+  globalThis.document = { getElementById: (id) => elements.get(id) ?? null }
+  app.gameView = new GameView({ onStartGame() {}, onLeaveGame() {} })
+  app.roundLifecycle.gameView = app.gameView
+  join('score-visibility', { bikes: true, played: true })
+  reset('visible-round')
+  assert.equal(elements.get('arena').style.display, 'block')
+  flush(50)
+  stage('visible-round', 'running')
+  finish('visible-round')
+  const revealTimer = app.roundLifecycle.scoreTimer
+  for (let i = 0; i < 2; i++) {
+    socket.receive(
+      MSG_TYPE.GAME_INFO,
+      info(
+        'score-visibility',
+        { stage: 'finished', startId: 'visible-round' },
+        true,
+      ),
+    )
+    assert.equal(state.matchState, 'scores')
+    assert.equal(app.roundLifecycle.scoreTimer, revealTimer)
+    assert.equal(
+      elements.get('arena').style.display,
+      'none',
+      'A repeated finished snapshot must not reopen the arena during score reveal',
+    )
+    assert.equal(elements.get('scores').style.display, 'block')
+  }
+  flush(1000)
+  assert.equal(state.matchState, 'finished')
+  app.gameView.hide()
+  app.gameView.show()
+  assert.equal(elements.get('arena').style.display, 'none')
+  assert.equal(elements.get('scores').style.display, 'block')
+  reset('next-visible-round')
+  assert.equal(elements.get('arena').style.display, 'block')
+  assert.equal(elements.get('scores').style.display, 'none')
+  flush(50)
+  app.leaveCurrentGame()
   network.stopPing()
   console.log(
     'Client round lifecycle: actual coordinator scoped events, pending snapshots, cancellation routing and stale callback guards passed',
@@ -405,6 +473,7 @@ try {
   globalThis.document = original.document
   globalThis.WebSocket = original.WebSocket
   globalThis.sessionStorage = original.sessionStorage
+  globalThis.localStorage = original.localStorage
   globalThis.setTimeout = original.setTimeout
   globalThis.clearTimeout = original.clearTimeout
 }

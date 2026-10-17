@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { LobbySession } from '../public/javascripts/lobbySession.js'
+import { LobbyView } from '../public/javascripts/ui/lobbyView.js'
+import { GRID_SIZE } from '../shared/constants.js'
 import { MSG_TYPE } from '../shared/protocol.js'
 import { state } from '../public/javascripts/state.js'
 
@@ -7,7 +9,6 @@ const originalDocument = globalThis.document
 const originalStorage = globalThis.sessionStorage
 const originalSetTimeout = globalThis.setTimeout
 const originalClearTimeout = globalThis.clearTimeout
-const originalFixture = globalThis.__creationFixture
 try {
   const timers = new Map()
   let sequence = 0
@@ -53,31 +54,46 @@ try {
       return () => listeners.delete(type)
     },
   }
-  globalThis.__creationFixture = { state, network, settings: {}, MSG_TYPE }
-  const source = readFileSync(
-    new URL('../public/javascripts/ui/lobbyView.js', import.meta.url),
-    'utf8',
-  ).replace(/^import .*\n/gm, '')
-  const { LobbyView } = await import(
-    `data:text/javascript,${encodeURIComponent(
-      `const { state, network, settings, MSG_TYPE } = globalThis.__creationFixture;\n${source}`,
-    )}`
-  )
   const selected = []
-  const lobby = new LobbyView({
-    onSelectGame: (key, name) => selected.push({ key, name }),
+  const selectGame = (key, name) => selected.push({ key, name })
+  const session = new LobbySession({
+    state,
+    network,
+    settings: { speed: 40 },
+    callbacks: {
+      onSelectGame: selectGame,
+      updateGamelistTable: (list) => lobby.updateGamelistTable(list),
+      renderStatusRow: (message, extraClass) =>
+        lobby.renderStatusRow(message, extraClass),
+      showError: (message, persistent) => lobby.showError(message, persistent),
+    },
   })
+  const lobby = new LobbyView({
+    onSelectGame: selectGame,
+    onCreateGame: (name) => session.createGame(name),
+    canRejoin: (key) => Boolean(state.getRoomOwnerClaim(key, true)),
+    onShow: () => session.start(),
+    onHide: () => session.stop(),
+  })
+  assert.equal(listeners.size, 0, 'Construction does not subscribe transport')
   lobby.show()
-  const payload = { name: 'Creator without bikes', interval: 25 }
+  assert.equal(state.listeners.get('connectedGames').size, 1)
+  const payload = {
+    name: 'Creator without bikes',
+    size: GRID_SIZE,
+    interval: 25,
+    isPublic: true,
+  }
   const created = {
     key: '12345678',
     ownerClientId: 'a'.repeat(32),
     roomOwnerToken: 'B'.repeat(43),
   }
-  lobby.createGame(payload)
+  session.createGame(payload.name)
+  assert.deepEqual(sends[0].payload, payload)
   const requestId = sends[0].requestId
   assert.match(requestId, /^[A-Za-z0-9_-]{1,64}$/)
-  lobby.createGame({ name: 'Duplicate form submission' })
+  session.createGame('Duplicate form submission')
   assert.equal(sends.length, 1)
   const acknowledge = (result = created, id = requestId) =>
     listeners.get(MSG_TYPE.GAME_CREATED)(result, { requestId: id })
@@ -136,26 +152,36 @@ try {
   )
   state.clearOwnership()
 
-  lobby.createGame(payload)
+  session.createGame(payload.name)
   const expired = sends.at(-1).requestId
   nextTimer()
   nextTimer()
   nextTimer()
   assert.equal(sends.filter((send) => send.requestId === expired).length, 3)
-  assert.equal(lobby.pendingCreation, null)
+  assert.equal(session.pendingCreation, null)
   assert.match(lobbyError.textContent, /acknowledgement was lost/i)
   acknowledge(created, expired)
   assert.equal(selected.length, 1)
-  lobby.createGame(payload)
+  session.createGame(payload.name)
   const stale = sends.at(-1).requestId
   network.generation++
   acknowledge(created, stale)
   assert.equal(selected.length, 1)
   listeners.get('close')()
   assert.equal(timers.size, 0)
-  lobby.createGame(payload)
+  session.createGame(payload.name)
+  const hiddenCreation = sends.at(-1).requestId
+  const hiddenAcknowledgement = listeners.get(MSG_TYPE.GAME_CREATED)
+  const hiddenRetry = timers.get(session.pendingCreation.timer).callback
   lobby.hide()
   assert.equal(timers.size, 0)
+  assert.equal(listeners.size, 0, 'Hiding releases transport subscriptions')
+  assert.equal(state.listeners.get('connectedGames').size, 0)
+  hiddenAcknowledgement(created, { requestId: hiddenCreation })
+  const sendsBeforeHiddenRetry = sends.length
+  hiddenRetry()
+  assert.equal(sends.length, sendsBeforeHiddenRetry)
+  assert.equal(selected.length, 1, 'Late hidden work cannot select a room')
 
   lobby.show()
   const error = (message) => listeners.get(MSG_TYPE.ERROR)(message)
@@ -189,13 +215,18 @@ try {
   assert.equal(lobbyError.style.display, 'block')
   const reinitializedCallback = timers.get(lobby.lobbyErrorTimer).callback
   lobby.show()
+  assert.equal(
+    state.listeners.get('connectedGames').size,
+    1,
+    'Showing again replaces the state subscription',
+  )
   assert.equal(timers.size, 0, 'Reinitializing cancels feedback expiry')
   assert.equal(lobbyError.style.display, 'none')
   error('Current lobby feedback')
   reinitializedCallback()
   assert.equal(lobbyError.style.display, 'block')
   const transientCallback = timers.get(lobby.lobbyErrorTimer).callback
-  lobby.createGame(payload)
+  session.createGame(payload.name)
   nextTimer()
   nextTimer()
   nextTimer()
@@ -214,5 +245,4 @@ try {
   globalThis.sessionStorage = originalStorage
   globalThis.setTimeout = originalSetTimeout
   globalThis.clearTimeout = originalClearTimeout
-  globalThis.__creationFixture = originalFixture
 }

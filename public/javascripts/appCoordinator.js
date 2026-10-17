@@ -1,5 +1,6 @@
 import { RoomSession } from './roomSession.js'
 import { RoundLifecycle } from './roundLifecycle.js'
+import { LobbySession } from './lobbySession.js'
 import {
   PLAYER_COLOR_KEYS,
   GRID_SIZE,
@@ -81,11 +82,31 @@ export class AppCoordinator {
     this.welcomeView = new WelcomeView({
       onEnterLobby: () => this.setScreen('lobby'),
     })
-    this.lobbyView = new LobbyView({
-      onSelectGame: (key, name) => {
-        state.setCurrentGame(key, name)
-        this.joinGame(key)
+    const selectGame = (key, name) => {
+      state.setCurrentGame(key, name)
+      this.joinGame(key)
+    }
+    this.lobbySession = new LobbySession({
+      state,
+      network,
+      settings,
+      callbacks: {
+        onSelectGame: selectGame,
+        updateGamelistTable: (list) => this.lobbyView.updateGamelistTable(list),
+        renderStatusRow: (message, extraClass) =>
+          this.lobbyView.renderStatusRow(message, extraClass),
+        showError: (message, persistent) =>
+          this.lobbyView.showError(message, persistent),
       },
+    })
+    this.lobbyView = new LobbyView({
+      onSelectGame: selectGame,
+      onCreateGame: (name) => this.lobbySession.createGame(name),
+      canRejoin: (key) =>
+        state.getReconnectEntries(key, true).length > 0 ||
+        Boolean(state.getRoomOwnerClaim(key, true)),
+      onShow: () => this.lobbySession.start(),
+      onHide: () => this.lobbySession.stop(),
     })
     this.configView = new ConfigView({
       onAddPlayer: (player) =>

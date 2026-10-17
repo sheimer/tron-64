@@ -295,9 +295,6 @@ export class GameView {
   }
 
   show() {
-    if (this.arenaCanvas) {
-      this.arenaCanvas.style.display = 'block'
-    }
     if (this.playernames) {
       this.playernames.style.display = ''
     }
@@ -307,7 +304,9 @@ export class GameView {
     if (this.startBtn) {
       this.startBtn.style.display = ''
     }
-    this.updatePermissions()
+    // Repeated room snapshots may show this screen during the score reveal.
+    // Project the current match state rather than reopening a hidden arena.
+    this.updateState(appState.matchState)
   }
 
   hide() {
