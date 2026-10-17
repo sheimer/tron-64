@@ -297,12 +297,23 @@ try {
       stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
     },
   )
-  const startup = await Promise.race([
-    once(wireServer, 'message'),
-    new Promise((resolve, reject) =>
-      setTimeout(() => reject(new Error('Wire fixture startup timeout')), 5000),
-    ),
-  ])
+  const startupController = new AbortController()
+  let startupTimer
+  let startup
+  try {
+    startup = await Promise.race([
+      once(wireServer, 'message', { signal: startupController.signal }),
+      new Promise((resolve, reject) => {
+        startupTimer = setTimeout(
+          () => reject(new Error('Wire fixture startup timeout')),
+          5000,
+        )
+      }),
+    ])
+  } finally {
+    clearTimeout(startupTimer)
+    startupController.abort()
+  }
   wireSocket = new RealWebSocket(`ws://127.0.0.1:${startup[0].port}/ws`)
   const packets = []
   wireSocket.on('message', (bytes, binary) => {
@@ -760,6 +771,7 @@ try {
   if (wireDataDir) await rm(wireDataDir, { recursive: true, force: true })
   app?.roundLifecycle.clearRoundCallbacks()
   app?.roomSession.clearPendingRegistrations()
+  app?.lobbyView.hide()
   if (network) {
     network.windowClosing = true
     network.stopPing()

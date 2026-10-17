@@ -9,6 +9,7 @@ export class LobbyView {
     this.onSelectGame = onSelectGame
     this.unsubscribers = []
     this.pendingCreation = null
+    this.lobbyErrorTimer = null
     this.pendingLobbyChecks = new Map()
     this.verifiedLobbyRecords = new Map()
     this.lobbyClaimsSignature = null
@@ -70,6 +71,7 @@ export class LobbyView {
         return
       if (pending.attempts >= 3) {
         this.clearPendingCreation()
+        this.clearLobbyError()
         if (this.lobbyError) {
           this.lobbyError.textContent =
             'Room creation acknowledgement was lost. Try again or reload before creating another room.'
@@ -87,6 +89,12 @@ export class LobbyView {
   clearPendingCreation() {
     clearTimeout(this.pendingCreation?.timer)
     this.pendingCreation = null
+  }
+
+  clearLobbyError() {
+    clearTimeout(this.lobbyErrorTimer)
+    this.lobbyErrorTimer = null
+    if (this.lobbyError) this.lobbyError.style.display = 'none'
   }
 
   requestLobbyList() {
@@ -246,6 +254,7 @@ export class LobbyView {
   }
 
   show() {
+    this.clearLobbyError()
     this.unsubscribers.forEach((unsub) => unsub())
     this.unsubscribers = []
 
@@ -320,14 +329,18 @@ export class LobbyView {
       network.on(MSG_TYPE.ERROR, (errorMessage, msg) => {
         if (msg?.requestId === this.pendingCreation?.requestId)
           this.clearPendingCreation()
+        this.clearLobbyError()
         if (this.lobbyError) {
           this.lobbyError.textContent = `[!] ${errorMessage}`
           this.lobbyError.style.display = 'block'
-          setTimeout(() => {
+          const timer = setTimeout(() => {
+            if (this.lobbyErrorTimer !== timer) return
+            this.lobbyErrorTimer = null
             if (this.lobbyError) {
               this.lobbyError.style.display = 'none'
             }
           }, 8000)
+          this.lobbyErrorTimer = timer
         }
       }),
     )
@@ -338,6 +351,7 @@ export class LobbyView {
 
   hide() {
     this.clearPendingCreation()
+    this.clearLobbyError()
     this.pendingLobbyChecks.clear()
     this.verifiedLobbyRecords.clear()
     this.lobbyClaimsSignature = null

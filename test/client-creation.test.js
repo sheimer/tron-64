@@ -11,15 +11,22 @@ const originalFixture = globalThis.__creationFixture
 try {
   const timers = new Map()
   let sequence = 0
-  globalThis.setTimeout = (callback) => {
-    timers.set(++sequence, callback)
+  let now = 0
+  globalThis.setTimeout = (callback, delay) => {
+    timers.set(++sequence, { callback, at: now + delay })
     return sequence
   }
   globalThis.clearTimeout = (id) => timers.delete(id)
   const nextTimer = () => {
-    const [id, callback] = timers.entries().next().value
+    const [id, timer] = [...timers].sort((a, b) => a[1].at - b[1].at)[0]
     timers.delete(id)
-    callback()
+    now = timer.at
+    timer.callback()
+  }
+  const advance = (duration) => {
+    const target = now + duration
+    while ([...timers.values()].some((timer) => timer.at <= target)) nextTimer()
+    now = target
   }
   const saved = new Map()
   globalThis.sessionStorage = {
@@ -147,8 +154,58 @@ try {
   lobby.createGame(payload)
   lobby.hide()
   assert.equal(timers.size, 0)
+
+  lobby.show()
+  const error = (message) => listeners.get(MSG_TYPE.ERROR)(message)
+  error('First error')
+  const replacedCallback = timers.get(lobby.lobbyErrorTimer).callback
+  advance(4000)
+  error('Newer error')
+  assert.equal(timers.size, 1, 'New feedback replaces the previous timer')
+  replacedCallback()
+  assert.equal(lobbyError.textContent, '[!] Newer error')
+  assert.equal(lobbyError.style.display, 'block')
+  advance(7999)
+  assert.equal(
+    lobbyError.style.display,
+    'block',
+    'Feedback lasts eight seconds',
+  )
+  advance(1)
+  assert.equal(lobbyError.style.display, 'none')
+  assert.equal(lobby.lobbyErrorTimer, null)
+  assert.equal(timers.size, 0)
+
+  error('Leaving the lobby')
+  const hiddenCallback = timers.get(lobby.lobbyErrorTimer).callback
+  lobby.hide()
+  assert.equal(timers.size, 0, 'Leaving cancels feedback expiry')
+  assert.equal(lobbyError.style.display, 'none')
+  lobby.show()
+  error('Returned to the lobby')
+  hiddenCallback()
+  assert.equal(lobbyError.style.display, 'block')
+  const reinitializedCallback = timers.get(lobby.lobbyErrorTimer).callback
+  lobby.show()
+  assert.equal(timers.size, 0, 'Reinitializing cancels feedback expiry')
+  assert.equal(lobbyError.style.display, 'none')
+  error('Current lobby feedback')
+  reinitializedCallback()
+  assert.equal(lobbyError.style.display, 'block')
+  const transientCallback = timers.get(lobby.lobbyErrorTimer).callback
+  lobby.createGame(payload)
+  nextTimer()
+  nextTimer()
+  nextTimer()
+  assert.equal(timers.size, 0, 'Lost-ack feedback cancels transient expiry')
+  transientCallback()
+  advance(8000)
+  assert.match(lobbyError.textContent, /acknowledgement was lost/i)
+  assert.equal(lobbyError.style.display, 'block')
+  lobby.hide()
+  assert.equal(timers.size, 0)
   console.log(
-    'Client creation: correlated bounded retries and independent owner-only records passed',
+    'Client creation: correlated bounded retries, independent owner-only records and lobby feedback timer lifecycle passed',
   )
 } finally {
   globalThis.document = originalDocument

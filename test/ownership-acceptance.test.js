@@ -77,15 +77,30 @@ async function acceptance() {
     child.output = ''
     for (const stream of [child.stdout, child.stderr])
       stream.on('data', (data) => (child.output += data.toString()))
-    const ready = await Promise.race([
-      once(child, 'message').then(([message]) => message),
-      once(child, 'exit').then(([code]) => {
-        throw new Error(`Server exited before ready: ${code}`)
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Server startup timed out')), 4000),
-      ),
-    ])
+    const startupController = new AbortController()
+    let startupTimer
+    let ready
+    try {
+      ready = await Promise.race([
+        once(child, 'message', { signal: startupController.signal }).then(
+          ([message]) => message,
+        ),
+        once(child, 'exit', { signal: startupController.signal }).then(
+          ([code]) => {
+            throw new Error(`Server exited before ready: ${code}`)
+          },
+        ),
+        new Promise((_, reject) => {
+          startupTimer = setTimeout(
+            () => reject(new Error('Server startup timed out')),
+            4000,
+          )
+        }),
+      ])
+    } finally {
+      clearTimeout(startupTimer)
+      startupController.abort()
+    }
     return { child, url: `ws://127.0.0.1:${ready.port}/ws` }
   }
 
