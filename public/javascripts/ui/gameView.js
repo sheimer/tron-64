@@ -91,15 +91,11 @@ export class GameView {
         state === 'scoresWaiting' ? 'block' : 'none'
     }
 
-    // Player positions animation
+    // Show positions before launch; the CSS transition fades names as movement
+    // starts. Avoid timers that could hide names belonging to a later attempt.
     if (this.playernames) {
-      if (state === 'running') {
+      if (state === 'start') {
         this.playernames.classList.add('active')
-        setTimeout(() => {
-          if (this.playernames) {
-            this.playernames.classList.remove('active')
-          }
-        }, 2500)
       } else {
         this.playernames.classList.remove('active')
       }

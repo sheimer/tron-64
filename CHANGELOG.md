@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Default to “fast (C-64 original)” for players without a saved speed preference and place speed feedback spacing below the explanation to group it with the speed control.
 - Room speed changes require the authenticated creator between rounds, accept integer intervals from 10 to 500 ms, and preserve the previous speed if saving fails. Duplicate pending starts and active-round starts are rejected without resetting or rescoring.
 - Matching client/server builds now use strict wire protocol version 4. Stale cached pages still receive reload guidance; older wire formats are not accepted.
 - Pending rounds now cancel safely on bike ownership/connection changes and initial creator loss, preserve scores and registration rules, and return clients to configuration or finished scores. Attempt-scoped events and guarded delayed callbacks prevent stale rounds from starting or changing a replacement screen.
@@ -28,6 +29,8 @@ Implementation and executed acceptance evidence: [approved plan](docs/plans/2026
 
 ### Fixed
 
+- Show player names before movement during round preparation and the one-second countdown, then fade them out when the round starts.
+- Allow selecting score-screen text through the invisible player-name overlay while preserving arena paint synchronization.
 - Restore focus to Start when finished scores are ready and starting is permitted, so Enter or Space starts the next round again. Reconnection can restore focus when eligibility returns; routine room updates preserve subsequent focus changes.
 
 ---

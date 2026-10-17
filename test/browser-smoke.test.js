@@ -206,12 +206,37 @@ async function smokeTest() {
   await page.locator('#arena').waitFor({ state: 'visible' })
   await page.waitForFunction(() => {
     const { state } = window.browserFixture
+    const names = document.getElementById('playernames')
+    return (
+      state.roundInfo?.round?.stage === 'countdown' &&
+      Number(getComputedStyle(names).opacity) > 0.9
+    )
+  })
+  assert.match(await page.locator('#playernames').textContent(), /Alice/)
+  assert.match(await page.locator('#playernames').textContent(), /Bob/)
+  assert.equal(
+    await page.evaluate(() => window.browserFixture.state.roundInfo.running),
+    false,
+    'Player names must be visible during the stationary countdown',
+  )
+  await page.waitForFunction(() => {
+    const { state } = window.browserFixture
     return state.screen === 'game' && state.matchState === 'running'
   })
-  // Reset already draws starting dots, and the running announcement signals
-  // countdown. Wait for the server's durable launch before accepting drawing
-  // evidence or transferring bikes; otherwise the fixture can cancel its first
-  // start without ever having run physics.
+  assert.equal(
+    await page.evaluate(() => {
+      const names = document.getElementById('playernames')
+      return (
+        !names.classList.contains('active') &&
+        Number(getComputedStyle(names).opacity) > 0
+      )
+    }),
+    true,
+    'Names must fade out as movement starts, after the countdown',
+  )
+  // Reset already draws starting dots. Wait for the server's durable launch
+  // before accepting drawing evidence or transferring bikes; otherwise the
+  // fixture can cancel its first start without ever having run physics.
   await page.waitForFunction((key) => {
     const { state } = window.browserFixture
     return (
@@ -255,6 +280,23 @@ async function smokeTest() {
     await rendered.jsonValue(),
     true,
     'Gameplay must paint player trails inside the arena border',
+  )
+  assert.equal(
+    await page.evaluate(() => {
+      const canvas = document.getElementById('arena')
+      const context = canvas.getContext('2d')
+      const { GRID_WIDTH, GRID_HEIGHT } = window.browserFixture.constants
+      const border = context.getImageData(0, 0, 1, 1).data
+      const interior = context.getImageData(
+        Math.ceil(canvas.width / GRID_WIDTH),
+        Math.ceil(canvas.height / GRID_HEIGHT),
+        1,
+        1,
+      ).data
+      return border[3] > 0 && border.some((value, i) => value !== interior[i])
+    }),
+    true,
+    'The first round must paint the arena border before gameplay',
   )
   const restoredHandles = await page.evaluate(async () => {
     const { state } = await import('/javascripts/state.js')
@@ -368,6 +410,25 @@ async function smokeTest() {
     const { state } = window.browserFixture
     return state.matchState === 'finished'
   })
+  const scoreHeading = page.locator('#scores > p').first()
+  const headingBounds = await scoreHeading.boundingBox()
+  assert.ok(headingBounds, 'Finished scores must have a visible heading')
+  await page.mouse.move(
+    headingBounds.x + 1,
+    headingBounds.y + headingBounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    headingBounds.x + headingBounds.width - 1,
+    headingBounds.y + headingBounds.height / 2,
+    { steps: 10 },
+  )
+  await page.mouse.up()
+  assert.match(
+    await page.evaluate(() => window.getSelection().toString()),
+    /game's results/,
+    'Finished score text must be selectable through the faded player-name layer',
+  )
   await page.evaluate(async () => {
     const { network } = await import('/javascripts/network.js')
     network.socket.close()
