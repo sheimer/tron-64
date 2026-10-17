@@ -1,7 +1,7 @@
 # Accurate room membership and cleanup — Implementation plan
 
 - Date: 2026-10-17
-- Status: Awaiting user review; implementation is not approved
+- Status: Approved for autonomous implementation on 2026-10-18; see [approval evidence and progress](2026-10-17-accurate-room-membership-and-cleanup-progress.md)
 - Roadmap section: [Accurate room membership and cleanup](../../ROADMAP.md#accurate-room-membership-and-cleanup)
 - Branch: `feat/accurate-room-membership-and-cleanup`
 - Base: `main` at `30f0356068bcc873fdc92b8e5c78fc776baf60b4`
@@ -287,6 +287,9 @@ them without a backup. Restoring a backup loses changes made since that backup.
 
 ## Approval gate
 
-Await user review and explicit implementation approval of this revision and the
-execution policy above. Planning authorization covers this feature branch and
-planning commit only. No implementation work or approval marker is included.
+The user approved the proposed defaults and subsequently requested implementation
+orchestration on 2026-10-18. The reviewed contract and execution policy above are
+approved for all three phases. See the [progress record](2026-10-17-accurate-room-membership-and-cleanup-progress.md)
+for the original reviewed revision and the actual approval statements. Material
+scope changes still require renewed review; merging and deployment remain outside
+this approval.
