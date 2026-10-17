@@ -182,19 +182,19 @@ reference cleanup are completed in Phase 2; do not mark the roadmap section done
 
 ### Phase 2 — Accurate empty-room expiry and complete destruction
 
-- [ ] Start/reset the idle window from membership transitions, including initial
+- [x] Start/reset the idle window from membership transitions, including initial
       emptiness and defensive dead-peer cleanup. Keep one unreferenced status
       timer and preserve the documented timeout/check cadence.
-- [ ] Unify `GameSession.destroy()` and `GameServer.destroyGame()` disposal with
+- [x] Unify `GameSession.destroy()` and `GameServer.destroyGame()` disposal with
       exact-instance protection, creation-failure safety and idempotency.
-- [ ] Invalidate timers/callbacks and purge socket discovery/creation retry room
+- [x] Invalidate timers/callbacks and purge socket discovery/creation retry room
       references, live bindings and routing indexes for removed instances.
-- [ ] Add `test/room-cleanup.test.js` using controlled time and captured callbacks
+- [x] Add `test/room-cleanup.test.js` using controlled time and captured callbacks
       for timeout boundaries, leave-to-lobby, switch-away, reconnect, spectator,
       cold restore, stale callbacks, double destruction and replacement safety.
       Assert actual snapshot deletion, capacity recovery and storage-failure
       behavior; retain meaningful server GC coverage without weakening thresholds.
-- [ ] Update lifecycle/testing documentation and Unreleased notes for expiry,
+- [x] Update lifecycle/testing documentation and Unreleased notes for expiry,
       destruction and the remaining persistence limitations.
 
 Dependencies: Phase 1 verified.
