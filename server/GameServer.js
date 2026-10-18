@@ -9,6 +9,7 @@ export class GameServer {
   constructor() {
     this.games = []
     this.changeHandler = null
+    this.destroyHandler = null
     this.loadFromStorage()
   }
 
@@ -34,17 +35,15 @@ export class GameServer {
           firstRoundStarted: record.firstRoundStarted,
           createdAt: record.createdAt,
           onChange: () => {
+            if (this.getGame(record.key) !== session) {
+              return
+            }
             this.saveToStorage()
             if (this.changeHandler !== null) {
               this.changeHandler()
             }
           },
-          onDestroy: () => {
-            this.destroyGame(record.key)
-            if (this.changeHandler !== null) {
-              this.changeHandler()
-            }
-          },
+          onDestroy: (game) => this.destroyGame(record.key, game),
         })
         this.games.push(session)
       } catch {
@@ -67,35 +66,29 @@ export class GameServer {
       return null
     }
     const key = randomBytes(4).toString('hex')
-    this.games.push(
-      new GameSession({
-        key,
-        name,
-        size,
-        interval,
-        isPublic,
-        onChange: () => {
-          this.saveToStorage()
-          if (this.changeHandler !== null) {
-            this.changeHandler()
-          }
-        },
-        onDestroy: () => {
-          this.destroyGame(key)
-          if (this.changeHandler !== null) {
-            this.changeHandler()
-          }
-        },
-      }),
-    )
-
+    const game = new GameSession({
+      key,
+      name,
+      size,
+      interval,
+      isPublic,
+      onChange: () => {
+        if (this.getGame(key) !== game) {
+          return
+        }
+        this.saveToStorage()
+        this.changeHandler?.()
+      },
+      onDestroy: (session) => this.destroyGame(key, session),
+    })
+    this.games.push(game)
     if (creator) {
-      creator.credentials = this.games.at(-1).roomOwner.create()
+      creator.credentials = game.roomOwner.create()
     }
     if (!this.saveToStorage()) {
-      const game = this.games.pop()
-      game.onDestroy = null
-      game.destroy()
+      // Creation was never acknowledged; dispose this exact instance without
+      // another write or publishing a transient room to discovery.
+      this.destroyGame(key, game, { persist: false, notify: false })
       if (creator) {
         creator.credentials = null
       }
@@ -104,13 +97,32 @@ export class GameServer {
     return key
   }
 
-  destroyGame(key) {
-    console.log('no connected clients anymore - destroy game key', key)
-    const index = this.games.findIndex((game) => game.key === key)
-    if (index !== -1) {
-      this.games.splice(index, 1)
+  destroyGame(
+    key,
+    expected = this.getGame(key),
+    { persist = true, notify = true } = {},
+  ) {
+    const index = this.games.indexOf(expected)
+    if (index === -1 || expected.key !== key) {
+      return false
+    }
+    // Remove first, so the session callback cannot recurse or remove a
+    // replacement with the same key. Session-first destruction is safe too.
+    this.games.splice(index, 1)
+    expected.onDestroy = null
+    expected.destroy()
+    this.destroyHandler?.(expected)
+    if (persist) {
       this.saveToStorage()
     }
+    if (notify) {
+      this.changeHandler?.()
+    }
+    return true
+  }
+
+  setDestroyHandler(handler) {
+    this.destroyHandler = handler
   }
 
   getGameList(visibleRooms = new Set()) {

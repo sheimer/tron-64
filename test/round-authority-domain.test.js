@@ -6,7 +6,6 @@ const games = []
 const socket = (game) => ({
   readyState: WebSocket.OPEN,
   gameKey: game.key,
-  playerIds: new Set(),
   handlesById: new Map(),
   idsByHandle: new Map(),
 })
@@ -17,7 +16,9 @@ function room() {
   const creator = socket(game)
   const bikes = socket(game)
   const spectator = socket(game)
-  game.clients.push(creator, bikes, spectator)
+  for (const client of [creator, bikes, spectator]) {
+    game.connect({ client })
+  }
   const credential = game.roomOwner.create()
   assert.equal(game.roomOwner.verify(credential), true)
   game.roomOwner.bind(creator)
@@ -46,7 +47,7 @@ function rejectsUnchanged(game, operation, code) {
 }
 try {
   const { game, creator, bikes, spectator } = room()
-  assert.equal(creator.playerIds.size, 0)
+  assert.equal([...game.ownership.owners.values()].includes(creator), false)
   assert.equal(game.eligiblePlayerCount, 2, 'Two bikes on one client qualify')
   rejectsUnchanged(game, () => game.beginRound(bikes), 'CREATOR_REQUIRED')
   rejectsUnchanged(game, () => game.beginRound(spectator), 'CREATOR_REQUIRED')

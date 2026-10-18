@@ -3,17 +3,24 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 // Room-scoped authority. Socket indexes and handles are only accelerators;
 // every connection-originated operation checks owners again.
 export class PlayerOwnership {
-  constructor(roomKey) {
+  constructor(roomKey, room = null) {
+    this.room = room
     this.roomKey = roomKey
     this.owners = new Map()
     this.verifiers = new Map()
+  }
+
+  hasSocketIndexes(socket) {
+    return (
+      socket.gameKey === this.roomKey &&
+      (!this.room || !socket.gameSession || socket.gameSession === this.room)
+    )
   }
 
   register(id, socket) {
     const token = randomBytes(32).toString('base64url')
     this.verifiers.set(id, createHash('sha256').update(token).digest())
     this.owners.set(id, socket)
-    socket.playerIds.add(id)
     return token
   }
 
@@ -69,8 +76,7 @@ export class PlayerOwnership {
 
   transfer(id, socket) {
     const previous = this.owners.get(id)
-    if (previous && previous !== socket) {
-      previous.playerIds.delete(id)
+    if (previous && previous !== socket && this.hasSocketIndexes(previous)) {
       const handle = previous.handlesById.get(id)
       previous.handlesById.delete(id)
       if (handle !== undefined) {
@@ -78,34 +84,30 @@ export class PlayerOwnership {
       }
     }
     this.owners.set(id, socket)
-    socket.playerIds.add(id)
     return previous
   }
 
   release(id, socket) {
-    if (!this.owns(id, socket)) {
+    // Releasing authority uses the actual owner, even if its routing index is
+    // stale. Indexes for a different current room must remain untouched.
+    if (this.owners.get(id) !== socket) {
       return false
     }
     this.owners.delete(id)
-    socket.playerIds.delete(id)
-    const handle = socket.handlesById.get(id)
-    socket.handlesById.delete(id)
-    if (handle !== undefined) {
-      socket.idsByHandle.delete(handle)
-    }
-    return true
-  }
-
-  clear() {
-    for (const [id, socket] of this.owners) {
-      socket.playerIds.delete(id)
+    if (this.hasSocketIndexes(socket)) {
       const handle = socket.handlesById.get(id)
       socket.handlesById.delete(id)
       if (handle !== undefined) {
         socket.idsByHandle.delete(handle)
       }
     }
-    this.owners.clear()
+    return true
+  }
+
+  clear() {
+    for (const [id, socket] of this.owners) {
+      this.release(id, socket)
+    }
     this.verifiers.clear()
   }
 }

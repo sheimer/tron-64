@@ -260,10 +260,14 @@ try {
     const room = gameServer.getGame(roomKey)
     assert.ok(room, 'Fixture room must exist before teardown')
     const releaseDeadline = Date.now() + 3000
-    while (room.clients.length > 0 && Date.now() < releaseDeadline) {
+    while (room.liveClients.length > 0 && Date.now() < releaseDeadline) {
       await new Promise((resolve) => setTimeout(resolve, 20))
     }
-    assert.equal(room.clients.length, 0, 'Leaving must release room membership')
+    assert.equal(
+      room.liveClients.length,
+      0,
+      'Leaving must release room membership',
+    )
     room.destroy()
     await page.waitForFunction((key) => {
       const { state } = window.browserFixture

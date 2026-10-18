@@ -146,7 +146,6 @@ async function persistence() {
           games.push(game)
           const socket = {
             gameKey: game.key,
-            playerIds: new Set(),
             handlesById: new Map(),
             idsByHandle: new Map(),
           }

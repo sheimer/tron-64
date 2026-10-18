@@ -35,26 +35,19 @@ Use one current, explicitly versioned client/server wire protocol throughout cod
 
 Complete this work before a larger influx of unfamiliar players. Keep account-free local multiplayer and cross-device play.
 
-Completed [ownership and reconnection](#player-ownership-and-reconnection) and [registration invariants and round authority](#registration-invariants-and-round-authority) are recorded in the implemented milestones below.
-
-### Accurate room membership and cleanup
-
-- [ ] Make joins idempotent with one membership record per socket, using a Set or equivalent deduplicated structure.
-- [ ] Explicitly remove membership on leave, room switch, close, and dead-peer termination; disconnect only players that the connection actually owns.
-- Preserve registered bikes, scores, and reconnect credentials when removing live socket membership. A client may leave, visit another room, and rejoin the original room while it still exists. Offline bikes remain marked `[disconnected]` and explode at their starting positions each round; membership cleanup must not remove them from the roster.
-- [ ] Use the same membership source for capacity checks, broadcasts, and inactivity detection.
-- [ ] Reap empty rooms even when former visitors remain connected to the lobby or another room.
-- [ ] Stop room timers and release callbacks when a room is removed; preserve the intended player-reconnection policy separately from socket membership.
-
-Reference plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnected-client-lifecycle.md), [Capacity limits](docs/plans/2026-08-23-server-concurrency-capacity-limits.md), [Spectator permissions and speed sync](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md).
+Completed [ownership and reconnection](#player-ownership-and-reconnection), [registration invariants and round authority](#registration-invariants-and-round-authority), and [accurate room membership and cleanup](#accurate-room-membership-and-cleanup) are recorded in the implemented milestones below.
 
 ### Scoring and collision correctness
+
+A round can contain several kills or simultaneous crashes. Every participant's result must survive aggregation so the scoreboard reflects what happened, including ties and mutual collisions.
 
 - [ ] Represent every kill event, including multiple victims of the same killer in one round; update aggregation and any affected stored-score format.
 - [ ] Verify simultaneous collisions with two and three or more players, checking death counts, mutual credit, position rollback, and end-of-round results.
 - [ ] Retain explosion cleanup and escape scoring behavior through resets, disconnects, and restarts.
 
 ### Metrics access and bounded network behavior
+
+Monitoring should be available only through the intended access policy. Bounded input and output, dead-connection cleanup, and measured persistence costs should keep a noisy or slow connection from disrupting everyone else's game.
 
 - [ ] Resolve client addresses through an explicit trusted-proxy boundary; do not authorize raw caller-supplied forwarding headers independently.
 - [ ] Fail closed for missing address information and document whether a configured metrics token is mandatory or an alternative to an IP allowlist.
@@ -69,7 +62,7 @@ Reference plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnec
 
 - [ ] Local WebSocket regressions prove that spectators cannot steer, claim, or disconnect other players, take creator-only first-start authority, or change owner-controlled speed; joined spectators may start subsequent eligible rounds between rounds.
 - [ ] Empty/duplicate IDs, over-capacity registration, and invalid round starts leave the room usable.
-- [ ] Repeated joins, room switches, reconnection handover, and open-socket leaves maintain correct capacity and eventually permit idle cleanup.
+- [x] Repeated joins, room switches, reconnection handover, and open-socket leaves maintain correct capacity and eventually permit idle cleanup. Verified in the [membership acceptance evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md).
 - [ ] Multi-kill scoring credits every victim; collision and explosion regressions pass.
 - [ ] Spoofed forwarding headers and invalid credentials cannot bypass the documented metrics policy.
 - [ ] Excess input and slow/dead connections stay within configured bounds without disrupting normal local multiplayer.
@@ -82,6 +75,8 @@ Make the existing game easy to try and maintain. A complete demo engine, practic
 
 ### Repeatable verification
 
+Changes need reproducible checks of both server rules and actual browser journeys. Making missing or skipped coverage visible helps prevent a green test result from hiding an untested part of the game.
+
 - [ ] Add pull-request and push CI for the supported Node version, dependency installation, lint, formatting, server tests, and required browser tests.
 - [ ] Report skipped suites separately from passing suites. Required browser checks must fail if the browser is unavailable; optional local skips must remain visible.
 - [x] Resolve formatting drift in a separate cleanup change so functional fixes remain reviewable.
@@ -93,6 +88,8 @@ Reference: [Testing architecture](docs/architecture/testing.md).
 
 ### Branding, assets, and notices
 
+Public-facing names, links, assets, and disclosures should accurately represent the project and what it uses. This helps visitors find the intended game and lets contributors and self-hosters understand the relevant permissions and data handling.
+
 - [ ] Use Bitcycles consistently in public titles and descriptions; correct the welcome page's GitHub link and choose a canonical Play URL.
 - [ ] Remove unnecessary legacy media from `public/images` and deployable output. Record provenance and permission for anything retained.
 - [ ] Fill in the project copyright holder and retain applicable licenses/notices for copied palette material, icons, fonts, and other third-party assets.
@@ -100,6 +97,8 @@ Reference: [Testing architecture](docs/architecture/testing.md).
 - [ ] Keep tribute credits and the non-affiliation disclaimer without treating either as permission to use third-party material.
 
 ### First-visit experience and contributor entry
+
+A newcomer should be able to understand the game and start a local match even when the lobby is empty. Clear setup and contribution guidance should also make it possible to help with the project without first reconstructing its development history.
 
 - [ ] Put a short game description, prominent Play link, gameplay clip/image, and two-to-six-player requirements at the top of the README.
 - [ ] Explain the fastest two-player-on-one-keyboard setup and how friends connect from separate devices.
@@ -111,6 +110,8 @@ Reference: [Testing architecture](docs/architecture/testing.md).
 
 ### Mobile usability and accessibility baseline
 
+Desktop playtests alone cannot establish whether the game is usable on a phone or with different input and visual needs. Verify the actual controls, layout, and feedback before making public accessibility or device-support claims.
+
 - [ ] Add device-width viewport metadata and check portrait/landscape layout on phones and tablets.
 - [ ] Verify touch turning, accidental scrolling, browser zoom, and canvas scaling across common device pixel ratios.
 - [ ] Check rendered text/control contrast, keyboard operation, focus visibility, and legal/privacy modal behavior.
@@ -119,7 +120,21 @@ Reference: [Testing architecture](docs/architecture/testing.md).
 
 Advanced landscape ergonomics remain in Milestone 5; basic mobile usability is part of launch readiness. Reference: [Mobile landscape plan](docs/plans/2026-08-17-mobile-landscape-layout.md).
 
+### Server logging
+
+Maintainers need enough context to diagnose server problems and follow a room's lifecycle without drowning in noise or affecting gameplay. Define a coherent logging policy before choosing tools or replacing the existing console calls.
+
+- [ ] Define which events need logs, including room creation/removal and removal reasons, connection/reconnection, round transitions, persistence, and unexpected failures; decide what should remain metrics rather than individual log entries.
+- [ ] Define log levels, their meaning, production defaults, and how verbosity can be configured for diagnosis.
+- [ ] Evaluate whether a logging library is needed and which output destinations/transports are useful. Investigate asynchronous output and serialization costs; do not assume a library alone prevents event-loop blocking. Define bounded buffering, behavior when output is slow or fails, and shutdown flushing so logging cannot stall gameplay or grow memory indefinitely.
+- [ ] Define a filterable record format and correlation scheme: consider stable event names, timestamps, severity, component, server instance, room/session identifiers, round identifiers, and connection identifiers. Decide identifier lifetimes across reconnection and restart, and whether structured fields, keywords, or both support the intended queries.
+- [ ] Define privacy and redaction rules: exclude credentials, room access secrets, and sensitive payloads; decide whether personal data such as IP addresses or player names is needed at all and how any retained data is handled.
+- [ ] Define noise controls for frequent or repeated events, such as sampling, rate limiting, or aggregation, and how suppressed/dropped logs remain visible.
+- [ ] Document the chosen policy, filtering examples, output configuration, retention/rotation responsibilities, and failure behavior. Verify representative events, level filtering, correlation, redaction, and gameplay performance with normal and slow/failing log output.
+
 ### Operational playtest
+
+Passing automated tests does not establish the capacity or reliability of the intended host. A small playtest and measured workload should expose deployment and multiplayer problems before wider promotion brings more players.
 
 - [ ] Run a small invited playtest covering shared keyboards, multiple devices, spectators, disconnects, room switching, and repeated rounds.
 - [ ] Benchmark representative matches with spectators; record tick latency, event-loop lag, CPU, memory, bandwidth, and persistence overhead.
@@ -149,6 +164,8 @@ Reference plans: [Capacity](docs/plans/2026-08-23-server-concurrency-capacity-li
 
 ### Feature demos and automated media recording
 
+Some mechanics and visual themes are easier to understand in motion than in instructions. Reproducible demos should give visitors a useful preview and make documentation clips easier to refresh as the game changes.
+
 - [ ] Create reproducible scripted showcases for themes, killzone scoring, wall-breach escape, and explosions; seed randomness where deterministic capture is needed.
 - [ ] Make demos accessible from the welcome screen and optionally deep links such as `#demo=escape`.
 - [ ] Keep demo state separate from public matches and ensure entering/exiting demos releases timers and subscriptions.
@@ -159,11 +176,15 @@ Plan: [Feature demos and media pipeline](docs/plans/2026-09-06-feature-demos-and
 
 ### Dynamic palette registry
 
+Adding a palette currently requires keeping several catalogs and checks aligned. One registry should make themes easier to contribute and reduce the chance that a palette appears in settings but is missing from tests or the gallery.
+
 - [ ] Centralize palette metadata in one manifest and generate the settings catalog, test discovery, and gallery metadata from it.
 - [ ] Preserve palette-specific highlight/muted derivations and raw overrides for effects such as neon and monochrome CRT styling.
 - [ ] Validate registered palette metadata and provide instructions for creating, checking, and contributing themes.
 
 ### C64 original hi-res refinement
+
+The disabled prototype explores a more faithful C64 appearance, but it still needs readable text and distinguishable players. Refinement should make the style usable in an actual match before it becomes a selectable theme.
 
 - [ ] Keep the prototype `c64-original` palette disabled until its typography, hierarchy, and player visibility are usable.
 - [ ] Introduce appropriately licensed bitmap/PETSCII-inspired typography for HUD, prompts, and scoreboards.
@@ -178,6 +199,8 @@ The existing `c64` palette and disabled `c64-original` prototype are different e
 
 Build on the verified creator-client ownership, round authority, and membership model from Milestone 1.
 
+Groups need to invite friends, choose room settings, and continue when players or the creator leave. These features should make that coordination easier while keeping temporary disconnection distinct from deliberately giving up a slot or handing over authority.
+
 - [ ] **Creation-time speed:** expose the initial speed in the lobby creation form; add a HUD indicator for non-normal speeds. Creator-client-only between-round changes are implemented in the [registration and authority foundation](#registration-invariants-and-round-authority).
 - [ ] **Unlisted rooms and invitations:** expose `isPublic: false` in the UI, with join-by-ID and shareable room links. Backend visibility filtering already exists; document that unlisted is not access-controlled private play.
 - [ ] **Roster locks:** let owner clients restrict new registration and define whether spectators remain permitted.
@@ -191,17 +214,23 @@ Build on the verified creator-client ownership, round authority, and membership 
 
 ### Procedural Web Audio SFX
 
+Sound can give turns, crashes, and round results clearer feedback and strengthen the arcade atmosphere. Browser-generated effects should support that experience with straightforward mute and volume controls.
+
 - [ ] Synthesize engine hum, turn blips, collision/explosion noise, and victory/game-over sounds without external audio downloads.
 - [ ] Respect browser audio activation requirements and provide persistent mute/volume controls.
 - [ ] Release audio resources when leaving a game or demo.
 
 ### Single-player practice bot
 
+The current multiplayer setup requires other players or several local controls. A practice opponent should let someone try the mechanics and controls on their own, using the same movement and scoring rules.
+
 - [ ] Implement a lightweight wall-avoidance/open-space heuristic—for example, flood-fill reachable-area scoring—for practice when no opponents are available.
 - [ ] Define whether practice runs locally/offline or in a server room before implementation; avoid implying offline support from a server-only bot.
 - [ ] Keep bot behavior bounded and preserve the same movement/scoring rules as human players.
 
 ### Advanced mobile landscape ergonomics
+
+The launch baseline checks basic mobile usability; this later work focuses on comfortable sustained play. Thumb placement, arena size, and touch response should remain usable across landscape screen sizes and densities.
 
 - [ ] Refine height-driven 16:10 arena scaling and split thumb controls beside the canvas.
 - [ ] Improve immediate pointer/touch response without creating duplicate events or unbounded client input queues.
@@ -214,6 +243,21 @@ Plan: [Mobile landscape layout](docs/plans/2026-08-17-mobile-landscape-layout.md
 ## Implemented Foundation & Historical Milestones
 
 These features exist or were recorded as completed in the previous roadmap. They describe the foundation, not blanket verification of security, deployment, accessibility, or every supported device. Open work above takes precedence where it strengthens or corrects an existing feature.
+
+### Accurate room membership and cleanup
+
+Live membership now gives capacity checks, room messages and idle cleanup one view of which sockets belong to a room. Departed visitors stop occupying slots and receiving old-room game events; their bikes, scores and credentials remain available for authenticated rejoin until the empty room expires.
+
+- [x] Make joins idempotent with one membership record per socket, using a Set or equivalent deduplicated structure.
+- [x] Explicitly remove membership on leave, room switch, close, and dead-peer termination; disconnect only players that the connection actually owns.
+- Preserve registered bikes, scores, and reconnect credentials when removing live socket membership. A client may leave, visit another room, and rejoin the original room while it still exists. Offline bikes remain marked `[disconnected]` and explode at their starting positions each round; membership cleanup must not remove them from the roster.
+- [x] Use the same membership source for capacity checks, broadcasts, and inactivity detection.
+- [x] Reap empty rooms even when former visitors remain connected to the lobby or another room.
+- [x] Stop room timers and release callbacks when a room is removed; preserve the intended player-reconnection policy separately from socket membership.
+
+Verified in all three phases: [implementation plan](docs/plans/2026-10-17-accurate-room-membership-and-cleanup.md), [acceptance and CI evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md), and [Unreleased notes](CHANGELOG.md#unreleased).
+
+Earlier related plans: [Disconnected client lifecycle](docs/plans/2026-08-22-disconnected-client-lifecycle.md), [Capacity limits](docs/plans/2026-08-23-server-concurrency-capacity-limits.md), [Spectator permissions and speed sync](docs/plans/2026-08-24-spectator-permissions-and-speed-sync.md).
 
 ### Registration invariants and round authority
 
@@ -251,10 +295,10 @@ Reference: [Lobby loading state](docs/plans/2026-08-21-lobby-loading-state.md).
 ### Server simulation, storage, and tests
 
 - Timestamp-based round scheduling with a lag recovery guard.
-- Configurable room-count limits and per-room client limits; accurate membership and broader traffic bounds remain open.
+- Configurable room-count limits and per-room client limits with [accurate live membership and idle cleanup](#accurate-room-membership-and-cleanup); broader traffic bounds remain open.
 - Versioned atomic JSON snapshots for room metadata, rosters, scores, and private credential verifiers. Restore starts disconnected. This does not restore in-progress physics or guarantee durability without file/directory fsync.
 - Server GC/lifecycle tests, browser memory-test tooling, and concurrency benchmark tooling. Publish measured results with environment and workload; distinguish skipped browser tests from executed verification.
-- Spectator UI restrictions and verified per-player ownership checks; creator-client ownership and round-control authorization remain open.
+- Spectator UI restrictions and verified per-player ownership checks, plus [creator-client ownership and round-control authorization](#registration-invariants-and-round-authority).
 
 ### Welcome screen and project identity
 
@@ -282,5 +326,7 @@ Plan: [Welcome page and branding](docs/plans/2026-08-28-welcome-page-and-brandin
 Plan: [Multi-palette schemes](docs/plans/2026-09-05-multi-palette-color-schemes.md).
 
 ## Maintaining This Roadmap
+
+Begin each active work section with a short explanation of the problem it addresses and the player or maintainer benefit. Use one to three plain-language sentences where the purpose is not already clear; avoid repeating the checklist. Keep examples, edge cases, and implementation choices in the linked plan, and record verified behavior in the architecture guides. Acceptance lists and historical summaries do not need a separate rationale for every item.
 
 Mark an item complete only with a reference to its implementation and relevant verification. Keep detailed design in the linked plans and release history in CHANGELOG. Update plans when their assumptions differ from the final implementation; preserve this roadmap as the short source of priority and launch criteria.

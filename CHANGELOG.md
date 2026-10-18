@@ -30,11 +30,19 @@ Implementation and executed acceptance evidence: [approved plan](docs/plans/2026
 
 ### Fixed
 
+- Count each joined connection once, including spectators and shared-keyboard players. Repeated joins remain safe at room capacity; rejected room or handle preflights preserve the current room and controls.
+- Use one safe departure path for leaving, switching, close, termination and stale-member pruning. Preserve saved rosters, scores and recovery credentials, protect replacement owners, and stop former members receiving old-room packets.
+- Start the five-minute recovery window when the last live member leaves, including spectators; rejoining resets it. Empty new and restored rooms receive the same window, checked every minute. Lobby discovery and offline bikes do not keep rooms active.
+- Completely dispose idle and explicitly removed rooms, cancel stale callbacks, free room capacity and remove socket discovery/retry references. Protect same-key replacements and other rooms' controls. Successful snapshot writes delete the room; failed writes retain the existing safe diagnostic and may allow the previous snapshot to restore it after restart.
 - Keep the arena hidden when room updates arrive during the score reveal, so the scoreboard stays in place.
 - Cancel outdated lobby error timers so they cannot hide newer feedback or remain active after leaving the lobby.
 - Show player names before movement during round preparation and the one-second countdown, then fade them out when the round starts.
 - Allow selecting score-screen text through the invisible player-name overlay while preserving arena paint synchronization.
 - Restore focus to Start when finished scores are ready and starting is permitted, so Enter or Space starts the next round again. Reconnection can restore focus when eligibility returns; routine room updates preserve subsequent focus changes.
+
+Room membership and cleanup implementation and acceptance:
+[approved plan](docs/plans/2026-10-17-accurate-room-membership-and-cleanup.md) and
+[progress evidence](docs/plans/2026-10-17-accurate-room-membership-and-cleanup-progress.md).
 
 ---
 

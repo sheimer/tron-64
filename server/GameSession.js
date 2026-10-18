@@ -49,7 +49,8 @@ export class GameSession {
           players: [],
           messages: [],
         }
-    this.ownership = new PlayerOwnership(key)
+    this.destroyed = false
+    this.ownership = new PlayerOwnership(key, this)
     this.roomOwner = new RoomOwnership(key, privateData?.roomOwner)
     this.firstRoundStarted =
       firstRoundStarted === true || this.stats.gamecount > 0
@@ -83,74 +84,139 @@ export class GameSession {
       !this.firstRoundStarted &&
       this.arena.players.length < MAX_PLAYERS &&
       this.stats.players.length < MAX_PLAYERS
-    this.clients = []
-    this.allDisconnected = null
+    this.clients = new Set()
+    this.allDisconnected = Date.now()
     this.statusTimer = null
     this.checkConnectionStatus()
   }
 
   destroy() {
+    if (this.destroyed) {
+      return false
+    }
+    // Invalidate captured callbacks before cancellation or releasing room data.
+    this.destroyed = true
+    const onDestroy = this.onDestroy
+    this.onDestroy = null
+    this.onstate = null
+    this.onleave = null
+    this.onChange = null
     this.stop()
     this.stage = 'destroyed'
-    this.onstate = null
+    this.activeRoundIsCurrent = () => false
     if (this.statusTimer !== null) {
       clearTimeout(this.statusTimer)
       this.statusTimer = null
     }
-    if (typeof this.arena?.destroy === 'function') {
-      this.arena.destroy()
-    }
-    this.arena = null
-    this.onChange = null
-    this.clients = []
+    const sockets = new Set([
+      ...this.clients,
+      ...this.ownership.owners.values(),
+      this.roomOwner.socket,
+    ])
     this.ownership.clear()
     this.roomOwner.clear()
-
-    if (typeof this.onDestroy === 'function') {
-      this.onDestroy()
-      this.onDestroy = null
+    for (const client of sockets) {
+      this.clearClientRouting(client)
     }
+    this.clients.clear()
+    this.arena?.destroy()
+    this.arena = null
+    this.stats = null
+    this.startId = null
+    this.acceptingPlayers = false
+    onDestroy?.(this)
+    return true
   }
 
   checkConnectionStatus() {
-    // Prune closed socket references
-    this.clients = this.clients.filter(
-      (client) => client?.readyState === WebSocket.OPEN,
-    )
-
-    if (this.clients.length > 0) {
-      this.allDisconnected = null
-    } else {
-      if (this.allDisconnected === null) {
-        this.allDisconnected = Date.now()
-      }
-      if (Date.now() - this.allDisconnected > IDLE_ROOM_TIMEOUT_MS) {
-        this.destroy()
-        return
-      }
+    if (this.destroyed) {
+      return
     }
-    this.statusTimer = setTimeout(() => {
-      if (this.arena) {
+    // Manual checks replace the existing timer rather than creating parallel loops.
+    if (this.statusTimer !== null) {
+      clearTimeout(this.statusTimer)
+      this.statusTimer = null
+    }
+    this.pruneClients()
+    this.updateActivity()
+    if (
+      this.allDisconnected !== null &&
+      Date.now() - this.allDisconnected >= IDLE_ROOM_TIMEOUT_MS
+    ) {
+      this.destroy()
+      return
+    }
+    const timer = setTimeout(() => {
+      if (!this.destroyed && this.statusTimer === timer) {
         this.checkConnectionStatus()
       }
     }, 60 * 1000)
-    if (this.statusTimer?.unref) {
-      this.statusTimer.unref()
+    this.statusTimer = timer
+    timer?.unref?.()
+  }
+
+  updateActivity() {
+    if (this.liveClients.length > 0) {
+      this.allDisconnected = null
+    } else if (this.allDisconnected === null) {
+      this.allDisconnected = Date.now()
     }
   }
 
-  connect({ client, ondraw, onfinish, onreset, onstate }) {
-    // Prune closed socket references before adding new client
-    this.clients = this.clients.filter((c) => c?.readyState === WebSocket.OPEN)
-    this.clients.push(client)
-    this.allDisconnected = null
-    if (!this.onstate) {
-      this.onstate = onstate
+  clearClientRouting(client) {
+    if (client?.gameSession === this && client.gameKey !== this.key) {
+      // Drop a stale instance pointer without touching a different room's indexes.
+      client.gameSession = null
+      return true
+    }
+    if (
+      client?.gameKey !== this.key ||
+      (client.gameSession && client.gameSession !== this)
+    ) {
+      return false
+    }
+    client.gameKey = null
+    client.gameSession = null
+    client.protocolReady = false
+    client.handlesById?.clear()
+    client.idsByHandle?.clear()
+    client.registrationRetries?.clear()
+    return true
+  }
+
+  connect({ client, ondraw, onfinish, onreset, onstate, onleave }) {
+    if (this.destroyed) {
+      return
+    }
+    this.pruneClients()
+    if (this.clients.has(client)) {
+      return
+    }
+    this.clients.add(client)
+    client.gameSession = this
+    this.updateActivity()
+    if (!this.onstate && typeof onstate === 'function') {
+      this.onstate = (...args) => {
+        if (!this.destroyed) {
+          onstate?.(...args)
+        }
+      }
+    }
+    if (!this.onleave && typeof onleave === 'function') {
+      this.onleave = () => {
+        if (!this.destroyed) {
+          onleave?.()
+        }
+      }
     }
     this.arena.addHandler({
-      ondraw,
+      ondraw: (changes) => {
+        if (!this.destroyed) {
+          ondraw?.(changes)
+        }
+      },
       onfinish: (stats) => {
-        if (!this.running) {
+        if (this.destroyed || !this.running) {
           return
         }
         this.stop()
@@ -161,6 +227,9 @@ export class GameSession {
         }
       },
       onreset: (positions) => {
+        if (this.destroyed) {
+          return
+        }
         if (this.pendingStart) {
           this.pendingStart.positions = positions
         }
@@ -181,10 +250,49 @@ export class GameSession {
 
   isJoined(client) {
     return Boolean(
+      !this.destroyed &&
       client?.readyState === WebSocket.OPEN &&
+      (!client.gameSession || client.gameSession === this) &&
       client.gameKey === this.key &&
-      this.clients.includes(client),
+      this.clients.has(client),
     )
+  }
+
+  get liveClients() {
+    return [...this.clients].filter((client) => this.isJoined(client))
+  }
+
+  pruneClients() {
+    for (const client of this.clients) {
+      if (!this.isJoined(client)) {
+        this.disconnect(client)
+      }
+    }
+  }
+
+  disconnect(client) {
+    if (this.destroyed) {
+      return false
+    }
+    // Remove membership first: departure effects and cancellation packets must
+    // reach only the remaining live members, including during defensive pruning.
+    let changed = this.clients.delete(client)
+    this.updateActivity()
+    for (const [id, owner] of this.ownership.owners) {
+      if (owner === client && this.ownership.release(id, client)) {
+        changed = true
+        this.disconnectPlayer(id)
+      }
+    }
+    changed = this.roomOwner.release(client) || changed
+    // A stale old-room member may already belong to another room. Its current
+    // handles/indexes belong to that room and must survive old-room cleanup.
+    changed = this.clearClientRouting(client) || changed
+    if (changed) {
+      this.reconcilePendingStart()
+      this.onleave?.()
+    }
+    return changed
   }
 
   get eligiblePlayerCount() {
@@ -273,7 +381,7 @@ export class GameSession {
 
   beginRound(
     client,
-    { save = () => true, isCurrent = () => true, onError, requestId } = {},
+    { save = () => true, isCurrent = () => true, onError } = {},
   ) {
     const result = this.validateRound(client)
     if (!result.ok) {
@@ -290,11 +398,9 @@ export class GameSession {
         roster.filter((entry) => entry.eligible).map((entry) => entry.owner),
       ),
       readyClients: new Set(),
-      countdownStarted: false,
       fallbackTimer: null,
       startTimer: null,
       isCurrent,
-      requestId,
     }
     this.pendingStart = pending
     this.startId = pending.startId
@@ -314,7 +420,6 @@ export class GameSession {
       if (this.pendingStart !== pending) {
         return
       }
-      pending.countdownStarted = true
       clearTimeout(pending.fallbackTimer)
       pending.fallbackTimer = null
       this.stage = 'countdown'

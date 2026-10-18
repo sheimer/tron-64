@@ -145,7 +145,7 @@ function createActiveSession(id) {
 
   // Connect client handler simulating delta broadcasts and round auto-restarts
   session.connect({
-    client: { readyState: WebSocket.OPEN },
+    client: { readyState: WebSocket.OPEN, gameKey: session.key },
     ondraw: (changes) => {
       encodeBinaryDraw(changes)
     },
