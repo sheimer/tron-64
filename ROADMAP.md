@@ -120,6 +120,18 @@ Desktop playtests alone cannot establish whether the game is usable on a phone o
 
 Advanced landscape ergonomics remain in Milestone 5; basic mobile usability is part of launch readiness. Reference: [Mobile landscape plan](docs/plans/2026-08-17-mobile-landscape-layout.md).
 
+### Server logging
+
+Maintainers need enough context to diagnose server problems and follow a room's lifecycle without drowning in noise or affecting gameplay. Define a coherent logging policy before choosing tools or replacing the existing console calls.
+
+- [ ] Define which events need logs, including room creation/removal and removal reasons, connection/reconnection, round transitions, persistence, and unexpected failures; decide what should remain metrics rather than individual log entries.
+- [ ] Define log levels, their meaning, production defaults, and how verbosity can be configured for diagnosis.
+- [ ] Evaluate whether a logging library is needed and which output destinations/transports are useful. Investigate asynchronous output and serialization costs; do not assume a library alone prevents event-loop blocking. Define bounded buffering, behavior when output is slow or fails, and shutdown flushing so logging cannot stall gameplay or grow memory indefinitely.
+- [ ] Define a filterable record format and correlation scheme: consider stable event names, timestamps, severity, component, server instance, room/session identifiers, round identifiers, and connection identifiers. Decide identifier lifetimes across reconnection and restart, and whether structured fields, keywords, or both support the intended queries.
+- [ ] Define privacy and redaction rules: exclude credentials, room access secrets, and sensitive payloads; decide whether personal data such as IP addresses or player names is needed at all and how any retained data is handled.
+- [ ] Define noise controls for frequent or repeated events, such as sampling, rate limiting, or aggregation, and how suppressed/dropped logs remain visible.
+- [ ] Document the chosen policy, filtering examples, output configuration, retention/rotation responsibilities, and failure behavior. Verify representative events, level filtering, correlation, redaction, and gameplay performance with normal and slow/failing log output.
+
 ### Operational playtest
 
 Passing automated tests does not establish the capacity or reliability of the intended host. A small playtest and measured workload should expose deployment and multiplayer problems before wider promotion brings more players.
