@@ -33,7 +33,9 @@ async function serve() {
         owners: game.ownership.owners.size,
         creatorBound: Boolean(game.roomOwner.socket),
         clients: game.liveClients.map((client) => ({
-          ids: [...client.playerIds],
+          ids: [...game.ownership.owners]
+            .filter(([, owner]) => owner === client)
+            .map(([id]) => id),
           handles: [...client.handlesById],
           owner: game.roomOwner.owns(client),
         })),

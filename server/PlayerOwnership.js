@@ -21,7 +21,6 @@ export class PlayerOwnership {
     const token = randomBytes(32).toString('base64url')
     this.verifiers.set(id, createHash('sha256').update(token).digest())
     this.owners.set(id, socket)
-    socket.playerIds.add(id)
     return token
   }
 
@@ -78,7 +77,6 @@ export class PlayerOwnership {
   transfer(id, socket) {
     const previous = this.owners.get(id)
     if (previous && previous !== socket && this.hasSocketIndexes(previous)) {
-      previous.playerIds.delete(id)
       const handle = previous.handlesById.get(id)
       previous.handlesById.delete(id)
       if (handle !== undefined) {
@@ -86,7 +84,6 @@ export class PlayerOwnership {
       }
     }
     this.owners.set(id, socket)
-    socket.playerIds.add(id)
     return previous
   }
 
@@ -98,7 +95,6 @@ export class PlayerOwnership {
     }
     this.owners.delete(id)
     if (this.hasSocketIndexes(socket)) {
-      socket.playerIds.delete(id)
       const handle = socket.handlesById.get(id)
       socket.handlesById.delete(id)
       if (handle !== undefined) {
@@ -112,7 +108,6 @@ export class PlayerOwnership {
     for (const [id, socket] of this.owners) {
       this.release(id, socket)
     }
-    this.owners.clear()
     this.verifiers.clear()
   }
 }

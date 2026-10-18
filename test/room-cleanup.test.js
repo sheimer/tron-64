@@ -28,7 +28,6 @@ const socket = (game) => ({
   readyState: WebSocket.OPEN,
   gameKey: game.key,
   protocolReady: true,
-  playerIds: new Set(),
   handlesById: new Map(),
   idsByHandle: new Map(),
   nextInputHandle: 3,
@@ -303,10 +302,10 @@ try {
   detached.roomOwner.create()
   detached.roomOwner.bind(detachedCreator)
   detached.destroy()
+  assert.equal(detached.ownership.owners.size, 0)
   for (const client of [detachedRider, detachedCreator]) {
     assert.equal(client.gameKey, null)
     assert.equal(client.protocolReady, false)
-    assert.equal(client.playerIds.size, 0)
     assert.equal(client.handlesById.size, 0)
     assert.equal(client.idsByHandle.size, 0)
     assert.equal(client.registrationRetries.size, 0)
@@ -344,7 +343,7 @@ try {
   registry.games.push(replacement)
   const replacementSocket = socket(replacement)
   replacement.connect({ client: replacementSocket })
-  replacementSocket.playerIds.add('shared')
+  replacement.ownership.register('shared', replacementSocket)
   replacementSocket.handlesById.set('shared', 7)
   replacementSocket.idsByHandle.set(7, 'shared')
   capturedRemove(persisted)
@@ -371,7 +370,6 @@ try {
     old.destroy()
     assert.equal(current.isJoined(client), true)
     assert.equal(current.ownership.owns('shared', client), true)
-    assert.equal(client.playerIds.has('shared'), true)
     assert.equal(client.handlesById.get('shared'), 9)
     assert.equal(client.idsByHandle.get(9), 'shared')
     current.destroy()
@@ -702,7 +700,6 @@ try {
   target.disconnect(routingOnly)
   routingOnly.gameKey = replacement.key
   routingOnly.protocolReady = true
-  routingOnly.playerIds.add('stale')
   routingOnly.handlesById.set('stale', 12)
   routingOnly.idsByHandle.set(12, 'stale')
   routingOnly.registrationRetries.set('stale', { retained: true })
@@ -732,11 +729,11 @@ try {
   assert.equal(serverSocket.protocolReady, false)
   assert.equal(client.readyState, WebSocket.OPEN)
   assert.equal(serverSocket.nextInputHandle, 1)
+  assert.equal(replacement.ownership.owners.size, 0)
   for (const affected of [serverSocket, routingOnly]) {
     assert.equal(affected.gameKey, null)
     assert.equal(affected.gameSession, null)
     assert.equal(affected.protocolReady, false)
-    assert.equal(affected.playerIds.size, 0)
     assert.equal(affected.handlesById.size, 0)
     assert.equal(affected.idsByHandle.size, 0)
     assert.equal(affected.registrationRetries.size, 0)

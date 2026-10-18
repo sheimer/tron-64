@@ -54,7 +54,6 @@ function advance(ms) {
 const socket = (game) => ({
   readyState: WebSocket.OPEN,
   gameKey: game.key,
-  playerIds: new Set(),
   handlesById: new Map(),
   idsByHandle: new Map(),
 })
@@ -121,7 +120,6 @@ function fixture({
     },
     isCurrent: () => current,
     onError: (...args) => errors.push(args),
-    requestId: 'round-request',
   }
   const begin = (requester = creator, extra = {}) => {
     const result = game.beginRound(requester, { ...options, ...extra })

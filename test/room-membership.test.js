@@ -282,7 +282,8 @@ try {
   assert.equal(transfer.payload.roomOwner.accepted, true)
   const replacementSocket = ownerOf(source, 'one')
   source.game.stats.players[0].total = 17
-  switchingSocket.playerIds.add('one')
+  switchingSocket.handlesById.set('one', sourceBikes[0].inputHandle)
+  switchingSocket.idsByHandle.set(sourceBikes[0].inputHandle, 'one')
   switchingSocket.lobbyRooms.add(source.game)
   const retryCount = switchingSocket.creationRetries.size
   const releaseCalls = []

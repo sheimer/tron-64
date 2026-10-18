@@ -92,7 +92,7 @@ The settings select displays the acknowledged interval exactly, including a stab
 
 ## 3. Player Registration and Ownership
 
-Public player IDs identify players; they do not authorize control. Each registered player has an independent secret credential, and the room tracks the socket that currently owns that player. One connection may own multiple local players.
+Public player IDs identify players; they do not authorize control. Each registered player has an independent secret credential, and the room tracks the socket that currently owns that player. One connection may own multiple local players. The room's `PlayerOwnership.owners` map is authoritative; sockets retain input-handle mappings but no separate player-ID set. Test diagnostics derive per-socket owned IDs from that map.
 
 ### Registration and acknowledgement
 

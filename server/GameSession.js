@@ -178,7 +178,6 @@ export class GameSession {
     client.gameKey = null
     client.gameSession = null
     client.protocolReady = false
-    client.playerIds?.clear()
     client.handlesById?.clear()
     client.idsByHandle?.clear()
     client.registrationRetries?.clear()
@@ -382,7 +381,7 @@ export class GameSession {
 
   beginRound(
     client,
-    { save = () => true, isCurrent = () => true, onError, requestId } = {},
+    { save = () => true, isCurrent = () => true, onError } = {},
   ) {
     const result = this.validateRound(client)
     if (!result.ok) {
@@ -399,11 +398,9 @@ export class GameSession {
         roster.filter((entry) => entry.eligible).map((entry) => entry.owner),
       ),
       readyClients: new Set(),
-      countdownStarted: false,
       fallbackTimer: null,
       startTimer: null,
       isCurrent,
-      requestId,
     }
     this.pendingStart = pending
     this.startId = pending.startId
@@ -423,7 +420,6 @@ export class GameSession {
       if (this.pendingStart !== pending) {
         return
       }
-      pending.countdownStarted = true
       clearTimeout(pending.fallbackTimer)
       pending.fallbackTimer = null
       this.stage = 'countdown'

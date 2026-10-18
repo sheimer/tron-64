@@ -21,7 +21,9 @@ function inspect(key) {
     info: gameServer.getGameInfo(key),
     emptySince: game.allDisconnected,
     clients: game.liveClients.map((client) => ({
-      ids: [...client.playerIds],
+      ids: [...game.ownership.owners]
+        .filter(([, owner]) => owner === client)
+        .map(([id]) => id),
       handles: [...client.handlesById],
       nextHandle: client.nextInputHandle,
       owner: game.roomOwner.owns(client),

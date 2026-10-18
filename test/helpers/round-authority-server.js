@@ -32,7 +32,9 @@ function inspect(game) {
     creatorBound: Boolean(game.roomOwner.socket),
     owners: game.ownership.owners.size,
     clients: game.liveClients.map((client) => ({
-      ids: [...client.playerIds],
+      ids: [...game.ownership.owners]
+        .filter(([, owner]) => owner === client)
+        .map(([id]) => id),
       handles: [...client.handlesById],
       owner: game.roomOwner.owns(client),
     })),

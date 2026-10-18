@@ -55,18 +55,16 @@ const controlErrors = {
 const leaveRoom = (ws) => {
   const game = gameServer.getGame(ws.gameKey)
   if (game) {
-    return game.disconnect(ws)
+    game.disconnect(ws)
+    return
   }
   // A missing room may still have routing/handle indexes on its old socket.
-  const changed = ws.gameKey !== null
   ws.gameKey = null
   ws.gameSession = null
   ws.protocolReady = false
-  ws.playerIds.clear()
   ws.handlesById.clear()
   ws.idsByHandle.clear()
   ws.registrationRetries.clear()
-  return changed
 }
 
 const encodeBinaryDraw = (changes) => {
@@ -175,7 +173,6 @@ export const setupWebSocketServer = (server) => {
     wsClientsGauge.set(wss.clients.size)
     ws.gameKey = null
     ws.gameSession = null
-    ws.playerIds = new Set()
     ws.handlesById = new Map()
     ws.idsByHandle = new Map()
     ws.nextInputHandle = 0
@@ -742,7 +739,6 @@ export const setupWebSocketServer = (server) => {
             const gameKey = ws.gameKey
             const game = gameServer.getGame(gameKey)
             const result = game?.beginRound(ws, {
-              requestId: msg.requestId,
               save: () => gameServer.saveToStorage(),
               isCurrent: () => gameServer.getGame(gameKey) === game,
               onError: (failure) => {
@@ -816,7 +812,6 @@ export const setupWebSocketServer = (server) => {
       leaveRoom(ws)
       ws.gameKey = null
       ws.protocolReady = false
-      ws.playerIds.clear()
       ws.lobbyRooms.clear()
       ws.creationRetries.clear()
     })

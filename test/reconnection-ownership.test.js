@@ -135,7 +135,9 @@ try {
   const game = gameServer.getGame(key)
   const ownerA = game.ownership.owners.get(first.id)
   const ownerB = [...game.clients].find(
-    (client) => client !== ownerA && client.playerIds.size === 0,
+    (client) =>
+      client !== ownerA &&
+      ![...game.ownership.owners.values()].includes(client),
   )
   assert.ok(ownerB)
 

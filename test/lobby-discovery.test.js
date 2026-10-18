@@ -71,7 +71,6 @@ try {
   const owner = {
     readyState: WebSocket.OPEN,
     gameKey: privateKey,
-    playerIds: new Set(),
     handlesById: new Map(),
     idsByHandle: new Map(),
   }

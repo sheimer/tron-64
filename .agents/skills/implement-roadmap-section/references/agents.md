@@ -28,6 +28,8 @@ Include in each assignment:
 
 Implementer reports changed behavior, files, tests actually run, and uncertainties. Tester reports coverage gaps, commands/results, skipped/unavailable checks, and failure evidence. Reviewer reports actionable findings or “no blocking findings,” with residual risks. Agent confidence is not a substitute for executed checks.
 
+For refactors or changed state ownership, include the repository's obsolete-code check in implementation and review assignments. Have the implementer identify superseded paths/state, the tester preserve behavioral coverage when fixtures change, and the reviewer check that removed code has no remaining consumers and that retained guards/diagnostics serve distinct purposes. Report confirmed removals or why candidates remain; keep this proportional to the phase and avoid unrelated cleanup.
+
 The lead arbitrates disagreements against the approved contract, integrates fixes, and revalidates changed code. Do not let agents race to edit a shared file. Assign follow-up fixes to one writer, or use separate worktrees and inspect integration diffs.
 
 ## Execution tracking

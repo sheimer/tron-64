@@ -15,6 +15,7 @@
 ## Code Quality, Linting & Formatting Rules
 
 - **Linter Hygiene (ESLint):** The codebase enforces ESLint (`eslint.config.js`) with `'no-unused-vars': 'error'`. Never leave unused imports, variables, or functions in new or modified files. Run `npx eslint <changed_js_files>` on changed JavaScript files covered by the ESLint configuration before handing off implementation changes. Do not pass Markdown or other unsupported files to ESLint.
+- **Obsolete Code Review:** When refactoring, replacing behavior, or changing state ownership, inspect affected paths and callers for unused methods/fields, write-only or duplicate state, unreachable branches, and redundant work left by the change. Search runtime, callbacks/dynamic access, tests, fixtures, benchmarks, and documentation before removing candidates; lint alone does not establish that code is unused. Remove confirmed leftovers within scope, adapt tests to verify behavior through authoritative state, and retain meaningful diagnostics and distinct authorization/lifecycle guards. Report uncertain or unrelated candidates instead of expanding into a repository-wide cleanup. Include the result in the handoff when this check is relevant.
 - **Code Formatting (Prettier):** Run `npx prettier --write <changed_supported_files>` on changed files supported by Prettier and not excluded by `.prettierignore`. Follow `.prettierrc` (single quotes, no semicolons, trailing commas, 80-character print width). Keep formatting scoped to the requested changes.
 
 ## Testing Guidelines
